@@ -54,9 +54,22 @@ To be really flexible and re-usable, we should create a multi-tiered approach:
     values from the low level index and add the high level values.
 4. TBD - Aggregations
 
-3. Querying / API
+5. Querying / API
 
     The highest level, differs per module. It can be an SQL-like, table-like interface (similar to CQL), or indexing JSON objects.
+    
+6. Proposal - "explicit indexing" module API
+
+```
+INDEX.CREATE <name> <type> [<type> ...]
+INDEX.ADD <name> <id> <value> [<value> ...]
+INDEX.DEL <name> <id> [<value> ... ]
+
+INDEX.INDEXHASH <name> <hash_key> <field> [<field>...]
+INDEX.INDEXJSON <name> <key> <path> [<path> ...]
+and so forth...
+
+```
 
 ## Data structures
 
