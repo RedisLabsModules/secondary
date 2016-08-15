@@ -52,6 +52,7 @@ To be really flexible and re-usable, we should create a multi-tiered approach:
     They are also responsible for tracking the changes needed when udpating the lower level index. i.e. if we have an index
     on the user's name and email, and just the name changes, this level needs to know that we need to delete the old
     values from the low level index and add the high level values.
+4. TBD - Aggregations
 
 3. Querying / API
 
