@@ -7,7 +7,8 @@ enable_testing()
 
 add_subdirectory(src)
 
-add_executable(testung src/test_tree.c src/tree.c)
+add_executable(testung src/test_tree.c src/tree.c src/index.c)
+add_test(test_tree testung)
 #add_library(secondary src)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

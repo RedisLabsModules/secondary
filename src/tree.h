@@ -14,6 +14,10 @@ int TreeNode_Insert(TreeNode *n, SIString key, void *val);
 TreeNode *TreeNode_Find(TreeNode *n, SIString key);
 TreeNode *TreeNode_FindGreater(TreeNode *n, SIString key);
 
+#define ST_LEFT 0
+#define ST_SELF 1
+#define ST_RIGHT 2
+#define ST_DONE 3
 typedef struct {
   TreeNode *current;
   int state;
@@ -26,6 +30,7 @@ typedef struct {
 } TreeIterator;
 
 TreeIterator Tree_Iterate(TreeNode *n);
+TreeIterator Tree_IterateFrom(TreeNode *n, SIString key);
 TreeNode *TreeIterator_Current(TreeIterator *it);
 TreeNode *TreeIterator_Next(TreeIterator *it);
 

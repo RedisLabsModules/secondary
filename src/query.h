@@ -1,4 +1,4 @@
-#ifdef __SECONDARY_QUERY_H__
+#ifndef __SECONDARY_QUERY_H__
 #define __SECONDARY_QUERY_H__
 #include "value.h"
 
@@ -11,33 +11,33 @@ typedef enum {
 
 typedef struct {
   // the value we must be equal to
-  Value v;
+  SIValue v;
 } SIEquals;
 
 typedef struct {
-  Value min;
+  SIValue min;
   int minExclusive;
-  Value max;
+  SIValue max;
   int maxExclusive;
 } SIRange;
 
 typedef struct {
   // the value we must be different from
-  Value v;
+  SIValue v;
 } SINotEquals;
 
 typedef struct {
-  Value *vals;
+  SIValue *vals;
   size_t numvals;
 } SIIn;
 
-typedef struct typedef struct {
+typedef struct {
   union {
-    PredEquals;
-    PredRange;
-    PredNotEquals;
-    PredIn;
-  } p;
+    SIEquals eq;
+    SIRange rng;
+    SINotEquals ne;
+    SIIn in;
+  };
   SIPredicateType t;
 } SIPredicate;
 
@@ -47,6 +47,6 @@ typedef struct {
 
   size_t offset;
   size_t num;
-} SIIndexQuery;
+} SIQuery;
 
 #endif // !__SECONDARY_QUERY_H__

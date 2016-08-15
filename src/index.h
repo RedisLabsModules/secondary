@@ -1,4 +1,4 @@
-#ifdef __SECONDARY_H__
+#ifndef __SECONDARY_H__
 #define __SECONDARY_H__
 
 #include <stdlib.h>
@@ -6,40 +6,54 @@
 #include "query.h"
 #include "value.h"
 
+#define SI_INDEX_ERROR -1
+#define SI_INDEX_OK 0
+
 typedef struct {
-  Type type;
+  SIType type;
   u_int32_t flags;
-} IndexProperty;
+} SIIndexProperty;
 
 typedef struct {
-  IndexProperty *properties;
+  SIIndexProperty *properties;
   size_t numProps;
-} IndexSpec;
+} SISpec;
 
-typedef char *Id;
+typedef char *SIId;
+
+#define SI_CURSOR_OK 0
+#define SI_CURSOR_ERROR 1
 
 typedef struct {
   size_t offset;
   size_t total;
-  void *opaque;
-} Cursor;
+  int error;
+  void *ctx;
+  SIId (*Next)(void *ctx);
+} SICursor;
 
-Id Cursor_Next(Cursor *c);
+void SICursor_Free(SICursor *c);
+SICursor *SI_NewCursor(void *ctx);
 
+typedef enum {
+  SI_CHADD,
+  SI_CHDEL,
+} SIChangeType;
 typedef struct {
-  ChangeType type;
-  Id id;
-  Value *vals;
+  SIChangeType type;
+  SIId id;
+  SIValue *vals;
   size_t numVals;
-} Change;
+} SIChange;
 
 typedef struct {
-  int (*Apply)(void *ctx, Change *changes, size_t numChanges);
-  Cursor *(*Find)(void *ctx, Query *q);
+  void *ctx;
+
+  int (*Apply)(void *ctx, SIChange *changes, size_t numChanges);
+  SICursor *(*Find)(void *ctx, SIQuery *q);
   size_t (*Len)(void *ctx);
-} Index;
+} SIIndex;
 
-Index NewSimpleIndex(IndexSpec spec);
-
+SIIndex NewSimpleIndex(SISpec spec);
 
 #endif // !__SECONDARY_H__

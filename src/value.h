@@ -26,6 +26,8 @@ typedef struct {
   size_t len;
 } SIString;
 
+SIString SI_WrapString(const char *s);
+
 typedef struct {
   union {
     int intval;
