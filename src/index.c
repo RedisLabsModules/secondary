@@ -20,10 +20,6 @@ typedef struct {
   size_t len;
 } simpleIndex;
 
-SIString SI_WrapString(const char *s) {
-  return (SIString){(char *)s, strlen(s)};
-}
-
 SIString simpleIndex_encode(SIValue *val) {
   switch (val->type) {
   case T_STRING:
@@ -31,7 +27,7 @@ SIString simpleIndex_encode(SIValue *val) {
   case T_BOOL:
     return SI_WrapString(strdup(val->boolval ? "1" : "0"));
 
-  case T_INT: {
+  case T_INT32: {
     char *b = malloc(4);
     b[0] = (char)(val->intval >> 24);
     b[1] = (char)(val->intval >> 16);
@@ -45,23 +41,23 @@ SIString simpleIndex_encode(SIValue *val) {
   }
 }
 
-int simpleIndex_Apply(void *ctx, SIChange *changes, size_t numChanges) {
+int simpleIndex_Apply(void *ctx, SIChangeSet cs) {
 
   simpleIndex *idx = ctx;
 
-  for (size_t i = 0; i < numChanges; i++) {
+  for (size_t i = 0; i < cs.numChanges; i++) {
 
     // this value is not applicable to the index
-    if (changes[i].numVals != 1) {
+    if (cs.changes[i].numVals != 1) {
       return SI_INDEX_ERROR;
     }
-    if (changes[i].type == SI_CHADD) {
+    if (cs.changes[i].type == SI_CHADD) {
 
-      SIString key = simpleIndex_encode(&changes[i].vals[0]);
+      SIString key = simpleIndex_encode(&cs.changes[i].vals[0]);
       if (idx->tree == NULL) {
-        idx->tree = NewTreeNode(key, changes[i].id);
+        idx->tree = NewTreeNode(key, cs.changes[i].id);
       } else {
-        TreeNode_Insert(idx->tree, key, changes[i].id);
+        TreeNode_Insert(idx->tree, key, cs.changes[i].id);
       }
     }
     // TODO: handle remove
@@ -86,16 +82,13 @@ SIId rangeIter_next(void *ctx) {
     // compare min key
     int c =
         strncmp(n->key.str, ic->minKey.str, MAX(ic->minKey.len, n->key.len));
-    printf("compare min: %d\n", c);
     // the key is before the node key or the we want an exclusive range -
     // continue
     if (c < 0 || (c == 0 && ic->minExclusive)) {
-      printf("exclusive equal\n");
       continue;
     }
 
     c = strncmp(n->key.str, ic->maxKey.str, MAX(ic->maxKey.len, n->key.len));
-    printf("compare max: %d\n", c);
     // we are out of range or equal but this is an exclusive range -  stop!
     if (c > 0 || (c == 0 && ic->maxExclusive)) {
       break;
@@ -107,6 +100,7 @@ SIId rangeIter_next(void *ctx) {
 }
 
 #define new_(T) malloc(sizeof(T))
+
 void simpleIndex_FindEq(simpleIndex *idx, SIEquals pred, SICursor *c) {
   SIString key = simpleIndex_encode(&pred.v);
 

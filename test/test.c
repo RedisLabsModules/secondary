@@ -1,9 +1,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "tree.h"
-#include "value.h"
-#include "index.h"
+#include "minunit.h"
+
+#include "../src/tree.h"
+#include "../src/value.h"
+#include "../src/index.h"
 
 // SIString SI_WrapString(const char *s) {
 //   return (SIString){(char *)s, strlen(s)};
@@ -43,22 +45,17 @@ int testIndex() {
 
   SIIndex idx = NewSimpleIndex(spec);
 
-  SIChange changeset[] = {
-      {SI_CHADD, "id1", (SIValue[]){stringValue("foo")}, 1},
-      {SI_CHADD, "id2", (SIValue[]){stringValue("bar")}, 1},
-      {SI_CHADD, "id3", (SIValue[]){stringValue("foot")}, 1},
-  };
+  SIChangeSet cs = SI_NewChangeSet(4);
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id1", 1, SI_StringValC("foo")));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id2", 1, SI_StringValC("bar")));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id3", 1, SI_StringValC("foot")));
 
-  int rc = idx.Apply(idx.ctx, changeset, 3);
+  int rc = idx.Apply(idx.ctx, cs);
   printf("%d\n", rc);
 
-  SIQuery q;
-  SIPredicate p;
-  p.rng = (SIRange){stringValue("foo"), 0, stringValue("xxx"), 0};
-  p.t = PRED_RNG;
-
-  q.predicates = (SIPredicate[]){p};
-  q.numPredicates = 1;
+  SIQuery q = SI_NewQuery();
+  SIQuery_AddPred(
+      &q, SI_PredBetween(SI_StringValC("foo"), SI_StringValC("xxx"), 0));
 
   SICursor *c = idx.Find(idx.ctx, &q);
   printf("%d\n", c->error);
@@ -71,4 +68,30 @@ int testIndex() {
   return 0;
 }
 
-int main(int argc, char **argv) { testIndex(); }
+MU_TEST(testChangeSet) {
+  SIChangeSet cs = SI_NewChangeSet(0);
+  mu_check(cs.cap == 0);
+
+  SIChange ch = SI_NewAddChange("id1", 2, SI_StringValC("foo"), SI_IntVal(32));
+  mu_check(ch.numVals == 2);
+  mu_check(ch.vals[0].type == T_STRING);
+  mu_check(ch.vals[1].type == T_INT32);
+
+  SIChangeSet_AddCahnge(&cs, ch);
+
+  mu_check(cs.cap == 1);
+  mu_check(cs.numChanges == 1);
+}
+
+MU_TEST_SUITE(test_index) {
+  // MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
+
+  MU_RUN_TEST(testChangeSet);
+}
+
+int main(int argc, char **argv) {
+  return testIndex();
+  // MU_RUN_SUITE(test_index);
+  // MU_REPORT();
+  return minunit_status;
+}

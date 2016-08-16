@@ -41,6 +41,9 @@ typedef struct {
   SIPredicateType t;
 } SIPredicate;
 
+SIPredicate SI_PredEquals(SIValue v);
+SIPredicate SI_PredBetween(SIValue min, SIValue max, int exclusive);
+
 typedef struct {
   SIPredicate *predicates;
   size_t numPredicates;
@@ -49,4 +52,6 @@ typedef struct {
   size_t num;
 } SIQuery;
 
+SIQuery SI_NewQuery();
+void SIQuery_AddPred(SIQuery *q, SIPredicate pred);
 #endif // !__SECONDARY_QUERY_H__

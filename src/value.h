@@ -6,13 +6,19 @@
 /* Type defines the supported types by the indexing system */
 typedef enum {
   T_STRING,
-  T_INT,
+  T_INT32,
+  T_INT64,
   T_UINT,
   T_BOOL,
   T_FLOAT,
   T_DOUBLE,
   T_TIME,
-  T_GEOPOINT
+
+  // FUTURE TYPES:
+  // T_GEOPOINT
+  // T_SET
+  // T_LIST
+  // T_MAP
 } SIType;
 
 typedef struct {
@@ -30,7 +36,9 @@ SIString SI_WrapString(const char *s);
 
 typedef struct {
   union {
-    int intval;
+    int32_t intval;
+    int64_t longval;
+    u_int64_t uintval;
     float floatval;
     double doubleval;
     int boolval;
@@ -40,5 +48,14 @@ typedef struct {
   };
   SIType type;
 } SIValue;
+
+SIValue SI_StringVal(SIString s);
+SIValue SI_StringValC(char *s);
+SIValue SI_IntVal(int i);
+SIValue SI_LongVal(int64_t i);
+SIValue SI_UintVal(u_int64_t i);
+SIValue SI_FloatVal(float f);
+SIValue SI_DoubleVal(double d);
+SIValue SI_TimeVal(time_t t);
 
 #endif

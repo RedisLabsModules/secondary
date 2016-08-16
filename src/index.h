@@ -39,6 +39,7 @@ typedef enum {
   SI_CHADD,
   SI_CHDEL,
 } SIChangeType;
+
 typedef struct {
   SIChangeType type;
   SIId id;
@@ -46,10 +47,26 @@ typedef struct {
   size_t numVals;
 } SIChange;
 
+/*
+* Create a new ADD change for a changeset for an id. The variadic args must be
+* SIValues, and the size of the list must match num
+*/
+SIChange SI_NewAddChange(SIId id, size_t num, ...);
+
+typedef struct {
+  SIChange *changes;
+  size_t numChanges;
+  size_t cap;
+} SIChangeSet;
+
+SIChangeSet SI_NewChangeSet(size_t cap);
+
+void SIChangeSet_AddCahnge(SIChangeSet *cs, SIChange ch);
+
 typedef struct {
   void *ctx;
 
-  int (*Apply)(void *ctx, SIChange *changes, size_t numChanges);
+  int (*Apply)(void *ctx, SIChangeSet cs);
   SICursor *(*Find)(void *ctx, SIQuery *q);
   size_t (*Len)(void *ctx);
 } SIIndex;
