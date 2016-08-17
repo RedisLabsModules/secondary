@@ -1,16 +1,19 @@
-#include "index.h"
+
 #include <stdarg.h>
+#include "changeset.h"
 
 SIChange SI_NewAddChange(SIId id, size_t num, ...) {
 
   va_list ap;
   SIValue v;
 
+  // initializing the change with {nun} values capacity
   SIChange ch = {.type = SI_CHADD, .id = id};
-
   ch.vals = calloc(num, sizeof(SIValue));
+  // we'll use this as our counter
   ch.numVals = 0;
 
+  // read SIValues from the va_list into the change
   va_start(ap, num);
   while (ch.numVals < num) {
     ch.vals[ch.numVals++] = va_arg(ap, SIValue);

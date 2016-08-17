@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef char *SIId;
+
 /* Type defines the supported types by the indexing system */
 typedef enum {
   T_STRING,
@@ -33,6 +35,7 @@ typedef struct {
 } SIString;
 
 SIString SI_WrapString(const char *s);
+SIString SIString_Copy(SIString s);
 
 typedef struct {
   union {

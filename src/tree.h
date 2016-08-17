@@ -1,18 +1,33 @@
 #ifndef __SI_TREE_H__
 #include "value.h"
 
+typedef int (*TreeCmpFunc)(void *, void *, void *);
+
 typedef struct treeNode {
-  SIString key;
+  void *key;
   void *val;
 
   struct treeNode *left;
   struct treeNode *right;
 } TreeNode;
 
-TreeNode *NewTreeNode(SIString key, void *val);
-int TreeNode_Insert(TreeNode *n, SIString key, void *val);
-TreeNode *TreeNode_Find(TreeNode *n, SIString key);
-TreeNode *TreeNode_FindGreater(TreeNode *n, SIString key);
+typedef struct {
+  TreeNode *root;
+  size_t len;
+  TreeCmpFunc keyCmpFunc;
+  void *cmpCtx;
+} Tree;
+
+Tree *NewTree(TreeCmpFunc cmp, void *cmpCtx);
+void Tree_Insert(Tree *t, void *key, void *data);
+void Tree_Free(Tree *t);
+
+TreeNode *NewTreeNode(void *key, void *val);
+int TreeNode_Insert(TreeNode *n, void *key, void *val, TreeCmpFunc cmp,
+                    void *ctx);
+TreeNode *TreeNode_Find(TreeNode *n, void *key, TreeCmpFunc cmp, void *ctx);
+TreeNode *TreeNode_FindGreater(TreeNode *n, void *key, TreeCmpFunc cmp,
+                               void *ctx);
 
 #define ST_LEFT 0
 #define ST_SELF 1
@@ -27,10 +42,11 @@ typedef struct {
   treeIterState *stack;
   size_t top;
   size_t cap;
+  Tree *tree;
 } TreeIterator;
 
-TreeIterator Tree_Iterate(TreeNode *n);
-TreeIterator Tree_IterateFrom(TreeNode *n, SIString key);
+TreeIterator Tree_Iterate(Tree *t);
+TreeIterator Tree_IterateFrom(Tree *t, void *key);
 TreeNode *TreeIterator_Current(TreeIterator *it);
 TreeNode *TreeIterator_Next(TreeIterator *it);
 

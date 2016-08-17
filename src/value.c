@@ -30,3 +30,10 @@ SIValue SI_StringVal(SIString s) {
 SIValue SI_StringValC(char *s) {
   return (SIValue){.stringval = SI_WrapString(s), .type = T_STRING};
 }
+
+SIString SIString_Copy(SIString s) {
+  char *b = malloc(s.len + 1);
+  memcpy(b, s.str, s.len);
+  b[s.len] = 0;
+  return (SIString){.str = b, .len = s.len};
+}
