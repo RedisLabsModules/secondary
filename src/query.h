@@ -9,11 +9,13 @@ typedef enum {
   PRED_IN,
 } SIPredicateType;
 
+/* Equals to predicate */
 typedef struct {
   // the value we must be equal to
   SIValue v;
 } SIEquals;
 
+/* Range predicate. Can also express GT / LT / GE / LE */
 typedef struct {
   SIValue min;
   int minExclusive;
@@ -21,16 +23,19 @@ typedef struct {
   int maxExclusive;
 } SIRange;
 
+/* NOT predicate */
 typedef struct {
   // the value we must be different from
   SIValue v;
 } SINotEquals;
 
+/* IN (foo, bar, baz) predicate */
 typedef struct {
   SIValue *vals;
   size_t numvals;
 } SIIn;
 
+/* Predicate union, will add more predicates later */
 typedef struct {
   union {
     SIEquals eq;

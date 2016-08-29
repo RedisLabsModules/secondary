@@ -17,7 +17,7 @@ typedef struct {
 
 typedef struct {
   SIIndexProperty *properties;
-  u_int8_t numProps;
+  size_t numProps;
 } SISpec;
 
 #define SI_CURSOR_OK 0
@@ -34,11 +34,14 @@ typedef struct {
 void SICursor_Free(SICursor *c);
 SICursor *SI_NewCursor(void *ctx);
 
+typedef void (*IndexVisitor)(SIId id, void *key, void *ctx);
+
 typedef struct {
   void *ctx;
 
   int (*Apply)(void *ctx, SIChangeSet cs);
   SICursor *(*Find)(void *ctx, SIQuery *q);
+  void (*Traverse)(void *ctx, IndexVisitor cb, void *visitCtx);
   size_t (*Len)(void *ctx);
 } SIIndex;
 

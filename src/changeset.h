@@ -30,5 +30,6 @@ typedef struct {
 SIChangeSet SI_NewChangeSet(size_t cap);
 
 void SIChangeSet_AddCahnge(SIChangeSet *cs, SIChange ch);
+void SIChangeSet_Free(SIChangeSet *cs);
 
 #endif // !1

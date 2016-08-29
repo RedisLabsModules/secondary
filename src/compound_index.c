@@ -10,7 +10,6 @@ typedef struct {
   u_int8_t numFuncs;
 
   Tree *tree;
-
 } compoundIndex;
 
 int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
@@ -42,6 +41,7 @@ size_t compoundIndex_Len(void *ctx) {
 }
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
+void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx);
 
 SIIndex SI_NewCompoundIndex(SISpec spec) {
 
@@ -95,6 +95,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
   ret.Find = compoundIndex_Find;
   ret.Apply = compoundIndex_Apply;
   ret.Len = compoundIndex_Len;
+  ret.Traverse = compoundIndex_Traverse;
 
   return ret;
 }
@@ -228,10 +229,13 @@ SIId scan_next(void *ctx) {
   TreeNode *n;
   while (NULL != (n = TreeIterator_Next(&sc->it))) {
 
+    // we are over our max limit
     if (sc->it.tree->keyCmpFunc(n->key, sc->max, sc->it.tree->cmpCtx) > 0) {
       break;
     }
 
+    // if we have filters beyond the min/max range, we need to explicitly filter
+    // each of them
     SIMultiKey *mk = n->key;
     int ok = 1;
     for (int i = 0; i < sc->numFilters; i++) {
@@ -263,4 +267,15 @@ SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
   c->ctx = sctx;
   c->Next = scan_next;
   return c;
+}
+
+void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
+
+  compoundIndex *idx = ctx;
+
+  TreeIterator it = Tree_Iterate(idx->tree);
+  TreeNode *n;
+  while (NULL != (n = TreeIterator_Next(&it))) {
+    cb(n->val, n->key, visitCtx);
+  }
 }

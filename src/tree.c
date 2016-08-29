@@ -58,16 +58,19 @@ TreeNode *TreeNode_FindGreater(TreeNode *n, void *key, TreeCmpFunc cmp,
     return NULL;
   }
   int c = cmp(key, n->key, ctx);
-  // printf("%s <> %s: %d. left? %p\n", key.str, n->key.str, c, n->left);
+
+  // this is the node we were looking for
   if (c == 0) {
-    printf("EQuals!\n");
     return n;
   }
+
+  // the key is less than the node's key, let's move left and continue - unless
+  // there is no left node for the current node
   if (c < 0) {
 
-    return n->left ? TreeNode_FindGreater(n->left, key, cmp, ctx) : n;
     // if left of us there is no result - return this node
-    //
+    return n->left ? TreeNode_FindGreater(n->left, key, cmp, ctx) : n;
+
   } else {
 
     return TreeNode_FindGreater(n->right, key, cmp, ctx);
@@ -103,6 +106,7 @@ void TreeNode_Free(TreeNode *n) {
     free(n->val);
   free(n);
 }
+
 void Tree_Free(Tree *t) {
   TreeNode_Free(t->root);
   free(t);

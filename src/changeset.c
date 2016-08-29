@@ -38,3 +38,8 @@ void SIChangeSet_AddCahnge(SIChangeSet *cs, SIChange ch) {
   }
   cs->changes[cs->numChanges++] = ch;
 }
+
+void SIChangeSet_Free(SIChangeSet *cs) {
+  if (cs->changes)
+    free(cs->changes);
+}

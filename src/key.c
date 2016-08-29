@@ -23,6 +23,7 @@ void *__valueToKey(SIValue *v) {
   }
 }
 
+// Comparators for all simple types
 GENERIC_CMP_FUNC_IMPL(si_cmp_float, float);
 GENERIC_CMP_FUNC_IMPL(si_cmp_int, int32_t);
 GENERIC_CMP_FUNC_IMPL(si_cmp_long, int64_t);
@@ -54,4 +55,4 @@ int SICmpMultiKey(void *p1, void *p2, void *ctx) {
       return rc;
   }
   return 0;
-}
+} 

@@ -15,7 +15,7 @@ typedef enum {
   T_FLOAT,
   T_DOUBLE,
   T_TIME,
-
+  T_NULL,
   // FUTURE TYPES:
   // T_GEOPOINT
   // T_SET
@@ -60,5 +60,7 @@ SIValue SI_UintVal(u_int64_t i);
 SIValue SI_FloatVal(float f);
 SIValue SI_DoubleVal(double d);
 SIValue SI_TimeVal(time_t t);
+
+int SIValue_IsNull(SIValue v);
 
 #endif

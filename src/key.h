@@ -37,6 +37,7 @@ typedef struct {
   u_int8_t size;
   SIKey keys[];
 } SIMultiKey;
+
 void *__valueToKey(SIValue *v);
 SIMultiKey *SI_NewMultiKey(SIValue *vals, u_int8_t numvals);
 int SICmpMultiKey(void *p1, void *p2, void *ctx);

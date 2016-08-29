@@ -8,5 +8,6 @@ SICursor *SI_NewCursor(void *ctx) {
   c->total = 0;
   c->ctx = ctx;
   c->error = SI_CURSOR_OK;
+
   return c;
 }

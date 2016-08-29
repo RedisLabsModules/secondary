@@ -37,3 +37,5 @@ SIString SIString_Copy(SIString s) {
   b[s.len] = 0;
   return (SIString){.str = b, .len = s.len};
 }
+
+int SIValue_IsNull(SIValue v) { return v.type == T_NULL; }
