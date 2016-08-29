@@ -32,6 +32,28 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
+/* IDX.ADD <index_name> <id> val1 ... */
+int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+
+  RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key =
+      RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+
+  // make sure it's an index key
+  if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY ||
+      RedisModule_ModuleTypeGetType(key) != IndexType) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
+
+  
+}
+
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   // LOGGING_INIT(0xFFFFFFFF);
   if (RedisModule_Init(ctx, "idx", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)

@@ -39,3 +39,24 @@ SIString SIString_Copy(SIString s) {
 }
 
 int SIValue_IsNull(SIValue v) { return v.type == T_NULL; }
+
+int _parseInt32(SIValue *v, char *str, size_t len) {}
+
+int SI_ParseValue(SIValue *v, char *str, size_t len) {
+  switch (v->type) {
+
+  case T_STRING:
+    v->stringval.str = str;
+    v->stringval.len = len;
+    break;
+  case T_INT32:
+
+  case T_INT64:
+  case T_UINT:
+  case T_BOOL:
+  case T_FLOAT:
+  case T_DOUBLE:
+  case T_TIME:
+  case T_NULL:
+  }
+}
