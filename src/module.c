@@ -51,7 +51,32 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
   RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
 
-  
+  size_t len;
+  char *id = (char *)RedisModule_StringPtrLen(argv[2], &len);
+  id[len] = 0;
+
+  SIValue vals[argc - 3];
+  for (int i = 0; i < argc - 3; i++) {
+    size_t vlen;
+    const char *vstr = RedisModule_StringPtrLen(argv[i + 3], &vlen);
+    vals[i].type = idx->spec.properties[i].type;
+    if (!SI_ParseValue(&vals[i], (char *)vstr, vlen)) {
+      printf("Could not parse %.*s\n", vlen, vstr);
+      return RedisModule_ReplyWithError(ctx, "Invalid value given");
+    }
+  }
+
+  SIChange ch = {
+      .type = SI_CHADD, .id = (SIId)id, .vals = vals, .numVals = argc - 3};
+
+  SIChangeSet cs = SI_NewChangeSet(1);
+  SIChangeSet_AddCahnge(&cs, ch);
+
+  if (idx->idx.Apply(idx->idx.ctx, cs) != SI_INDEX_OK) {
+    return RedisModule_ReplyWithError(ctx, "Could not apply change to index");
+  }
+
+  return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
@@ -59,11 +84,16 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   if (RedisModule_Init(ctx, "idx", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
-  // register trie type
+  // register index type
   if (RedisIndex_Register(ctx) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
   if (RedisModule_CreateCommand(ctx, "idx.create", CreateIndexCommand,
+                                "write deny-oom no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+
+  if (RedisModule_CreateCommand(ctx, "idx.add", IndexAddCommand,
                                 "write deny-oom no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
