@@ -148,3 +148,37 @@ int SI_ParseValue(SIValue *v, char *str, size_t len) {
 
   return 1;
 }
+
+void SIValue_ToString(SIValue v, char *buf, size_t len) {
+  switch (v.type) {
+  case T_STRING:
+    snprintf(buf, len, "\"%.*s\"", (int)v.stringval.len, v.stringval.str);
+    break;
+  case T_INT32:
+    snprintf(buf, len, "%d", v.intval);
+    break;
+  case T_INT64:
+    snprintf(buf, len, "%ld", v.longval);
+    break;
+  case T_UINT:
+    snprintf(buf, len, "%zd", v.uintval);
+    break;
+  case T_TIME:
+    snprintf(buf, len, "%ld", v.timeval);
+    break;
+  case T_BOOL:
+    snprintf(buf, len, "%s", v.boolval ? "true" : "false");
+    break;
+
+  case T_FLOAT:
+    snprintf(buf, len, "%f", v.floatval);
+    break;
+  case T_DOUBLE:
+    snprintf(buf, len, "%f", v.doubleval);
+    break;
+
+  case T_NULL:
+  default:
+    snprintf(buf, len, "NULL");
+  }
+}

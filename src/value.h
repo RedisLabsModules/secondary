@@ -68,4 +68,6 @@ int SIValue_IsNull(SIValue v);
 * to force strict parsing and not best guess */
 int SI_ParseValue(SIValue *v, char *str, size_t len);
 
+void SIValue_ToString(SIValue v, char *buf, size_t len);
+
 #endif

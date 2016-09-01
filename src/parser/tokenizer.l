@@ -14,35 +14,38 @@ Token tok;
 "AND"         { return AND; }
 "OR"         { return OR; }
 
-\@[0-9]{1} {    
+\$[0-9]{1} {    
                 tok.intval = atoi(yytext+1); 
-                return ENUMERATOR; }
+                return ENUMERATOR; 
+}
  
 [0-9]*\.[0-9]+    {  
-                                                tok.dval = atof(yytext); 
-                                                return FLOAT; }
+                    tok.dval = atof(yytext); 
+                    return FLOAT; 
+}
 
 [\-\+]?[0-9]+    {   
-                                                tok.intval = atoi(yytext); 
-                                                return INTEGER; }
+  tok.intval = atoi(yytext); 
+  return INTEGER; 
+}
 
-\"[^\"]*\"     { 
-                                                tok.strval = yytext; 
-                                                return STRING; }
-                                                                                                
+\"[^\"]*\"     {
 
+  *(yytext+strlen(yytext)-1) = '\0';
+  tok.strval = yytext+1; 
+  return STRING; 
+}
 
-#[A-Za-z][A-Za-z0-9]*                           { /* ignore but needed for variables */
-
-                                                return 0;
-                                               }
-
+                                                                                               
 "="           {  return EQ; }
 "!="           {  return NE; }
 ">="           {  return GE; }
 "<="           {  return LE; }
 ">"           {  return GT; }
 "<"           {  return LT; }
+"("           { return LP; }
+")"           { return RP; }
+
 %%
 
 
@@ -55,7 +58,6 @@ Token tok;
 void yyerror(char *s)
 {
   printf("error: %s at line: %d\n",s,yylineno);
-
 }
 
 int yywrap(void)

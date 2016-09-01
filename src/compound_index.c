@@ -262,6 +262,7 @@ SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
   }
 
   scanCtx *sctx = buildScanCtx(idx, q->predicates, q->numPredicates);
+
   sctx->it = Tree_IterateFrom(idx->tree, sctx->min);
 
   c->ctx = sctx;

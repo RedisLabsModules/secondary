@@ -14,6 +14,7 @@ void *__valueToKey(SIValue *v) {
   case T_INT32: {
     int32_t *i = malloc(sizeof(int32_t));
     *i = v->intval;
+
     return i;
   }
 
@@ -55,4 +56,4 @@ int SICmpMultiKey(void *p1, void *p2, void *ctx) {
       return rc;
   }
   return 0;
-} 
+}
