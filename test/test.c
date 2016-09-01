@@ -6,6 +6,7 @@
 #include "../src/tree.h"
 #include "../src/value.h"
 #include "../src/index.h"
+#include "../src/query.h"
 
 // SIString SI_WrapString(const char *s) {
 //   return (SIString){(char *)s, strlen(s)};
@@ -95,6 +96,22 @@ MU_TEST(testChangeSet) {
   mu_check(cs.numChanges == 1);
 }
 
+MU_TEST(testQueryParser) {
+  char *str = "$1 = \"hello world\" AND $2 = 3";
+
+  SIQuery q = SI_NewQuery();
+
+  mu_check(SI_ParseQuery(&q, str, strlen(str)));
+  for (int i = 0; i < q.numPredicates; i++) {
+    printf("pred %d\n", i);
+  }
+}
+MU_TEST_SUITE(test_query) {
+  // MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
+
+  MU_RUN_TEST(testQueryParser);
+}
+
 MU_TEST_SUITE(test_index) {
   // MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
 
@@ -102,8 +119,8 @@ MU_TEST_SUITE(test_index) {
 }
 
 int main(int argc, char **argv) {
-  return testIndex();
-  // MU_RUN_SUITE(test_index);
+  // return testIndex();
+  MU_RUN_SUITE(test_query);
   // MU_REPORT();
   return minunit_status;
 }

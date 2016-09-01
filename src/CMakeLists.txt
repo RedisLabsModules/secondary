@@ -1,4 +1,5 @@
 
+
 add_library(libsecondary STATIC 
             tree.c 
             key.c 
@@ -7,8 +8,21 @@ add_library(libsecondary STATIC
             query.c
             cursor.c
             compound_index.c
+            query_parse.c
+            parser/ast.c
+            parser/parser.c
+            parser/lex.yy.c
         )
 target_compile_options(libsecondary PUBLIC "-fPIC")
+
+# build the parser source code before building libsecondary
+# TODO: remove this
+add_custom_command(
+                TARGET libsecondary
+                PRE_BUILD
+                COMMAND lex tokenizer.l
+                COMMAND lemon -s parser.y 
+                WORKING_DIRECTORY ../../src/parser)
 
 
 add_library(module MODULE

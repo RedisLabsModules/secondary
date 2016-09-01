@@ -80,10 +80,10 @@ typedef union {
 #ifndef YYSTACKDEPTH
 #define YYSTACKDEPTH 100
 #endif
-#define ParseARG_SDECL
-#define ParseARG_PDECL
-#define ParseARG_FETCH
-#define ParseARG_STORE
+#define ParseARG_SDECL  ParseNode **root ;
+#define ParseARG_PDECL , ParseNode **root 
+#define ParseARG_FETCH  ParseNode **root  = yypParser->root 
+#define ParseARG_STORE yypParser->root  = root 
 #define YYNSTATE 22
 #define YYNRULE 15
 #define YY_NO_ACTION      (YYNSTATE+YYNRULE+2)
@@ -385,7 +385,7 @@ static void yy_destructor(
     */
     case 17: /* cond */
 {
-#line 39 "parser.y"
+#line 42 "parser.y"
  ParseNode_Free((yypminor->yy40)); 
 #line 391 "parser.c"
 }
@@ -695,42 +695,42 @@ static void yy_reduce(
   **     break;
   */
       case 0: /* query ::= cond */
-#line 28 "parser.y"
-{ ParseNode_print(yymsp[0].minor.yy40, 0); }
+#line 31 "parser.y"
+{ *root = yymsp[0].minor.yy40; }
 #line 701 "parser.c"
         break;
       case 1: /* op ::= EQ */
-#line 31 "parser.y"
+#line 34 "parser.y"
 { yygotominor.yy4 = EQ; }
 #line 706 "parser.c"
         break;
       case 2: /* op ::= GT */
-#line 32 "parser.y"
+#line 35 "parser.y"
 { yygotominor.yy4 = GT; }
 #line 711 "parser.c"
         break;
       case 3: /* op ::= LT */
-#line 33 "parser.y"
+#line 36 "parser.y"
 { yygotominor.yy4 = LT; }
 #line 716 "parser.c"
         break;
       case 4: /* op ::= LE */
-#line 34 "parser.y"
+#line 37 "parser.y"
 { yygotominor.yy4 = LE; }
 #line 721 "parser.c"
         break;
       case 5: /* op ::= GE */
-#line 35 "parser.y"
+#line 38 "parser.y"
 { yygotominor.yy4 = GE; }
 #line 726 "parser.c"
         break;
       case 6: /* op ::= NE */
-#line 36 "parser.y"
+#line 39 "parser.y"
 { yygotominor.yy4 = NE; }
 #line 731 "parser.c"
         break;
       case 7: /* cond ::= prop op value */
-#line 41 "parser.y"
+#line 44 "parser.y"
 { 
     /* Terminal condition of a single predicate */
     yygotominor.yy40 = NewPredicateNode(yymsp[-2].minor.yy4, yymsp[-1].minor.yy4, yymsp[0].minor.yy36);
@@ -738,43 +738,43 @@ static void yy_reduce(
 #line 739 "parser.c"
         break;
       case 8: /* cond ::= LP cond RP */
-#line 46 "parser.y"
+#line 49 "parser.y"
 { 
   yygotominor.yy40 = yymsp[-1].minor.yy40;
 }
 #line 746 "parser.c"
         break;
       case 9: /* cond ::= cond AND cond */
-#line 50 "parser.y"
+#line 53 "parser.y"
 {
   yygotominor.yy40 = NewConditionNode(yymsp[-2].minor.yy40, AND, yymsp[0].minor.yy40);
 }
 #line 753 "parser.c"
         break;
       case 10: /* cond ::= cond OR cond */
-#line 54 "parser.y"
+#line 57 "parser.y"
 {
   yygotominor.yy40 = NewConditionNode(yymsp[-2].minor.yy40, OR, yymsp[0].minor.yy40);
 }
 #line 760 "parser.c"
         break;
       case 11: /* value ::= INTEGER */
-#line 61 "parser.y"
+#line 64 "parser.y"
 {  yygotominor.yy36 = SI_IntVal(yymsp[0].minor.yy0.intval); }
 #line 765 "parser.c"
         break;
       case 12: /* value ::= STRING */
-#line 62 "parser.y"
+#line 65 "parser.y"
 {  yygotominor.yy36 = SI_StringValC(yymsp[0].minor.yy0.strval); }
 #line 770 "parser.c"
         break;
       case 13: /* value ::= FLOAT */
-#line 63 "parser.y"
+#line 66 "parser.y"
 {  yygotominor.yy36 = SI_FloatVal(yymsp[0].minor.yy0.dval); }
 #line 775 "parser.c"
         break;
       case 14: /* prop ::= ENUMERATOR */
-#line 68 "parser.y"
+#line 71 "parser.y"
 { yygotominor.yy4 = yymsp[0].minor.yy0.intval; }
 #line 780 "parser.c"
         break;
@@ -1032,39 +1032,53 @@ void Parse(
   }while( yymajor!=YYNOCODE && yypParser->yyidx>=0 );
   return;
 }
-#line 71 "parser.y"
+#line 74 "parser.y"
 
 
-/* Definitions of flex stuff */
-extern FILE *yyin;
-typedef struct yy_buffer_state *YY_BUFFER_STATE;
-int             yylex( void );
-YY_BUFFER_STATE yy_scan_string( const char * );
-void            yy_delete_buffer( YY_BUFFER_STATE );
-extern int yylineno;
-extern char *yytext;
+  /* Definitions of flex stuff */
+ // extern FILE *yyin;
+  typedef struct yy_buffer_state *YY_BUFFER_STATE;
+  int             yylex( void );
+  YY_BUFFER_STATE yy_scan_string( const char * );
+  YY_BUFFER_STATE yy_scan_bytes( const char *, size_t );
+  void            yy_delete_buffer( YY_BUFFER_STATE );
+  extern int yylineno;
+  extern char *yytext;
   
 
+ParseNode *ParseQuery(const char *c, size_t len)  {
 
+    //printf("Parsing query %s\n", c);
+    yy_scan_bytes(c, len);
+    void* pParser = ParseAlloc (malloc);        
+    int t = 0;
 
-int main( int argc, char **argv )   {
-  ++argv, --argc;  /* skip over program name */
-  if ( argc > 0 )
-          yyin = fopen( argv[0], "r" );
-  else
-          yyin = stdin;
-        
-  void* pParser = ParseAlloc (malloc);        
-  int t = 0;
+    ParseNode *ret = NULL;
+    //ParserFree(pParser);
+    while (0 != (t = yylex())) {
+      printf("Token %d\n", t);
+        Parse(pParser, t, tok, &ret);                
+    }
+    Parse (pParser, 0, tok, &ret);
+    ParseFree(pParser, free);
 
-  //ParserFree(pParser);
-  while (0 != (t = yylex())) {
-      Parse(pParser, t, tok);                
-      
-      printf("%d) tok: %d (%s)\n", yylineno, t, yytext);
+    return ret;
   }
-  Parse (pParser, 0, tok);
-  ParseFree(pParser, free);
-}
-     
-#line 1071 "parser.c"
+   
+
+
+  // int main( int argc, char **argv )   {
+    
+  //   yy_scan_string("$1 = \"foo bar\" AND $2 = 1337");
+  //   void* pParser = ParseAlloc (malloc);        
+  //   int t = 0;
+
+  //   //ParserFree(pParser);
+  //   while (0 != (t = yylex())) {
+  //       Parse(pParser, t, tok);                
+  //   }
+  //   Parse (pParser, 0, tok);
+  //   ParseFree(pParser, free);
+  // }
+      
+#line 1085 "parser.c"

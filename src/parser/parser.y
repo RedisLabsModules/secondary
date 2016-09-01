@@ -24,8 +24,11 @@ yyerror("WAT?");
 void yyerror(char *s);
 
 } // END %include  
-     
-query ::= cond(A). { ParseNode_print(A, 0); }
+
+%extra_argument { ParseNode **root }
+
+
+query ::= cond(A). { *root = A; }
 
 %type op {int}
 op(A) ::= EQ. { A = EQ; }
@@ -70,36 +73,50 @@ prop(A) ::= ENUMERATOR(B). { A = B.intval; }
 
 %code {
 
-/* Definitions of flex stuff */
-extern FILE *yyin;
-typedef struct yy_buffer_state *YY_BUFFER_STATE;
-int             yylex( void );
-YY_BUFFER_STATE yy_scan_string( const char * );
-void            yy_delete_buffer( YY_BUFFER_STATE );
-extern int yylineno;
-extern char *yytext;
+  /* Definitions of flex stuff */
+ // extern FILE *yyin;
+  typedef struct yy_buffer_state *YY_BUFFER_STATE;
+  int             yylex( void );
+  YY_BUFFER_STATE yy_scan_string( const char * );
+  YY_BUFFER_STATE yy_scan_bytes( const char *, size_t );
+  void            yy_delete_buffer( YY_BUFFER_STATE );
+  extern int yylineno;
+  extern char *yytext;
   
 
+ParseNode *ParseQuery(const char *c, size_t len)  {
 
+    //printf("Parsing query %s\n", c);
+    yy_scan_bytes(c, len);
+    void* pParser = ParseAlloc (malloc);        
+    int t = 0;
 
-int main( int argc, char **argv )   {
-  ++argv, --argc;  /* skip over program name */
-  if ( argc > 0 )
-          yyin = fopen( argv[0], "r" );
-  else
-          yyin = stdin;
-        
-  void* pParser = ParseAlloc (malloc);        
-  int t = 0;
+    ParseNode *ret = NULL;
+    //ParserFree(pParser);
+    while (0 != (t = yylex())) {
+      printf("Token %d\n", t);
+        Parse(pParser, t, tok, &ret);                
+    }
+    Parse (pParser, 0, tok, &ret);
+    ParseFree(pParser, free);
 
-  //ParserFree(pParser);
-  while (0 != (t = yylex())) {
-      Parse(pParser, t, tok);                
-      
-      printf("%d) tok: %d (%s)\n", yylineno, t, yytext);
+    return ret;
   }
-  Parse (pParser, 0, tok);
-  ParseFree(pParser, free);
-}
-     
+   
+
+
+  // int main( int argc, char **argv )   {
+    
+  //   yy_scan_string("$1 = \"foo bar\" AND $2 = 1337");
+  //   void* pParser = ParseAlloc (malloc);        
+  //   int t = 0;
+
+  //   //ParserFree(pParser);
+  //   while (0 != (t = yylex())) {
+  //       Parse(pParser, t, tok);                
+  //   }
+  //   Parse (pParser, 0, tok);
+  //   ParseFree(pParser, free);
+  // }
+      
 }

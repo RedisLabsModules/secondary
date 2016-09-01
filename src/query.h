@@ -59,4 +59,7 @@ typedef struct {
 
 SIQuery SI_NewQuery();
 void SIQuery_AddPred(SIQuery *q, SIPredicate pred);
+
+int SI_ParseQuery(SIQuery *query, const char *q, size_t len);
+
 #endif // !__SECONDARY_QUERY_H__

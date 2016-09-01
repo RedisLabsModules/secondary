@@ -7,6 +7,7 @@
 #include "token.h"
 #include "parser.h"
 #include "../value.h"
+#include "../query.h"
 
 typedef enum {
   N_PRED,

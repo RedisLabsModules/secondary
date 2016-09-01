@@ -187,7 +187,8 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
   ret->min = numRangeVals > 0 ? SI_NewMultiKey(minVals, numRangeVals) : NULL;
   ret->max = numRangeVals > 0 ? SI_NewMultiKey(maxVals, numRangeVals) : NULL;
   ret->filtersOffset = numRangeVals;
-
+  ret->numFilters = 0;
+  ret->filters = NULL;
   if (i < numPreds) {
     ret->filters = calloc(numPreds - numRangeVals, sizeof(scanFilter));
     ret->numFilters = 0;

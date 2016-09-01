@@ -1,4 +1,5 @@
 #include "query.h"
+
 SIPredicate SI_PredEquals(SIValue v) {
   return (SIPredicate){.eq = (SIEquals){v}, .t = PRED_EQ};
 }
