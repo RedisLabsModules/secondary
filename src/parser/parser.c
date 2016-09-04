@@ -1073,6 +1073,11 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
   //   void* pParser = ParseAlloc (malloc);        
   //   int t = 0;
 
+  // IDX.HGETALL FROM <index_name> WHERE ....
+  // IDX.HMSET index_nmae key elem vale elem value
+
+  // RQL.CREATE_TABLE ... 
+
   //   //ParserFree(pParser);
   //   while (0 != (t = yylex())) {
   //       Parse(pParser, t, tok);                
@@ -1081,4 +1086,4 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
   //   ParseFree(pParser, free);
   // }
       
-#line 1085 "parser.c"
+#line 1090 "parser.c"

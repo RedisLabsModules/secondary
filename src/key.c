@@ -60,7 +60,7 @@ SIMultiKey *SI_NewMultiKey(SIValue *vals, u_int8_t numvals) {
 int SICmpMultiKey(void *p1, void *p2, void *ctx) {
   SIMultiKey *mk1 = p1, *mk2 = p2;
   SIMultiSearchSctx *sctx = ctx;
-  for (u_int8_t i = 0; i < mk1->size; i++) {
+  for (u_int8_t i = 0; i < MIN(mk1->size, mk2->size); i++) {
     int rc = sctx->cmpFuncs[i](mk1->keys[i], mk2->keys[i], NULL);
     if (rc != 0)
       return rc;
