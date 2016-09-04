@@ -11,8 +11,11 @@ typedef int (*SIKeyCmpFunc)(void *p1, void *p2, void *ctx);
 #define GENERIC_CMP_FUNC_IMPL(F, T)                                            \
   int F(void *p1, void *p2, void *ctx) {                                       \
     T *v1 = p1, *v2 = p2;                                                      \
+    if (!v1 || !v2)                                                            \
+      return -1;                                                               \
     return (*v1 < *v2 ? -1 : (*v1 > *v2 ? 1 : 0));                             \
   }
+
 GENERIC_CMP_FUNC_DECL(si_cmp_string);
 GENERIC_CMP_FUNC_DECL(si_cmp_float);
 GENERIC_CMP_FUNC_DECL(si_cmp_int);

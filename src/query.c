@@ -4,11 +4,12 @@ SIPredicate SI_PredEquals(SIValue v) {
   return (SIPredicate){.eq = (SIEquals){v}, .t = PRED_EQ};
 }
 
-SIPredicate SI_PredBetween(SIValue min, SIValue max, int exclusive) {
+SIPredicate SI_PredBetween(SIValue min, SIValue max, int minExclusive,
+                           int maxExclusive) {
   return (SIPredicate){.rng = (SIRange){.min = min,
                                         .max = max,
-                                        .minExclusive = exclusive,
-                                        .maxExclusive = exclusive},
+                                        .minExclusive = minExclusive,
+                                        .maxExclusive = maxExclusive},
                        .t = PRED_RNG};
 }
 

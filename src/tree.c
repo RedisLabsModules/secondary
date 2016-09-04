@@ -140,7 +140,7 @@ void __ti_push(TreeIterator *ti, TreeNode *n, int state) {
   ti->stack[ti->top++] = (treeIterState){n, state};
 }
 
-TreeIterator Tree_IterateFrom(Tree *t, void *key) {
+TreeIterator Tree_IterateFrom(Tree *t, void *key, int exclusive) {
   TreeIterator ret;
   ret.cap = 8;
   ret.stack = calloc(ret.cap, sizeof(treeIterState));
@@ -155,7 +155,7 @@ TreeIterator Tree_IterateFrom(Tree *t, void *key) {
     int c = t->keyCmpFunc(key, current->key, t->cmpCtx);
     // printf("%s <> %s: %d. left? %p right %p\n", key.str, current->key.str, c,
     //        current->left, current->right);
-    if (c == 0) {
+    if (c == 0 && !exclusive) {
       break;
     }
 

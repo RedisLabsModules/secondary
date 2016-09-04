@@ -16,6 +16,8 @@ void *__valueToKey(SIValue *v) {
     *i = v->intval;
 
     return i;
+  case T_NULL:
+    return NULL;
   }
 
   default:
@@ -34,6 +36,14 @@ GENERIC_CMP_FUNC_IMPL(si_cmp_time, time_t);
 
 int si_cmp_string(void *p1, void *p2, void *ctx) {
   SIString *s1 = p1, *s2 = p2;
+  printf("s1: %s, s2: %s\n", s1 ? s1->str : "NULL", s2 ? s2->str : "NULL");
+
+  // no lookup string, means on side is -INF
+  // TODO: fix this with real values
+  if (!s1 || !s2) {
+    return -1;
+  }
+
   return strncmp(s1->str, s2->str, MAX(s1->len, s2->len));
 }
 

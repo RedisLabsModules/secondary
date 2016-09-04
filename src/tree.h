@@ -34,7 +34,8 @@ TreeNode *TreeNode_FindGreater(TreeNode *n, void *key, TreeCmpFunc cmp,
 #define ST_RIGHT 2
 #define ST_DONE 3
 typedef struct {
-  TreeNode *current;   int state;
+  TreeNode *current;
+  int state;
 } treeIterState;
 
 typedef struct {
@@ -45,7 +46,7 @@ typedef struct {
 } TreeIterator;
 
 TreeIterator Tree_Iterate(Tree *t);
-TreeIterator Tree_IterateFrom(Tree *t, void *key);
+TreeIterator Tree_IterateFrom(Tree *t, void *key, int exclusive);
 TreeNode *TreeIterator_Current(TreeIterator *it);
 TreeNode *TreeIterator_Next(TreeIterator *it);
 

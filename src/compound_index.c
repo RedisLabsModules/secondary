@@ -105,6 +105,8 @@ typedef int (*scanFilterFunc)(void *val, void *ctx);
 typedef struct {
   void *min;
   void *max;
+  int minExclusive;
+  int maxExclusive;
   SIKeyCmpFunc cmp;
 } rangeFilter;
 
@@ -128,11 +130,19 @@ typedef struct {
 int filterInRange(void *val, void *ctx) {
   rangeFilter *f = ctx;
 
-  if (f->cmp(val, f->min, NULL) < 0) {
-    return 0;
+  if (f->min) {
+
+    int c = f->cmp(val, f->min, NULL);
+    if (c < 0 || (c == 0 && f->minExclusive)) {
+      return 0;
+    }
   }
-  if (f->cmp(val, f->max, NULL) > 0) {
-    return 0;
+
+  if (f->max) {
+    int c = f->cmp(val, f->max, NULL);
+    if (c > 0 || (c == 0 && f->maxExclusive)) {
+      return 0;
+    }
   }
   return 1;
 }
@@ -145,7 +155,9 @@ int filterEquals(void *val, void *ctx) {
 typedef struct {
 
   SIMultiKey *min;
+  int minExclusive;
   SIMultiKey *max;
+  int maxExclusive;
   scanFilter *filters;
   int numFilters;
   int filtersOffset;
@@ -160,6 +172,7 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
   int i = 0;
   int ok = 1;
   int numRangeVals = 0;
+  int minExclusive = 0, maxExclusive = 0;
   while (i < numPreds && ok) {
     switch (preds[i].t) {
     case PRED_EQ:
@@ -170,7 +183,9 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
       break;
     case PRED_RNG:
       minVals[i] = preds[i].rng.min;
+      minExclusive = preds[i].rng.minExclusive;
       maxVals[i] = preds[i].rng.max;
+      maxExclusive = preds[i].rng.maxExclusive;
       numRangeVals++;
       ok = 0;
       i++;
@@ -185,7 +200,9 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
   scanCtx *ret = malloc(sizeof(scanCtx));
 
   ret->min = numRangeVals > 0 ? SI_NewMultiKey(minVals, numRangeVals) : NULL;
+  ret->minExclusive = minExclusive;
   ret->max = numRangeVals > 0 ? SI_NewMultiKey(maxVals, numRangeVals) : NULL;
+  ret->maxExclusive = maxExclusive;
   ret->filtersOffset = numRangeVals;
   ret->numFilters = 0;
   ret->filters = NULL;
@@ -208,7 +225,9 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
         ret->filters[n] =
 
             (scanFilter){.rng = {.min = __valueToKey(&preds[i].rng.min),
+                                 .minExclusive = preds[i].rng.minExclusive,
                                  .max = __valueToKey(&preds[i].rng.max),
+                                 .maxExclusive = preds[i].rng.maxExclusive,
                                  .cmp = idx->cmpFuncs[i]},
                          .f = filterInRange,
                          .type = f_rng};
@@ -231,12 +250,13 @@ SIId scan_next(void *ctx) {
   while (NULL != (n = TreeIterator_Next(&sc->it))) {
 
     // we are over our max limit
-    if (sc->it.tree->keyCmpFunc(n->key, sc->max, sc->it.tree->cmpCtx) > 0) {
+    int maxcomp = sc->it.tree->keyCmpFunc(n->key, sc->max, sc->it.tree->cmpCtx);
+    if (maxcomp > 0 || (sc->maxExclusive && maxcomp == 0)) {
       break;
     }
 
-    // if we have filters beyond the min/max range, we need to explicitly filter
-    // each of them
+    // if we have filters beyond the min/max range, we need to explicitly
+    // filter each of them
     SIMultiKey *mk = n->key;
     int ok = 1;
     for (int i = 0; i < sc->numFilters; i++) {
@@ -264,7 +284,7 @@ SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
 
   scanCtx *sctx = buildScanCtx(idx, q->predicates, q->numPredicates);
 
-  sctx->it = Tree_IterateFrom(idx->tree, sctx->min);
+  sctx->it = Tree_IterateFrom(idx->tree, sctx->min, sctx->minExclusive);
 
   c->ctx = sctx;
   c->Next = scan_next;

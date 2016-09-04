@@ -29,12 +29,15 @@ Token tok;
   return INTEGER; 
 }
 
-\"[^\"]*\"     {
-
+(\"(\\.|[^\"])*\")|('(\\.|[^'])*')    {
+  /* String literals, with escape sequences - enclosed by "" or '' */
   *(yytext+strlen(yytext)-1) = '\0';
   tok.strval = yytext+1; 
+  //TODO: pre-process string to unescape shit
   return STRING; 
 }
+
+
 
                                                                                                
 "="           {  return EQ; }
@@ -46,6 +49,7 @@ Token tok;
 "("           { return LP; }
 ")"           { return RP; }
 
+[ \t\n]+ /* ignore whitespace */
 %%
 
 

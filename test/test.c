@@ -26,7 +26,7 @@ int testTree() {
 
   TreeNode *n = TreeNode_FindGreater(root, "foot", cmpstr, NULL);
 
-  printf("%s\n", n ? n->val : NULL);
+  printf("%s\n", n ? n->val : "NULL");
 
   // TreeIterator it = Tree_IterateFrom(root, SI_WrapString("zoo"));
   // // it.stack[0].state = 1;
@@ -65,8 +65,8 @@ int testIndex() {
 
   SIQuery q = SI_NewQuery();
   SIQuery_AddPred(
-      &q, SI_PredBetween(SI_StringValC("foo"), SI_StringValC("xxx"), 0));
-  SIQuery_AddPred(&q, SI_PredBetween(SI_IntVal(0), SI_IntVal(5), 0));
+      &q, SI_PredBetween(SI_StringValC("foo"), SI_StringValC("xxx"), 0, 0));
+  SIQuery_AddPred(&q, SI_PredBetween(SI_IntVal(0), SI_IntVal(5), 0, 0));
 
   SICursor *c = idx.Find(idx.ctx, &q);
   printf("%d\n", c->error);

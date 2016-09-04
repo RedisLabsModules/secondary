@@ -182,3 +182,5 @@ void SIValue_ToString(SIValue v, char *buf, size_t len) {
     snprintf(buf, len, "NULL");
   }
 }
+
+SIValue SI_NullVal() { return (SIValue){.intval = 0, .type = T_NULL}; }

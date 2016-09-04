@@ -47,7 +47,8 @@ typedef struct {
 } SIPredicate;
 
 SIPredicate SI_PredEquals(SIValue v);
-SIPredicate SI_PredBetween(SIValue min, SIValue max, int exclusive);
+SIPredicate SI_PredBetween(SIValue min, SIValue max, int minExclusive,
+                           int maxExclusive);
 
 typedef struct {
   SIPredicate *predicates;
