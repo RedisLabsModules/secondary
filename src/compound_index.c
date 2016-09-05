@@ -3,6 +3,7 @@
 #include "index.h"
 #include "tree.h"
 #include "key.h"
+#include "skiplist/skiplist.h"
 
 typedef struct {
   SISpec spec;
@@ -10,6 +11,8 @@ typedef struct {
   u_int8_t numFuncs;
 
   Tree *tree;
+  skiplist *sl;
+
 } compoundIndex;
 
 int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
@@ -29,6 +32,7 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
           SI_NewMultiKey(cs.changes[i].vals, cs.changes[i].numVals);
 
       Tree_Insert(idx->tree, key, cs.changes[i].id);
+      skiplistInsert(idx->sl, key, cs.changes[i].id);
     }
     // TODO: handle remove
   }
@@ -37,7 +41,7 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
 }
 
 size_t compoundIndex_Len(void *ctx) {
-  return ((compoundIndex *)ctx)->tree->len;
+  return skiplistLength(((compoundIndex *)ctx)->sl);
 }
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
@@ -89,6 +93,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
   sctx->numFuncs = idx->numFuncs;
 
   idx->tree = NewTree(SICmpMultiKey, sctx);
+  idx->sl = skiplistCreate(SICmpMultiKey, sctx);
 
   SIIndex ret;
   ret.ctx = idx;
@@ -162,7 +167,8 @@ typedef struct {
   int numFilters;
   int filtersOffset;
 
-  TreeIterator it;
+  // TreeIterator it;
+  skiplistIterator it;
 
 } scanCtx;
 
@@ -246,18 +252,12 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
 SIId scan_next(void *ctx) {
 
   scanCtx *sc = ctx;
-  TreeNode *n;
-  while (NULL != (n = TreeIterator_Next(&sc->it))) {
-
-    // we are over our max limit
-    int maxcomp = sc->it.tree->keyCmpFunc(n->key, sc->max, sc->it.tree->cmpCtx);
-    if (maxcomp > 0 || (sc->maxExclusive && maxcomp == 0)) {
-      break;
-    }
+  skiplistNode *n;
+  while (NULL != (n = skiplistIterator_Next(&sc->it))) {
 
     // if we have filters beyond the min/max range, we need to explicitly
     // filter each of them
-    SIMultiKey *mk = n->key;
+    SIMultiKey *mk = n->obj;
     int ok = 1;
     for (int i = 0; i < sc->numFilters; i++) {
       scanFilter *flt = &sc->filters[i];
@@ -284,7 +284,9 @@ SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
 
   scanCtx *sctx = buildScanCtx(idx, q->predicates, q->numPredicates);
 
-  sctx->it = Tree_IterateFrom(idx->tree, sctx->min, sctx->minExclusive);
+  sctx->it = skiplistIterateRange(idx->sl, sctx->min, sctx->max,
+                                  sctx->minExclusive, sctx->maxExclusive);
+  // sctx->it = Tree_IterateFrom(idx->tree, sctx->min, sctx->minExclusive);
 
   c->ctx = sctx;
   c->Next = scan_next;
@@ -295,9 +297,9 @@ void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
 
   compoundIndex *idx = ctx;
 
-  TreeIterator it = Tree_Iterate(idx->tree);
-  TreeNode *n;
-  while (NULL != (n = TreeIterator_Next(&it))) {
-    cb(n->val, n->key, visitCtx);
+  skiplistIterator it = skiplistIterateAll(idx->sl);
+  skiplistNode *n;
+  while (NULL != (n = skiplistIterator_Next(&it))) {
+    cb(n->val, n->obj, visitCtx);
   }
 }

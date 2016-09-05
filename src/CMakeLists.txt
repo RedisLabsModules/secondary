@@ -12,6 +12,8 @@ add_library(libsecondary STATIC
             parser/ast.c
             parser/parser.c
             parser/lex.yy.c
+
+            skiplist/skiplist.c            
         )
 target_compile_options(libsecondary PUBLIC "-fPIC")
 
