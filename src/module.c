@@ -125,6 +125,19 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   return REDISMODULE_OK;
 }
 
+// int TestDoubleFormatting(RedisModuleCtx *ctx, RedisModuleString **argv,
+//                          int argc) {
+
+//   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+//   if (argc < 2) {
+//     return RedisModule_WrongArity(ctx);
+//   }
+
+//   RedisModuleCallReply *r =
+//       RedisModule_Call(ctx, "INCRBYFLOAT", "sd", argv[1], 3.14159265359);
+//   return RedisModule_ReplyWithCallReply(ctx, r);
+// }
+
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   // LOGGING_INIT(0xFFFFFFFF);
   if (RedisModule_Init(ctx, "idx", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
@@ -143,10 +156,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
                                 "write deny-oom no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
+
   if (RedisModule_CreateCommand(ctx, "idx.select", IndexSelectCommand,
                                 "readonly no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
-    return REDISMODULE_ERR;
 
-  return REDISMODULE_OK;
+    return REDISMODULE_OK;
 }

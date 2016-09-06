@@ -47,6 +47,11 @@ size_t compoundIndex_Len(void *ctx) {
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
 void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx);
 
+int _cmpIds(void *p1, void *p2) {
+  SIId id1 = p1, id2 = p2;
+  return strcmp(id1, id2);
+}
+
 SIIndex SI_NewCompoundIndex(SISpec spec) {
 
   compoundIndex *idx = malloc(sizeof(compoundIndex));
@@ -93,7 +98,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
   sctx->numFuncs = idx->numFuncs;
 
   idx->tree = NewTree(SICmpMultiKey, sctx);
-  idx->sl = skiplistCreate(SICmpMultiKey, sctx);
+  idx->sl = skiplistCreate(SICmpMultiKey, sctx, _cmpIds);
 
   SIIndex ret;
   ret.ctx = idx;
@@ -252,9 +257,9 @@ scanCtx *buildScanCtx(compoundIndex *idx, SIPredicate *preds, size_t numPreds) {
 SIId scan_next(void *ctx) {
 
   scanCtx *sc = ctx;
-  skiplistNode *n;
-  while (NULL != (n = skiplistIterator_Next(&sc->it))) {
-
+  skiplistNode *n = skiplistIteratorCurrent(&sc->it);
+  SIId ret = NULL;
+  if (n) {
     // if we have filters beyond the min/max range, we need to explicitly
     // filter each of them
     SIMultiKey *mk = n->obj;
@@ -267,7 +272,7 @@ SIId scan_next(void *ctx) {
       }
     }
     if (ok) {
-      return n->val;
+      return skiplistIterator_Next(&sc->it);
     }
   }
 
@@ -298,8 +303,10 @@ void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
   compoundIndex *idx = ctx;
 
   skiplistIterator it = skiplistIterateAll(idx->sl);
-  skiplistNode *n;
-  while (NULL != (n = skiplistIterator_Next(&it))) {
-    cb(n->val, n->obj, visitCtx);
+  skiplistNode *n = skiplistIteratorCurrent(&it);
+  while (n) {
+    for (u_int i = 0; i < n->numVals; i++) {
+      cb(n->vals[i], n->obj, visitCtx);
+    }
   }
 }

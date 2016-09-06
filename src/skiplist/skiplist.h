@@ -36,7 +36,8 @@
 
 typedef struct skiplistNode {
   void *obj;
-  void *val;
+  void **vals;
+  unsigned int numVals;
   struct skiplistNode *backward;
   struct skiplistLevel {
     struct skiplistNode *forward;
@@ -44,16 +45,22 @@ typedef struct skiplistNode {
   } level[];
 } skiplistNode;
 
+typedef int (*skiplistCmpFunc)(void *p1, void *p2, void *ctx);
+typedef int (*skiplistValCmpFunc)(void *p1, void *p2);
+
 typedef struct skiplist {
   struct skiplistNode *header, *tail;
-  int (*compare)(const void *, const void *, void *ctx);
+  skiplistCmpFunc compare;
+  skiplistValCmpFunc valcmp;
+
   void *cmpCtx;
   unsigned long length;
   int level;
 } skiplist;
 
-skiplist *skiplistCreate(int (*compare)(const void *, const void *, void *),
-                         void *cmpCtx);
+skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
+                         skiplistValCmpFunc vcmp);
+
 void skiplistFree(skiplist *sl);
 skiplistNode *skiplistInsert(skiplist *sl, void *obj, void *val);
 int skiplistDelete(skiplist *sl, void *obj);
@@ -64,11 +71,13 @@ unsigned long skiplistLength(skiplist *sl);
 
 typedef struct {
   skiplistNode *current;
+  unsigned int currentValOffset;
   void *rangeMin;
   int minExclusive;
   void *rangeMax;
   int maxExclusive;
   skiplist *sl;
+
 } skiplistIterator;
 
 skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
@@ -76,5 +85,6 @@ skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
 
 skiplistIterator skiplistIterateAll(skiplist *sl);
 void *skiplistIterator_Next(skiplistIterator *it);
+skiplistNode *skiplistIteratorCurrent(skiplistIterator *it);
 
 #endif

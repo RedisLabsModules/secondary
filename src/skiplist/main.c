@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include "skiplist.h"
 
-int compare(const void *a, const void *b, void *ctx) { return strcmp(a, b); }
+int compare(void *a, void *b, void *ctx) { return strcmp(a, b); }
+
+int compareVals(void *p1, void *p2) { return strcmp(p1, p2); }
 
 int main(void) {
   char *words[] = {"foo",  "bar",     "zap",    "pomo",
@@ -12,18 +14,20 @@ int main(void) {
                   "pera val", "arancio val", "limone val", NULL};
   int j;
 
-  skiplist *sl = skiplistCreate(compare, NULL);
+  skiplist *sl = skiplistCreate(compare, NULL, compareVals);
   for (j = 0; words[j] != NULL; j++)
     printf("Insert %s: %p\n", words[j], skiplistInsert(sl, words[j], vals[j]));
+  for (j = 0; words[j] != NULL; j++)
+    printf("Insert %s: %p\n", words[j], skiplistInsert(sl, words[j], words[j]));
 
   /* The following should fail. */
-  printf("\nInsert %s again: %p\n\n", words[2],
-         skiplistInsert(sl, words[2], vals[2]));
+  // printf("\nInsert %s again: %p\n\n", words[2],
+  //        skiplistInsert(sl, words[2], vals[2]));
 
   skiplistIterator it = skiplistIterateRange(sl, "limone", NULL, 0, 0);
-  skiplistNode *val;
+  void *val;
   while (NULL != (val = skiplistIterator_Next(&it))) {
-    printf("Iterator: %s\n", val->val);
+    printf("Iterator: %s\n", (char *)val);
   }
   skiplistNode *x;
   x = sl->header;
