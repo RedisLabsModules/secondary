@@ -1,5 +1,23 @@
 # Proposed Secondary Index External API
 
+The following document is a proposal for **three** different APIs that can take advantage of Secondary Indexing in Redis.
+
+The three APIs described are:
+
+1. Explicit Anonymous Indexes
+
+    providing raw indexes as a primitive data type in Redis.
+
+2. Indexed Redis Objects
+
+    Adding secondary indexes to common redis data structures, and a way to query them.
+
+3. Aggregations API
+
+    Building on indexed objects, provide a way to run various aggregations o query results.
+
+---         
+
 ## 1. Explicit Anonymous Indexes
 
 ### Purpose: 
@@ -21,59 +39,57 @@
         This has a lot of memory overhead, so if a higher level engine can do this by comparing object states on updates,
         it is preferable not to do this.
 
-### Proposed API:
+    ### Proposed API:
 
+    * Creating an index:
 
-* Creating an index:
+            IDX.CREATE <index_name> [OPTIONS [TRACKING] [UNIQUE]] SCHEMA <type> [<type> ...]`
 
-        IDX.CREATE <index_name> [OPTIONS [TRACKING] [UNIQUE]] SCHEMA <type> [<type> ...]`
+    * Inserting ids and tuples into an index:
 
-* Inserting ids and tuples into an index:
+            IDX.INSERT <index_name> <id> <value> [<value> ...]
 
-        IDX.INSERT <index_name> <id> <value> [<value> ...]
+    * Deleting ids from an index (if the index is not tracking, the values must also be given):
+            
+            IDX.DELETE <index_name> <id> [<value> [<value> ...]] 
 
-* Deleting ids from an index (if the index is not tracking, the values must also be given):
+    * Selecting ids from an index:
         
-        IDX.DELETE <index_name> <id> [<value> [<value> ...]] 
+            IDX.SELECT <index_name> WHERE "<predicates>" [LIMIT offset num]
 
-* Selecting ids from an index:
-    
-        IDX.SELECT <index_name> WHERE "<predicates>" [LIMIT offset num]
+        Returns a list of ids matching the predicates, with the index's natural ordering.
 
-    Returns a list of ids matching the predicates, with the index's natural ordering.
-
-    Predicates are similar to the WHERE clause of an SQL query. e.g.:
-    
-        WHERE "$1 < 1 AND $2 = 'foo' AND $3 IN (1,2,'foo','bar') 
-
-* General info (cardinality, memory, etc):
-
-        IDX.INFO <index_name>
-
-* Flushing an index without deleting its schema:
+        Predicates are similar to the WHERE clause of an SQL query. e.g.:
         
-        IDX.FLUSH <index_name>
+            WHERE "$1 < 1 AND $2 = 'foo' AND $3 IN (1,2,'foo','bar') 
+
+    * General info (cardinality, memory, etc):
+
+            IDX.INFO <index_name>
+
+    * Flushing an index without deleting its schema:
+            
+            IDX.FLUSH <index_name>
+
+    * Predicate expressions syntax:
+
+        Since they are anonymous, the index properties or columns are represented by a dollar sign and their numeric order in the index's schema.
+        i.e. $1, $2, $3 etc. Of course, they must be within the range of the index's schema length.  
+
+        #### pseudo BNF query syntax:
 
 
-* Predicate expressions syntax:
+                <query> ::= <predicate> | <predicate> "AND" <predicate> ... 
 
-    Since they are anonymous, the index properties or columns are represented by a dollar sign and their numeric order in the index's schema.
-    i.e. $1, $2, $3 etc. Of course, they must be within the range of the index's schema length.  
+                <predicate> ::= <property> <operator> <value>
 
-    #### pseudo EBNF query syntax:
+                <property> ::= "$" <digit> | "_"
+                
+                <operator> ::= "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "IN" | "LIKE"
 
+                <value> ::= <number> | <string> | "TRUE" | "FALSE" | <list>
 
-        <query> ::= <predicate> | <predicate> "AND" <predicate> ... 
-
-        <predicate> ::= <property> <operator> <value>
-
-        <property> ::= "$" <digit> | "_"
-         
-        <operator> ::= "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "IN" | "LIKE"
-
-        <value> ::= <number> | <string> | "TRUE" | "FALSE" | <list>
-
-        <list> ::= "(" <value>, ... ")"
+                <list> ::= "(" <value>, ... ")"
 
 ---
 
@@ -97,57 +113,57 @@
 
 * The index also implements the GET family of functions for the type, using WHERE clauses.
 
-Proposed API:
+    Proposed API:
 
-* Creating an index:
+    * Creating an index:
 
-        IDX.CREATE [OPTIONS [UNIQUE]] TYPE [HASH|STR|ZSET] [SCHEMA <field> <type> ...]
+            IDX.CREATE [OPTIONS [UNIQUE]] TYPE [HASH|STR|ZSET] [SCHEMA <field> <type> ...]
 
-    **Note:** more options TBD
+        **Note:** more options TBD
 
-* Writing syntax - HASH values:
+    * Writing syntax - HASH values:
 
-        HSET <key> <element> <value>
+            HSET <key> <element> <value>
 
-        IDX.HSET <element> <value> USING <index_name> [<index_name> ...] WHERE <predicates>
+            IDX.HSET <element> <value> USING <index_name> [<index_name> ...] WHERE <predicates>
 
-        IDX.HMSET <num_pairs> <element> <value> ... USING <index_name> [<index_name> ...] WHERE <predicates>
+            IDX.HMSET <num_pairs> <element> <value> ... USING <index_name> [<index_name> ...] WHERE <predicates>
 
-        IDX.HDEL <index_name> <key> USING <index_name> [<index_name> ...] WHERE <predicates>
+            IDX.HDEL <index_name> <key> USING <index_name> [<index_name> ...] WHERE <predicates>
 
-        IDX.HINCRBY <element> <amount> USING <index_name> [<index_name> ...] WHERE <predicates>
+            IDX.HINCRBY <element> <amount> USING <index_name> [<index_name> ...] WHERE <predicates>
 
-* Reading - HASH values:
+    * Reading - HASH values:
 
-        IDX.HGETALL USING <index_name>  WHERE <predicates> [LIMIT <offset> <num>] 
-        
-    returns an array of interleaved key, values, where values is a nested array of all the hash values.
-        
-        IDX.HMGET <index_name> <num_elements> <elem> <elem> ... WHERE <predicates> [LIMIT offset num]
-        
-    same as HGETALL but gets only some of the elements, and does not return the element names, just the values.
-        
-        IDX.HGET <index_name> <elem> WHERE <predicates> [LIMIT offset num]
-        
-    same as HGETALL but gets only one element's value for each matching HASH.
+            IDX.HGETALL USING <index_name>  WHERE <predicates> [LIMIT <offset> <num>] 
+            
+        returns an array of interleaved key, values, where values is a nested array of all the hash values.
+            
+            IDX.HMGET <index_name> <num_elements> <elem> <elem> ... WHERE <predicates> [LIMIT offset num]
+            
+        same as HGETALL but gets only some of the elements, and does not return the element names, just the values.
+            
+            IDX.HGET <index_name> <elem> WHERE <predicates> [LIMIT offset num]
+            
+        same as HGETALL but gets only one element's value for each matching HASH.
 
-* Writing - strings:
+    * Writing - strings:
 
-        IDX.SET <index_name> <key> <value> <key> <value> ...
-        IDX.SETNX <index_name> <key> <value> <key> <value> ...
-        IDX.SETEX <index_name> <key> <value> <key> <value> ...
-        IDX.INCRBY <index_name> <key> <value> <key> <value> ...
-        IDX.DEL <index_name> WHERE <predicates> [LIMIT offset num]
+            IDX.SET <index_name> <key> <value> <key> <value> ...
+            IDX.SETNX <index_name> <key> <value> <key> <value> ...
+            IDX.SETEX <index_name> <key> <value> <key> <value> ...
+            IDX.INCRBY <index_name> <key> <value> <key> <value> ...
+            IDX.DEL <index_name> WHERE <predicates> [LIMIT offset num]
 
-* Reading - strings:
-        
-        IDX.GET <index_name> WHERE <predicates> [LIMIT offset num]
+    * Reading - strings:
+            
+            IDX.GET <index_name> WHERE <predicates> [LIMIT offset num]
 
-    > ### TBD: how do we handle expires? 
-    > 
-    > for now we simply assume no expiration support, until redis has keyspace notifications for modules. 
+        > ### TBD: how do we handle expires? 
+        > 
+        > for now we simply assume no expiration support, until redis has keyspace notifications for modules. 
 
-## Aggregations:
+## 3. Aggregations:
 
 The above indexing scheme also allows us to do aggregations on HASH properties or complete string values. This is useful for analytics. 
 
@@ -174,34 +190,35 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
 
             <trans_func> ::= "ROUND" | "FLOOR" | "CEIL" | ...
 
-* Proposed Aggregation functions:
+    * Proposed Aggregation functions:
 
-> | function        | Description  |
-> |-------------|-------------|
-> |SUM(P) | Sum numeric values of P for all matching objects| 
-> | COUNT() | Count the total matching objects for the query |
-> | COUNT_DISTINCT(property) || 
-> | HISTOGRAM(property)  || 
-> | AVG(property) || 
-> | MEAN(property)  || 
-> | MAX(property) || 
-> | NLARGEST(property) || 
-> | NSMALLEST(property) || 
+    > | function        | Description  |
+    > |-------------|-------------|
+    > |SUM(P) | Sum numeric values of P for all matching objects| 
+    > | COUNT() | Count the total matching objects for the query |
+    > | COUNT_DISTINCT(property) || 
+    > | HISTOGRAM(property)  || 
+    > | AVG(property) || 
+    > | MEAN(property)  || 
+    > | MAX(property) || 
+    > | NLARGEST(property) || 
+    > | NSMALLEST(property) || 
         
-* Proposed Transformation functions:
-> | function        | Description  |
-> |-------------|-------------|
-        * ROUND(x)
-        * FLOOR(x)
-        * CEIL(x)
-        * LOG(x, base)
-        * MODULO(x, y)
-        * QUANTIZE(x, ranges)
-        * FILTER_ABOVE(x, y)
-        * FILTER_BELOW(x, y)
-        * AND(x, y)
-        * XOR(x, y)
-        * OR (x, y)
+    * Proposed Transformation functions:
+    
+    > | function        | Description  |
+    > |-------------|-------------|
+    > | ROUND(x)
+    > | FLOOR(x)
+    > | CEIL(x)
+    > | LOG(x, base)
+    > | MODULO(x, y)
+    > | QUANTIZE(x, ranges)
+    > | FILTER_ABOVE(x, y)
+    > | FILTER_BELOW(x, y)
+    > | AND(x, y)
+    > | XOR(x, y)
+    > | OR (x, y)
         
     * String:
         * LOWER(x)
