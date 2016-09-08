@@ -77,20 +77,36 @@ The three APIs described are:
         Since they are anonymous, the index properties or columns are represented by a dollar sign and their numeric order in the index's schema.
         i.e. $1, $2, $3 etc. Of course, they must be within the range of the index's schema length.  
 
-        #### pseudo BNF query syntax:
+        pseudo BNF query syntax:
 
+            <query> ::= <predicate> | <predicate> "AND" <predicate> ... 
+            <predicate> ::= <property> <operator> <value>
+            <property> ::= "$" <digit>
+            <operator> ::= "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "IN" | "LIKE"
+            <value> ::= <number> | <string> | "TRUE" | "FALSE" | <list>
+            <list> ::= "(" <value>, ... ")"
+    
+    * Example Usage:
+    
+            # Creating an index on two strings and an integer, or first/last name and age.
+            
+            > IDX.CREATE myidx OPTIONS TRACKING SCHEMA STRING STRING INT32
 
-                <query> ::= <predicate> | <predicate> "AND" <predicate> ... 
+            # Adding some records
 
-                <predicate> ::= <property> <operator> <value>
+            > IDX.INSERT myidx user1 "John" "Doe" 18
+            > IDX.INSERT myidx user2 "Herp" "Derp" 37
+            > IDX.INSERT myidx user3 "Jeff" "Lebowski" 45
 
-                <property> ::= "$" <digit>
-                
-                <operator> ::= "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "IN" | "LIKE"
+            # Querying the index - getting all users called Jeff Lebowski
+            > IDX.SELECT myidx WHERE "$1 = 'Jeff' AND $2 = 'Lebowski'"  
 
-                <value> ::= <number> | <string> | "TRUE" | "FALSE" | <list>
+            # Querying the index - getting all users called Jeff aged over 18
+            > IDX.SELECT myidx WHERE "$1 = 'Jeff' AND $3 > 18"  
 
-                <list> ::= "(" <value>, ... ")"
+            # Removing a record. Since this is a tracking index, no need for values
+            > IDX.DELETE myidx user3
+        
 
 ---
 
@@ -119,7 +135,7 @@ The three APIs described are:
 
     * Creating an index:
 
-            IDX.CREATE [OPTIONS [UNIQUE]] TYPE [HASH|STR|ZSET] [SCHEMA <field> <type> ...]
+            IDX.CREATE <index_name> [OPTIONS [UNIQUE]] TYPE [HASH|STR|ZSET] [SCHEMA <field> <type> ...]
 
         **Note:** more options TBD
 
@@ -164,6 +180,22 @@ The three APIs described are:
         > ### TBD: how do we handle expires? 
         > 
         > for now we simply assume no expiration support, until redis has keyspace notifications for modules. 
+    
+    * Example Usage:
+
+            > IDX.CREATE myidx TYPE HASH SCHEMA name STRING last STRING age INT32
+            
+            # an index for age only
+            > IDX.CREATE age_idx TYPE HASH SCHEMA age INT32
+            
+            # Inserting a user into a HASH key via the index. This is an UPSERT query, like HMSET
+            > IDX.HMSET 3 first "Jeff" last "Lebowski" age 45 USING myidx WHERE "_ = 'user3'"
+
+            # Selecting the last name and age of all users named Jeff
+            > IDX.HMGET USING myidx 2 last age WHERE "name = 'Lebowski'" 
+
+            # Getting all HASH elements and values of users over 18
+            > IDX.HGETALL USING age_idx WHER "age >= 18" LIMIT 0 10
 
 ## 3. Aggregations:
 
@@ -191,6 +223,12 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
             <transformation> ::= <trans_func> <arglist>
 
             <trans_func> ::= "ROUND" | "FLOOR" | "CEIL" | ...
+    
+    * Example Usage
+
+            # Getting age distribution of users named Jeff:
+            > IDX.AGGREGATE USING myidx COUNT_DISTINCT(FLOOR(age)) WHERE "name = 'Jeff'
+            (returns a list of age,count pairs)
 
     * Proposed Aggregation functions:
 
@@ -203,8 +241,6 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
     > | AVG(property) || 
     > | MEAN(property)  || 
     > | MAX(property) || 
-    > | NLARGEST(property) || 
-    > | NSMALLEST(property) || 
         
     * Proposed Transformation functions:
     
@@ -221,17 +257,19 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
     > | AND(x, y)
     > | XOR(x, y)
     > | OR (x, y)
-        
-    * String:
-        * LOWER(x)
-        * UPPER(x)
-        * REPLACE(x, y)
-
-    * Time:
-        * DAY(x)
-        * MONTH(x)
-        * YEAR(x)
-        * WEEK(x)
-        * DOM(x)
+    > |
+    > | String Functions |
+    > | 
+    > | LOWER(x)
+    > | UPPER(x)
+    > |REPLACE(x, y)
+    > ||
+    > | Time Functions |
+    > ||
+    > | DAY(x) | Day of Month|
+    > | MONTH(x) | Month Of Year|
+    > | YEAR(x) | |
+    > | WEEK(x) ||
+    > |  WEEKDAY(x) | |
          
   
