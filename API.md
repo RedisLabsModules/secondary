@@ -30,9 +30,10 @@ The three APIs described are:
 1. Indexes map n-tuples of values to ids only (e.g. (string, string, int)).
 2. Indexes are created before they are updated, with a given schema (as above)
 2. The lookups are anonymous and refer to index columns only by sequence number ($1, $2, $3...).
-3. The index does not track anything and must be called explicitly. 
-4. The query language is minimal and contains mostly predicates.
-5. Book-keeping of the index is not handled by the index, or is optional.
+3. The index does not track any change implicitly and must be called explicitly. 
+4. The user "inserts" records into the index, each record is a string Id, followed by a tuple of values that must conform to the index's schma.
+4. The query language is minimal and contains mostly predicates. Queries return just Ids, and it is up to the user to decide what to do with them.
+5. Book-keeping of the index (allowing deletion of records by id) is not handled by the index, or is optional. 
     * If it is not handled, the user needs to remove and add records to the index manually when values change.
     * If it is handled, we keep a reverse index of {id => values}, and when an id is indexed, if it already exists
         we simply remove the old record. 
@@ -83,7 +84,7 @@ The three APIs described are:
 
                 <predicate> ::= <property> <operator> <value>
 
-                <property> ::= "$" <digit> | "_"
+                <property> ::= "$" <digit>
                 
                 <operator> ::= "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "IN" | "LIKE"
 
@@ -98,13 +99,14 @@ The three APIs described are:
 ### Purpose:
 * Extend redis common patterns with secondary indexing
 * Keep using the basic redis concepts and structures with as little disruption
-* Allow more automation and less boiler plate than #1 
+* Allow more automation and less boilerplate than #1 
+* Provide a query language that feels familiar to redis users *and* SQL users.
 
 ### How It Works:
 
-* Indexes are created either on HASHes, complete strings, and possibly ZSETs.
+* Indexes are created either on HASHes, complete strings, (and possibly ZSETs in the future).
 * For hashes, the schema includes not only types, but also the entity names.
-* For strings, the index just indexes the entire value of the string (up until a limited value)
+* For strings, the index just indexes the entire value of the string (up until a limited length). Numeric indexes assume that string values represent numbers.
 * For sorted sets, the index indexes values and scores.
 * The index DOES NOT track changes in keys implicitly.
 * Instead, write operations to the keys are done **through** the index.
@@ -139,25 +141,25 @@ The three APIs described are:
             
         returns an array of interleaved key, values, where values is a nested array of all the hash values.
             
-            IDX.HMGET <index_name> <num_elements> <elem> <elem> ... WHERE <predicates> [LIMIT offset num]
+            IDX.HMGET USING <index_name> <num_elements> <elem> <elem> ... WHERE <predicates> [LIMIT offset num]
             
         same as HGETALL but gets only some of the elements, and does not return the element names, just the values.
             
-            IDX.HGET <index_name> <elem> WHERE <predicates> [LIMIT offset num]
+            IDX.HGET USING <index_name> <elem> WHERE <predicates> [LIMIT offset num]
             
         same as HGETALL but gets only one element's value for each matching HASH.
 
     * Writing - strings:
 
-            IDX.SET <index_name> <key> <value> <key> <value> ...
-            IDX.SETNX <index_name> <key> <value> <key> <value> ...
-            IDX.SETEX <index_name> <key> <value> <key> <value> ...
-            IDX.INCRBY <index_name> <key> <value> <key> <value> ...
-            IDX.DEL <index_name> WHERE <predicates> [LIMIT offset num]
+            IDX.SET USING <index_name> <key> <value> <key> <value> ...
+            IDX.SETNX USING <index_name> <key> <value> <key> <value> ...
+            IDX.SETEX USING <index_name> <key> <value> <key> <value> ...
+            IDX.INCRBY USING <index_name> <key> <value> <key> <value> ...
+            IDX.DEL USING <index_name> WHERE <predicates> [LIMIT offset num]
 
     * Reading - strings:
             
-            IDX.GET <index_name> WHERE <predicates> [LIMIT offset num]
+            IDX.GET USING <index_name> WHERE <predicates> [LIMIT offset num]
 
         > ### TBD: how do we handle expires? 
         > 
