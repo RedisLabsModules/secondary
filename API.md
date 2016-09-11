@@ -1,20 +1,22 @@
-# Proposed Secondary Index External API
+# Proposed Redis Secondary Index Module API
 
-The following document is a proposal for **three** different APIs that can take advantage of Secondary Indexing in Redis.
+## What's This?
 
-The three APIs described are:
+Redis is a very sophisticated data structure server, that can be used as a powerful in-memory database. However, if you look at redis as database per-se, it only has primary keys. There is no native way to ask redis for something like "what are the names of users over 18 who have visited my website yesterday?". 
 
-1. Explicit Anonymous Indexes
+If you're familiar with traditional relational databases, this is usually done by creating an index on the relevant columns in your table, allowing to efficiently add complex *WHERE* clauses to your query. Such an index is called a Secondary Index.
 
-    providing raw indexes as a primitive data type in Redis.
+While it is possible (and done by many many people) to implement these indexes on top of redis manually, doing them right and in a performant way is hard. 
 
-2. Indexed Redis Objects
+This is why I think it is a very strong case in which Redis modules can be put to work, adding abilities to redis that make it more complex, but more powerful for some use cases. This doucment describes a proposed API and query language for secondary indexes in  Redis. *Note that it does not go into the detail of the internal design of how they work. *
 
-    Adding secondary indexes to common redis data structures, and a way to query them.
+The API includes three layers that can be used separately but are orthogonal to one another:
 
-3. Aggregations API
+1. **Explicit Anonymous Indexes** - providing raw indexes as a primitive data type in Redis.
 
-    Building on indexed objects, provide a way to run various aggregations o query results.
+2. **Indexed Redis Objects** - Adding secondary indexes to common redis data structures, and a way to query them.
+
+3. **Aggregations API** - Building on indexed objects, provide a way to run various aggregations of query results.
 
 ---         
 
@@ -22,13 +24,13 @@ The three APIs described are:
 
 ### Purpose: 
 
-* Use as an index for external databases
+* Use Redis as an index for external databases.
 * Index existing data already inside redis, independent of how this data is modeled.
-* Facilitate writing ORMs and database engines on top of redis
+* Facilitate writing ORMs and database engines on top of redis.
 
 ### Basic Concepts:
 1. Indexes map n-tuples of values to ids only (e.g. (string, string, int)).
-2. Indexes are created before they are updated, with a given schema (as above)
+2. Indexes are created before they are updated, with a given schema (as above).
 2. The lookups are anonymous and refer to index columns only by sequence number ($1, $2, $3...).
 3. The index does not track any change implicitly and must be called explicitly. 
 4. The user "inserts" records into the index, each record is a string Id, followed by a tuple of values that must conform to the index's schma.
@@ -199,13 +201,13 @@ The three APIs described are:
 
 ## 3. Aggregations:
 
-The above indexing scheme also allows us to do aggregations on HASH properties or complete string values. This is useful for analytics. 
+The above indexing scheme also allows us to do aggregations on HASH properties or complete string values. This is useful for analytics, for example.
 
-The idea is to do an indexed scan, and for each matching redis object, feed the existing values (be them hash element values, complete values of strings, values and scores of sorted sets) into an aggregation function. This may produce a single number, a list of values, etc.
+The idea is to do an indexed scan, and for each matching redis object, feed the existing values (be them hash element values, complete values of strings, values and scores of sorted sets) into an aggregation function. This may produce a single number, a list of values, etc. This can be done by accessing the HASH elements themselves, or for better speed, accessing values already in the index.
 
 * Proposed Aggregation Syntax: 
 
-        IDX.AGGREGATE USING <index_name> <aggregation_func> ... WHERE <predicates> 
+            IDX.AGGREGATE USING <index_name> <aggregation_func> ... WHERE <predicates> 
     
 * Aggregation Function Grammar:
 
@@ -262,7 +264,7 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
     > | 
     > | LOWER(x)
     > | UPPER(x)
-    > |REPLACE(x, y)
+    > | REPLACE(x, y)
     > ||
     > | Time Functions |
     > ||
