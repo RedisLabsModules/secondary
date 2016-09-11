@@ -9,6 +9,18 @@ typedef enum {
   PRED_IN,
 } SIPredicateType;
 
+typedef enum {
+  OP_AND,
+  OP_OR,
+} SILogicOperator;
+
+typedef enum {
+  QN_LOGIC,
+  QN_PRED,
+} SIQueryNodeType;
+
+struct queryNode;
+
 /* Equals to predicate */
 typedef struct {
   // the value we must be equal to
@@ -43,24 +55,47 @@ typedef struct {
     SINotEquals ne;
     SIIn in;
   };
+  /* the ordinal id of the propery being accessed in the index */
+  int propId;
   SIPredicateType t;
 } SIPredicate;
 
-SIPredicate SI_PredEquals(SIValue v);
-SIPredicate SI_PredBetween(SIValue min, SIValue max, int minExclusive,
-                           int maxExclusive);
+typedef struct {
+  struct queryNode *left;
+  struct queryNode *right;
+  SILogicOperator op;
+} SILogicNode;
+
+typedef struct queryNode {
+  union {
+    SIPredicate pred;
+    SILogicNode op;
+  };
+  SIQueryNodeType type;
+} SIQueryNode;
+
+SIQueryNode *SI_PredEquals(SIValue v);
+SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
+                            int maxExclusive);
 
 typedef struct {
-  SIPredicate *predicates;
-  size_t numPredicates;
+  SIQueryNode *root;
 
   size_t offset;
   size_t num;
+
+  // TODO - ordering and other options
 } SIQuery;
 
 SIQuery SI_NewQuery();
-void SIQuery_AddPred(SIQuery *q, SIPredicate pred);
+SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,
+                                  SIQueryNode *right);
+
+SIQueryNode *SIQuery_SetRoot(SIQuery *q, SIQueryNode *n);
 
 int SI_ParseQuery(SIQuery *query, const char *q, size_t len);
+void SIQueryNode_Print(SIQueryNode *n, int depth);
+
+void SIQueryNode_Free(SIQueryNode *n);
 
 #endif // !__SECONDARY_QUERY_H__

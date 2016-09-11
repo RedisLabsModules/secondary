@@ -1,26 +1,57 @@
 #include "query.h"
 
-SIPredicate SI_PredEquals(SIValue v) {
-  return (SIPredicate){.eq = (SIEquals){v}, .t = PRED_EQ};
+SIQueryNode *__newQueryNode(SIQueryNodeType t) {
+  SIQueryNode *ret = malloc(sizeof(SIQueryNode));
+  ret->type = t;
+  return ret;
+}
+SIQueryNode *SI_PredEquals(SIValue v) {
+  SIQueryNode *ret = __newQueryNode(QN_PRED);
+  ret->pred = (SIPredicate){.eq = (SIEquals){v}, .t = PRED_EQ};
+  return ret;
 }
 
-SIPredicate SI_PredBetween(SIValue min, SIValue max, int minExclusive,
-                           int maxExclusive) {
-  return (SIPredicate){.rng = (SIRange){.min = min,
-                                        .max = max,
-                                        .minExclusive = minExclusive,
-                                        .maxExclusive = maxExclusive},
-                       .t = PRED_RNG};
+SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
+                            int maxExclusive) {
+  SIQueryNode *ret = __newQueryNode(QN_PRED);
+
+  ret->pred = (SIPredicate){.rng = (SIRange){.min = min,
+                                             .max = max,
+                                             .minExclusive = minExclusive,
+                                             .maxExclusive = maxExclusive},
+                            .t = PRED_RNG};
+  return ret;
 }
 
-SIQuery SI_NewQuery() {
-  return (SIQuery){
-      .predicates = NULL, .numPredicates = 0, .offset = 0, .num = 0};
+SIQuery SI_NewQuery() { return (SIQuery){.root = NULL, .offset = 0, .num = 0}; }
+
+SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,
+                                  SIQueryNode *right) {
+  SIQueryNode *ret = __newQueryNode(QN_LOGIC);
+  ret->op.left = left;
+  ret->op.right = right;
+  ret->op.op = op;
+  return ret;
 }
 
-void SIQuery_AddPred(SIQuery *q, SIPredicate pred) {
+SIQueryNode *SIQuery_SetRoot(SIQuery *q, SIQueryNode *n) {
+  q->root = n;
+  return n;
+}
 
-  q->predicates =
-      realloc(q->predicates, (q->numPredicates + 1) * sizeof(SIPredicate));
-  q->predicates[q->numPredicates++] = pred;
+void SIQueryNode_Free(SIQueryNode *n) {
+  if (!n)
+    return;
+
+  switch (n->type) {
+  case QN_LOGIC:
+    SIQueryNode_Free(n->op.left);
+    SIQueryNode_Free(n->op.right);
+    break;
+  case QN_PRED:
+  default:
+    // TODO: see about freeing predicate values
+    break;
+  }
+  free(n);
 }

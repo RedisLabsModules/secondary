@@ -280,22 +280,23 @@ SIId scan_next(void *ctx) {
 }
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
-  compoundIndex *idx = ctx;
-  SICursor *c = SI_NewCursor(NULL);
-  if (q->numPredicates > idx->numFuncs) {
-    c->error = SI_CURSOR_ERROR;
-    return c;
-  }
+  return NULL;
+  // compoundIndex *idx = ctx;
+  // SICursor *c = SI_NewCursor(NULL);
+  // if (q->numPredicates > idx->numFuncs) {
+  //   c->error = SI_CURSOR_ERROR;
+  //   return c;
+  // }
 
-  scanCtx *sctx = buildScanCtx(idx, q->predicates, q->numPredicates);
+  // scanCtx *sctx = buildScanCtx(idx, q->predicates, q->numPredicates);
 
-  sctx->it = skiplistIterateRange(idx->sl, sctx->min, sctx->max,
-                                  sctx->minExclusive, sctx->maxExclusive);
-  // sctx->it = Tree_IterateFrom(idx->tree, sctx->min, sctx->minExclusive);
+  // sctx->it = skiplistIterateRange(idx->sl, sctx->min, sctx->max,
+  //                                 sctx->minExclusive, sctx->maxExclusive);
+  // // sctx->it = Tree_IterateFrom(idx->tree, sctx->min, sctx->minExclusive);
 
-  c->ctx = sctx;
-  c->Next = scan_next;
-  return c;
+  // c->ctx = sctx;
+  // c->Next = scan_next;
+  // return c;
 }
 
 void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
