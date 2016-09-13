@@ -15,6 +15,9 @@ SIQueryNode *toQueryNode(PredicateNode *n) {
     return SI_PredBetween(n->val, SI_NullVal(), 0, 0);
   case LE:
     return SI_PredBetween(SI_NullVal(), n->val, 0, 0);
+  case IN:
+    return SI_PredIn(n->lst);
+
   default:
     printf("Only EQ supported. PANIC!");
     exit(-1);
@@ -32,12 +35,16 @@ SIQueryNode *traverseNode(SIQuery *q, ParseNode *n) {
                                 traverseNode(q, n->cn.right));
   } else {
     SIQueryNode *ret = toQueryNode(&n->pn);
-    ret->pred.propId = n->pn.propId;
+    // prop ids start at index 1, here we convert them to zero-index
+    ret->pred.propId = n->pn.propId - 1;
+    q->numPredicates++;
+    return ret;
   }
 }
 
 int SI_ParseQuery(SIQuery *query, const char *q, size_t len) {
-
+  // TODO: Query validation!
+  query->numPredicates = 0;
   ParseNode *root = ParseQuery(q, len);
   if (!root) {
     return 0;
@@ -94,7 +101,12 @@ void qpredicateNode_print(SIPredicate *n, int depth) {
     printf(" %s", buf);
     break;
   case PRED_IN:
-    printf("TODO: print IN node ;)");
+    printf("$%d IN (", n->propId);
+    for (int i = 0; i < n->in.numvals; i++) {
+      SIValue_ToString(n->in.vals[i], buf, 1024);
+      printf("%s%s", buf, i < n->in.numvals - 1 ? ", " : "");
+    }
+    printf(")");
   }
 }
 
@@ -108,6 +120,8 @@ void SIQueryNode_Print(SIQueryNode *n, int depth) {
   case QN_PRED:
     qpredicateNode_print(&(n->pred), depth + 1);
     break;
+  case QN_PASSTHRU:
+    printf("NOOP");
   }
   printf(")\n");
 }

@@ -23,7 +23,16 @@ SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
   return ret;
 }
 
-SIQuery SI_NewQuery() { return (SIQuery){.root = NULL, .offset = 0, .num = 0}; }
+SIQueryNode *SI_PredIn(SIValueVector v) {
+  SIQueryNode *ret = __newQueryNode(QN_PRED);
+  ret->pred = (SIPredicate){.in = (SIIn){.vals = v.vals, .numvals = v.len},
+                            .t = PRED_IN};
+  return ret;
+}
+
+SIQuery SI_NewQuery() {
+  return (SIQuery){.root = NULL, .offset = 0, .num = 0, .numPredicates = 0};
+}
 
 SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,
                                   SIQueryNode *right) {
@@ -49,6 +58,7 @@ void SIQueryNode_Free(SIQueryNode *n) {
     SIQueryNode_Free(n->op.right);
     break;
   case QN_PRED:
+  case QN_PASSTHRU:
   default:
     // TODO: see about freeing predicate values
     break;

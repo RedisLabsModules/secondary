@@ -191,7 +191,7 @@ The API includes three layers that can be used separately but are orthogonal to 
             > IDX.CREATE age_idx TYPE HASH SCHEMA age INT32
             
             # Inserting a user into a HASH key via the index. This is an UPSERT query, like HMSET
-            > IDX.HMSET 3 first "Jeff" last "Lebowski" age 45 USING myidx WHERE "_ = 'user3'"
+            > IDX.HMSET 3 name "Jeff" last "Lebowski" age 45 USING myidx WHERE "_ = 'user3'"
 
             # Selecting the last name and age of all users named Jeff
             > IDX.HMGET USING myidx 2 last age WHERE "name = 'Lebowski'" 

@@ -36,6 +36,17 @@ ParseNode *NewPredicateNode(int propId, int op, SIValue v) {
   return n;
 }
 
+ParseNode *NewInPredicateNode(int propId, int op, SIValueVector v) {
+
+  ParseNode *n = malloc(sizeof(ParseNode));
+  n->t = N_PRED;
+  n->pn.propId = propId;
+  n->pn.op = op;
+  n->pn.lst = v;
+
+  return n;
+}
+
 #define pad(n)                                                                 \
   {                                                                            \
     for (int i = 0; i < n; i++)                                                \
@@ -62,6 +73,9 @@ void printOp(int op) {
   case NE:
     printf("!=");
     break;
+  case IN:
+    printf("IN");
+    break;
   }
 }
 
@@ -87,10 +101,20 @@ void conditionNode_print(ConditionNode *n, int depth) {
 
 void predicateNode_print(PredicateNode *n, int depth) {
   char buf[1024];
-  SIValue_ToString(n->val, buf, 1024);
+
   printf("$%d ", n->propId);
   printOp(n->op);
-  printf(" %s", buf);
+  if (n->op != IN) {
+    SIValue_ToString(n->val, buf, 1024);
+    printf(" %s", buf);
+  } else {
+    printf("(");
+    for (int i = 0; i < n->lst.len; i++) {
+      SIValue_ToString(n->lst.vals[i], buf, 1024);
+      printf("%s%s", buf, i < n->lst.len - 1 ? ", " : "");
+    }
+    printf(")");
+  }
 }
 
 void ParseNode_print(ParseNode *n, int depth) {

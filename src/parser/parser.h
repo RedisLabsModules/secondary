@@ -6,9 +6,11 @@
 #define GE                               6
 #define LT                               7
 #define LE                               8
-#define LP                               9
-#define RP                              10
-#define INTEGER                         11
-#define STRING                          12
-#define FLOAT                           13
-#define ENUMERATOR                      14
+#define IN                               9
+#define LP                              10
+#define RP                              11
+#define INTEGER                         12
+#define STRING                          13
+#define FLOAT                           14
+#define COMMA                           15
+#define ENUMERATOR                      16

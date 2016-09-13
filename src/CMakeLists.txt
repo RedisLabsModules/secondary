@@ -9,10 +9,12 @@ add_library(libsecondary STATIC
             cursor.c
             compound_index.c
             query_parse.c
+            query_plan.c
             parser/ast.c
             parser/parser.c
             parser/lex.yy.c
 
+            rmutil/vector.c
             skiplist/skiplist.c            
         )
 target_compile_options(libsecondary PUBLIC "-fPIC")

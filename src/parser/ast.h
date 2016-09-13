@@ -19,7 +19,10 @@ struct parseNode;
 typedef struct {
   int propId;
   int op;
-  SIValue val;
+  union {
+    SIValue val;
+    SIValueVector lst;
+  };
 } PredicateNode;
 
 typedef struct conditionNode {

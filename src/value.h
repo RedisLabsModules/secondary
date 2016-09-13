@@ -7,6 +7,7 @@ typedef char *SIId;
 
 /* Type defines the supported types by the indexing system */
 typedef enum {
+  T_NULL = 0,
   T_STRING,
   T_INT32,
   T_INT64,
@@ -15,7 +16,6 @@ typedef enum {
   T_FLOAT,
   T_DOUBLE,
   T_TIME,
-  T_NULL,
 
   //  -- FUTURE TYPES: --
   // T_GEOPOINT
@@ -52,6 +52,16 @@ typedef struct {
   };
   SIType type;
 } SIValue;
+
+typedef struct {
+  SIValue *vals;
+  size_t len;
+  size_t cap;
+} SIValueVector;
+
+SIValueVector SI_NewValueVector(size_t cap);
+void SIValueVector_Append(SIValueVector *v, SIValue val);
+void SIValueVector_Free(SIValueVector *v);
 
 SIValue SI_StringVal(SIString s);
 SIValue SI_StringValC(char *s);

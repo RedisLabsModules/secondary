@@ -13,7 +13,7 @@ Token tok;
 
 "AND"         { return AND; }
 "OR"         { return OR; }
-
+"IN"         { return IN; }
 \$[0-9]{1} {    
                 tok.intval = atoi(yytext+1); 
                 return ENUMERATOR; 
@@ -37,8 +37,6 @@ Token tok;
   return STRING; 
 }
 
-
-
                                                                                                
 "="           {  return EQ; }
 "!="           {  return NE; }
@@ -48,6 +46,7 @@ Token tok;
 "<"           {  return LT; }
 "("           { return LP; }
 ")"           { return RP; }
+","           { return COMMA; }
 
 [ \t\n]+ /* ignore whitespace */
 %%

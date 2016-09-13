@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <sys/param.h>
 
 SIValue SI_IntVal(int i) { return (SIValue){.intval = i, .type = T_INT32}; }
 
@@ -184,3 +185,17 @@ void SIValue_ToString(SIValue v, char *buf, size_t len) {
 }
 
 SIValue SI_NullVal() { return (SIValue){.intval = 0, .type = T_NULL}; }
+
+SIValueVector SI_NewValueVector(size_t cap) {
+  return (SIValueVector){
+      .vals = calloc(cap, sizeof(SIValue)), .cap = cap, .len = 0};
+}
+void SIValueVector_Append(SIValueVector *v, SIValue val) {
+  if (v->len == v->cap) {
+    v->cap = v->cap ? MIN(v->cap * 2, 1000) : v->cap + 1;
+    v->vals = realloc(v->vals, v->cap * sizeof(SIValue));
+  }
+  v->vals[v->len++] = val;
+}
+
+void SIValueVector_Free(SIValueVector *v) { free(v->vals); }

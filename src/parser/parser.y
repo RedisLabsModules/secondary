@@ -1,7 +1,7 @@
 
 %left AND.
 %left OR.
-%nonassoc EQ NE GT GE LT LE.
+%nonassoc EQ NE GT GE LT LE IN.
 //%left PLUS MINUS.
 //%right EXP NOT.
 
@@ -46,6 +46,11 @@ cond(A) ::= prop(B) op(C) value(D). {
     A = NewPredicateNode(B, C, D);
 }
 
+cond(A) ::= prop(B) IN vallist(D). { 
+    /* Terminal condition of a single IN predicate */
+    A = NewInPredicateNode(B, IN, D);
+}
+
 cond(A) ::= LP cond(B) RP. { 
   A = B;
 }
@@ -58,12 +63,37 @@ cond(A) ::= cond(B) OR cond(C). {
   A = NewConditionNode(B, OR, C);
 }
 
+
 %type value {SIValue}
 
 // raw value tokens - int / string / float
 value(A) ::= INTEGER(B). {  A = SI_IntVal(B.intval); }
 value(A) ::= STRING(B). {  A = SI_StringValC(B.strval); }
 value(A) ::= FLOAT(B). {  A = SI_FloatVal(B.dval); }
+
+%type vallist {SIValueVector}
+%type vals {SIValueVector}
+%destructor vallist {SIValueVector_Free(&$$);}
+%destructor vals {SIValueVector_Free(&$$);}
+
+vallist(A) ::= LP vallist(B) RP. {
+    A = B;
+    
+}
+vallist(A) ::= value(B) COMMA value(C). {
+      A = SI_NewValueVector(2);
+      SIValueVector_Append(&A, B);
+      SIValueVector_Append(&A, C);
+}
+
+vallist(A) ::= vallist(B) COMMA value(C). {
+    SIValueVector_Append(&B, C);
+    A = B;
+}
+
+
+//valt(A) ::= LP vallist(B) RP.    {A = B;}
+
 
 
 %type prop {int}
