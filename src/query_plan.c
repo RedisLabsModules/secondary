@@ -98,13 +98,13 @@ void buildKey(siPlanRangeKey **keys, size_t *keyNums, size_t *stack,
 
   // if not - we're at the end, let's build the scan range up until here
   siPlanRange *rng = malloc(sizeof(siPlanRange));
-  rng->min = malloc(sizeof(SIMultiKey) + numKeys * sizeof(SIKey));
+  rng->min = malloc(sizeof(SIMultiKey) + numKeys * sizeof(SIValue));
   rng->min->size = numKeys;
-  rng->max = malloc(sizeof(SIMultiKey) + numKeys * sizeof(SIKey));
+  rng->max = malloc(sizeof(SIMultiKey) + numKeys * sizeof(SIValue));
   rng->max->size = numKeys;
   for (int i = 0; i < numKeys; i++) {
-    rng->min->keys[i] = keys[i][stack[i]].min;
-    rng->max->keys[i] = keys[i][stack[i]].max;
+    rng->min->keys[i] = *keys[i][stack[i]].min;
+    rng->max->keys[i] = *keys[i][stack[i]].max;
     rng->minExclusive = keys[i][stack[i]].minExclusive;
     rng->maxExclusive = keys[i][stack[i]].maxExclusive;
   }
@@ -112,22 +112,51 @@ void buildKey(siPlanRangeKey **keys, size_t *keyNums, size_t *stack,
   printf("Extracted scan key MIN:\n");
   char buf[1024];
   for (int i = 0; i < rng->min->size; i++) {
-    SIValue_ToString(*(SIValue *)rng->min->keys[i], buf, 1024);
+    SIValue_ToString(rng->min->keys[i], buf, 1024);
     printf("%s|", buf);
   }
   printf("\n");
 
   printf("Extracted scan key MAX:\n");
   for (int i = 0; i < rng->max->size; i++) {
-    SIValue_ToString(*(SIValue *)rng->max->keys[i], buf, 1024);
+    SIValue_ToString(rng->max->keys[i], buf, 1024);
     printf("%s|", buf);
   }
   printf("\n");
 
-  Vector_Push(result, &rng);
+  Vector_Push(result, rng);
 }
 
-SIQueryPlan *SIBuildQueryPlan(SIQuery *q, SISpec *spec) {
+void cleanQueryNode(SIQueryNode **pn) {
+  if (!pn || *pn == NULL)
+    return;
+  SIQueryNode *n = *pn;
+  switch (n->type) {
+  case QN_PASSTHRU:
+    return;
+  case QN_LOGIC:
+    cleanQueryNode(&n->op.left);
+    cleanQueryNode(&n->op.right);
+    if (n->op.left->type == QN_PASSTHRU && n->op.right->type == QN_PASSTHRU) {
+      n->type = QN_PASSTHRU;
+    } else if (n->op.left->type == QN_PASSTHRU) {
+
+      *pn = n->op.right;
+      n->op.right = NULL;
+      SIQueryNode_Free(n);
+    } else if (n->op.right->type == QN_PASSTHRU) {
+
+      *pn = n->op.left;
+      n->op.left = NULL;
+      SIQueryNode_Free(n);
+    }
+    break;
+  default:
+    break;
+  }
+}
+
+SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
 
   siPlanRangeKey *keys[q->numPredicates];
   size_t keyNums[q->numPredicates];
@@ -166,6 +195,8 @@ SIQueryPlan *SIBuildQueryPlan(SIQuery *q, SISpec *spec) {
   if (q->root->type == QN_PASSTHRU) {
     pln->filterTree = NULL;
   } else {
+    SIQueryNode_Print(q->root, 0);
+    cleanQueryNode(&q->root);
     pln->filterTree = q->root;
     printf("Filter tree:\n");
     SIQueryNode_Print(q->root, 0);

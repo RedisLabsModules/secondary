@@ -8,12 +8,12 @@ typedef int (*SIKeyCmpFunc)(void *p1, void *p2, void *ctx);
 
 #define GENERIC_CMP_FUNC_DECL(F) int F(void *p1, void *p2, void *ctx);
 
-#define GENERIC_CMP_FUNC_IMPL(F, T)                                            \
+#define GENERIC_CMP_FUNC_IMPL(F, memb)                                         \
   int F(void *p1, void *p2, void *ctx) {                                       \
-    T *v1 = p1, *v2 = p2;                                                      \
-    if (!v1 || !v2)                                                            \
+    SIValue *v1 = p1, *v2 = p2;                                                \
+    if (SIValue_IsNullPtr(v1) || SIValue_IsNullPtr(v2))                        \
       return -1;                                                               \
-    return (*v1 < *v2 ? -1 : (*v1 > *v2 ? 1 : 0));                             \
+    return (v1->memb < v2->memb ? -1 : (v1->memb > v2->memb ? 1 : 0));         \
   }
 
 GENERIC_CMP_FUNC_DECL(si_cmp_string);
@@ -32,17 +32,17 @@ typedef struct {
 typedef struct {
   SIKeyCmpFunc *cmpFuncs;
   u_int8_t numFuncs;
-} SIMultiSearchSctx;
-
-typedef void *SIKey;
+} SICmpFuncVector;
 
 typedef struct {
   u_int8_t size;
-  SIKey keys[];
+  SIValue keys[];
 } SIMultiKey;
+
+void SIMultiKey_Print(SIMultiKey *mk);
 
 void *__valueToKey(SIValue *v);
 SIMultiKey *SI_NewMultiKey(SIValue *vals, u_int8_t numvals);
 int SICmpMultiKey(void *p1, void *p2, void *ctx);
 
-#endif // __SI_KEY_H__
+#endif

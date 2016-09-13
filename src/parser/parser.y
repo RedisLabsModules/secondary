@@ -72,28 +72,24 @@ value(A) ::= STRING(B). {  A = SI_StringValC(B.strval); }
 value(A) ::= FLOAT(B). {  A = SI_FloatVal(B.dval); }
 
 %type vallist {SIValueVector}
-%type vals {SIValueVector}
+%type multivals {SIValueVector}
 %destructor vallist {SIValueVector_Free(&$$);}
-%destructor vals {SIValueVector_Free(&$$);}
+%destructor multivals {SIValueVector_Free(&$$);}
 
-vallist(A) ::= LP vallist(B) RP. {
+vallist(A) ::= LP multivals(B) RP. {
     A = B;
     
 }
-vallist(A) ::= value(B) COMMA value(C). {
+multivals(A) ::= value(B) COMMA value(C). {
       A = SI_NewValueVector(2);
       SIValueVector_Append(&A, B);
       SIValueVector_Append(&A, C);
 }
 
-vallist(A) ::= vallist(B) COMMA value(C). {
+multivals(A) ::= multivals(B) COMMA value(C). {
     SIValueVector_Append(&B, C);
     A = B;
 }
-
-
-//valt(A) ::= LP vallist(B) RP.    {A = B;}
-
 
 
 %type prop {int}

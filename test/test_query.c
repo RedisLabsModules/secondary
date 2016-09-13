@@ -53,7 +53,20 @@ MU_TEST(testQueryPlan) {
 
   mu_check(SI_ParseQuery(&q, str, strlen(str)));
 
-  SIQueryPlan *qp = SIBuildQueryPlan(&q, &spec);
+  SIQueryPlan *qp = SI_BuildQueryPlan(&q, &spec);
+}
+
+MU_TEST(testQueryExecution) {
+  SISpec spec = {.properties = (SIIndexProperty[]){{T_INT32}, {T_INT32}},
+                 .numProps = 2};
+
+  char *str = "$1 = 2 AND $2 > 3";
+
+  SIQuery q = SI_NewQuery();
+
+  mu_check(SI_ParseQuery(&q, str, strlen(str)));
+
+  SIQueryPlan *qp = SI_BuildQueryPlan(&q, &spec);
 }
 
 int main(int argc, char **argv) {

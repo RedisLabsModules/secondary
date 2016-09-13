@@ -139,6 +139,16 @@ The API includes three layers that can be used separately but are orthogonal to 
 
             IDX.CREATE <index_name> [OPTIONS [UNIQUE]] TYPE [HASH|STR|ZSET] [SCHEMA <field> <type> ...]
 
+    * Generic index based execution:
+
+            IDX.FOREACH <index_name> WHERE <predicates> DO [ANY REDIS COMMAND]
+
+            we denote the id using something like $, * or _
+            e.g.:
+
+            IDX.FOREACH myidx WHERE "name='foofi'" DO HMSET $ age 13 salary 1337
+            IDX.FOREACH myidx WHERE "name='foofi'" DO HINCRBY $ num_visits 1
+
         **Note:** more options TBD
 
     * Writing syntax - HASH values:

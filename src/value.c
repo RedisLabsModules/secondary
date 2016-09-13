@@ -44,6 +44,7 @@ SIString SIString_Copy(SIString s) {
 }
 
 int SIValue_IsNull(SIValue v) { return v.type == T_NULL; }
+int SIValue_IsNullPtr(SIValue *v) { return v == NULL || v->type == T_NULL; }
 
 int _parseInt(SIValue *v, char *str, size_t len) {
 

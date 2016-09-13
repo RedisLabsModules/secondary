@@ -4,12 +4,6 @@
 #include "query.h"
 #include "index.h"
 
-/*
-
-
-
-
-*/
 typedef struct {
   SIMultiKey *min;
   int minExclusive;
@@ -42,6 +36,7 @@ typedef struct {
 * Build a query plan from a parsed/composed query tree.
 * Returns 1 if successful, 0 if an error occured
 */
-SIQueryPlan *SIBuildQueryPlan(SIQuery *q, SISpec *spec);
+SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec);
 
 #endif
+ 

@@ -7,6 +7,7 @@
 #include "../src/value.h"
 #include "../src/index.h"
 #include "../src/query.h"
+#include "minunit.h"
 
 // SIString SI_WrapString(const char *s) {
 //   return (SIString){(char *)s, strlen(s)};
@@ -44,7 +45,7 @@ SIValue stringValue(char *s) {
   return ret;
 }
 
-int testIndex() {
+MU_TEST(testIndex) {
   SISpec spec = {.properties = (SIIndexProperty[]){{T_STRING}, {T_INT32}},
                  .numProps = 2};
 
@@ -63,12 +64,13 @@ int testIndex() {
   int rc = idx.Apply(idx.ctx, cs);
   printf("%d\n", rc);
 
-  SIQuery q = SI_NewQuery();
-  SIQuery_AddPred(
-      &q, SI_PredBetween(SI_StringValC("foo"), SI_StringValC("xxx"), 0, 0));
-  SIQuery_AddPred(&q, SI_PredBetween(SI_IntVal(0), SI_IntVal(5), 0, 0));
+  char *str = "$1 = 'foo'";
 
+  SIQuery q = SI_NewQuery();
+
+  mu_check(SI_ParseQuery(&q, str, strlen(str)));
   SICursor *c = idx.Find(idx.ctx, &q);
+  mu_check(c->error == SI_CURSOR_OK);
   printf("%d\n", c->error);
   if (c->error == SI_CURSOR_OK) {
     SIId id;
@@ -77,8 +79,6 @@ int testIndex() {
     }
   }
   SICursor_Free(c);
-
-  return 0;
 }
 
 MU_TEST(testChangeSet) {
@@ -96,22 +96,6 @@ MU_TEST(testChangeSet) {
   mu_check(cs.numChanges == 1);
 }
 
-MU_TEST(testQueryParser) {
-  char *str = "$1 = \"hello world\" AND $2 = 3";
-
-  SIQuery q = SI_NewQuery();
-
-  mu_check(SI_ParseQuery(&q, str, strlen(str)));
-  for (int i = 0; i < q.numPredicates; i++) {
-    printf("pred %d\n", i);
-  }
-}
-MU_TEST_SUITE(test_query) {
-  // MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
-
-  MU_RUN_TEST(testQueryParser);
-}
-
 MU_TEST_SUITE(test_index) {
   // MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
 
@@ -120,7 +104,8 @@ MU_TEST_SUITE(test_index) {
 
 int main(int argc, char **argv) {
   // return testIndex();
-  MU_RUN_SUITE(test_query);
+  MU_RUN_TEST(testIndex);
+  // MU_RUN_SUITE(test_query);
   // MU_REPORT();
   return minunit_status;
 }

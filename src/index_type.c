@@ -109,7 +109,7 @@ void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
   RedisModule_SaveStringBuffer(vx->w, id, strlen(id));
 
   for (int i = 0; i < vx->idx->spec.numProps; i++) {
-    __writeValue(mk->keys[i], vx->idx->spec.properties[i].type, vx->w);
+    __writeValue(&mk->keys[i], vx->idx->spec.properties[i].type, vx->w);
   }
 }
 void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {

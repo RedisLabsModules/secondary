@@ -319,6 +319,8 @@ skiplistIterator skiplistIterateRange(skiplist *sl, void *min, void *max,
 
     // make sure the first item of the range is not already above the range end
     int c = sl->compare(n->obj, max, sl->cmpCtx);
+    printf("c start: %d\n", c);
+    // TODO: Fix comparisons to work with null functions
     if (c > 0 || (c == 0 && maxExclusive)) {
       n = NULL;
     }
@@ -364,6 +366,7 @@ void *skiplistIterator_Next(skiplistIterator *it) {
     // make sure we don't pass the range max. NULL means +inf
     if (it->current && it->rangeMax) {
       int c = it->sl->compare(it->current->obj, it->rangeMax, it->sl->cmpCtx);
+      printf("cmp: %d\n", c);
       if (c > 0 || (c == 0 && it->maxExclusive)) {
         it->current = NULL;
       }

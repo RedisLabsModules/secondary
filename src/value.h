@@ -74,8 +74,10 @@ SIValue SI_TimeVal(time_t t);
 SIValue SI_NullVal();
 
 int SIValue_IsNull(SIValue v);
+int SIValue_IsNullPtr(SIValue *v);
 
-/* Try to parse a value by string. The value's type should be set to anything
+/* Try to parse a value by string. The value's type should be set to
+* anything
 * other than T_NULL
 * to force strict parsing and not best guess */
 int SI_ParseValue(SIValue *v, char *str, size_t len);
