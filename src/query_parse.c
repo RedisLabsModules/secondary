@@ -7,14 +7,14 @@ SIQueryNode *toQueryNode(PredicateNode *n) {
     return SI_PredEquals(n->val);
 
   case GT:
-    // > --> betweetn val and inf (NULL value), exclusive min
-    return SI_PredBetween(n->val, SI_NullVal(), 1, 0);
-  case LT:
-    return SI_PredBetween(SI_NullVal(), n->val, 0, 1);
   case GE:
-    return SI_PredBetween(n->val, SI_NullVal(), 0, 0);
+    // > --> betweetn val and inf (NULL value), exclusive min
+    return SI_PredBetween(n->val, SI_InfVal(), n->op == GT, 0);
+
+  case LT:
   case LE:
-    return SI_PredBetween(SI_NullVal(), n->val, 0, 0);
+    return SI_PredBetween(SI_NegativeInfVal(), n->val, 0, n->op == LT);
+
   case IN:
     return SI_PredIn(n->lst);
 

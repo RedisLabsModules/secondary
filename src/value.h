@@ -17,6 +17,9 @@ typedef enum {
   T_DOUBLE,
   T_TIME,
 
+  // special types for +inf and -inf on all types:
+  T_INF,
+  T_NEGINF,
   //  -- FUTURE TYPES: --
   // T_GEOPOINT
   // T_SET
@@ -75,6 +78,11 @@ SIValue SI_NullVal();
 
 int SIValue_IsNull(SIValue v);
 int SIValue_IsNullPtr(SIValue *v);
+
+SIValue SI_InfVal();
+SIValue SI_NegativeInfVal();
+int SIValue_IsInf(SIValue *v);
+int SIValue_IsNegativeInf(SIValue *v);
 
 /* Try to parse a value by string. The value's type should be set to
 * anything

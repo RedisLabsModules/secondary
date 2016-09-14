@@ -43,8 +43,18 @@ SIString SIString_Copy(SIString s) {
   return (SIString){.str = b, .len = s.len};
 }
 
-int SIValue_IsNull(SIValue v) { return v.type == T_NULL; }
-int SIValue_IsNullPtr(SIValue *v) { return v == NULL || v->type == T_NULL; }
+SIValue SI_InfVal() { return (SIValue){.intval = 0, .type = T_INF}; }
+SIValue SI_NegativeInfVal() { return (SIValue){.intval = 0, .type = T_NEGINF}; }
+
+inline int SIValue_IsInf(SIValue *v) { return v && v->type == T_INF; }
+inline int SIValue_IsNegativeInf(SIValue *v) {
+  return v && v->type == T_NEGINF;
+};
+
+inline int SIValue_IsNull(SIValue v) { return v.type == T_NULL; }
+inline int SIValue_IsNullPtr(SIValue *v) {
+  return v == NULL || v->type == T_NULL;
+}
 
 int _parseInt(SIValue *v, char *str, size_t len) {
 
@@ -178,14 +188,19 @@ void SIValue_ToString(SIValue v, char *buf, size_t len) {
   case T_DOUBLE:
     snprintf(buf, len, "%f", v.doubleval);
     break;
-
+  case T_INF:
+    snprintf(buf, len, "+inf");
+    break;
+  case T_NEGINF:
+    snprintf(buf, len, "-inf");
+    break;
   case T_NULL:
   default:
     snprintf(buf, len, "NULL");
   }
 }
 
-SIValue SI_NullVal() { return (SIValue){.intval = 0, .type = T_NULL}; }
+inline SIValue SI_NullVal() { return (SIValue){.intval = 0, .type = T_NULL}; }
 
 SIValueVector SI_NewValueVector(size_t cap) {
   return (SIValueVector){

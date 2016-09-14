@@ -128,48 +128,115 @@ siPlanRange *scanCtx_CurrentRange(ciScanCtx *c) {
              : NULL;
 }
 
+/* Eval a predicate query node against a given key. Returns 1 if the key
+ * staisfies the predicate */
+int evalPredicate(SIPredicate *pred, SIMultiKey *mk, SICmpFuncVector *fv) {
+
+  if (pred->propId < 0 || pred->propId >= mk->size) {
+    return 0;
+  }
+  SIKeyCmpFunc cmp = fv->cmpFuncs[pred->propId];
+
+  switch (pred->t) {
+  // compare equals
+  case PRED_EQ:
+    return 0 == cmp(&mk->keys[pred->propId], &pred->eq.v, NULL);
+
+  // compare IN
+  case PRED_IN:
+    for (int i = 0; i < pred->in.numvals; i++) {
+      if (cmp(&mk->keys[pred->propId], &pred->in.vals[i], NULL) != 0) {
+        return 0;
+      }
+    }
+    // we only return true if the IN actually had values in it
+    return pred->in.numvals > 0;
+    break;
+
+  // compare !=
+  case PRED_NE:
+    return cmp(&mk->keys[pred->propId], &pred->eq.v, NULL) != 0;
+
+  // compare range
+  case PRED_RNG: {
+
+    int minc = cmp(&mk->keys[pred->propId], &pred->rng.min, NULL);
+    if (minc < 0 || (minc == 0 && pred->rng.minExclusive)) {
+      return 0;
+    }
+    int maxc = cmp(&mk->keys[pred->propId], &pred->rng.max, NULL);
+    if (maxc > 0 || (maxc == 0 && pred->rng.maxExclusive)) {
+      return 0;
+    }
+    return 1;
+  }
+  default:
+    printf("Unssupported filter predicate %d\n", pred->t);
+  }
+  return 0;
+}
+
+/* Eval a key against a query node, whether a logical or predicate node. If the
+ * node is a logical operator, its children are evaluated recursivel */
+int evalKey(SIQueryNode *n, SIMultiKey *mk, SICmpFuncVector *fv) {
+  // passthrough nodes always return 1
+  if (n->type == QN_PASSTHRU) {
+    return 1;
+  }
+  // predicate nodes are evaluated one by one
+  if (n->type == QN_PRED) {
+    return evalPredicate(&n->pred, mk, fv);
+  } else if (n->type != QN_LOGIC) {
+    // WTF?
+    return 0;
+  }
+
+  // a logic node always has left and right that are either ORed or ANDed
+  int leftEval = evalKey(n->op.left, mk, fv);
+  int rightEval = evalKey(n->op.right, mk, fv);
+  if (n->op.op == OP_OR) {
+    return leftEval || rightEval;
+  }
+  return leftEval && rightEval;
+}
+
 SIId scan_next(void *ctx) {
 
   ciScanCtx *sc = ctx;
-  skiplistNode *n = skiplistIteratorCurrent(&sc->it);
-  printf("Node: %p\n", n);
+  skiplistNode *n;
   SIId ret = NULL;
   SICmpFuncVector fv = {.cmpFuncs = sc->idx->cmpFuncs,
                         .numFuncs = sc->idx->numFuncs};
-  if (n) {
-    // if we have filters beyond the min/max range, we need to explicitly
-    // filter each of them
-    SIMultiKey *mk = n->obj;
-    printf("Current node key: ");
-    SIMultiKey_Print(mk);
-    printf("\nmin: ");
-    siPlanRange *cr = scanCtx_CurrentRange(sc);
-    SIMultiKey_Print(cr->min);
-    printf("\n");
-    // siPlanRange *cr = scanCtx_CurrentRange(sc);
-    // if (!cr) {
-    //   return NULL;
-    // }
 
-    int ok = 1;
-    // for (int i = 0; i < sc->numFilters; i++) {
-    //   scanFilter *flt = &sc->filters[i];
-    //   if (!flt->f(mk->keys[i + sc->filtersOffset], flt)) {
-    //     ok = 0;
-    //     break;
-    //   }
-    // }
-    if (ok) {
-      return skiplistIterator_Next(&sc->it);
+  while (sc->currentScanRange < sc->plan->numRanges) {
+
+    while (NULL != (n = skiplistIteratorCurrent(&sc->it))) {
+      // if we have filters beyond the min/max range, we need to explicitly
+      // filter each of them
+      SIMultiKey *mk = n->obj;
+
+      int ok = 1;
+      if (sc->plan->filterTree) {
+        ok = evalKey(sc->plan->filterTree, mk, &fv);
+      }
+
+      // advance the iterator by one - but only return the value if the filter
+      // eval was successful
+      void *nextval = skiplistIterator_Next(&sc->it);
+      if (ok) {
+        return nextval;
+      }
+      // otherwise we just continue to the next node
     }
-    // the range is over but we can continue to the next range!
-  } else if (sc->currentScanRange < sc->plan->numRanges) {
+
+    // If we are here - the current range iteration is over. let's see if we can
+    // find a new range
     sc->currentScanRange++;
     siPlanRange *cr = scanCtx_CurrentRange(sc);
+    // start iterating the new range
     if (cr) {
       sc->it = skiplistIterateRange(sc->idx->sl, cr->min, cr->max,
                                     cr->minExclusive, cr->maxExclusive);
-      return scan_next(ctx);
     }
   }
 
