@@ -6,19 +6,10 @@
 #include "query.h"
 #include "value.h"
 #include "changeset.h"
+#include "spec.h"
 
 #define SI_INDEX_ERROR -1
 #define SI_INDEX_OK 0
-
-typedef struct {
-  SIType type;
-  u_int32_t flags;
-} SIIndexProperty;
-
-typedef struct {
-  SIIndexProperty *properties;
-  size_t numProps;
-} SISpec;
 
 #define SI_CURSOR_OK 0
 #define SI_CURSOR_ERROR 1

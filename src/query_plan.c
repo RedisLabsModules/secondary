@@ -85,10 +85,9 @@ siPlanRangeKey *predicateToRanges(SIPredicate *pred, size_t *numRanges,
 void buildKey(siPlanRangeKey **keys, size_t *keyNums, size_t *stack,
               int numKeys, int keyIdx, Vector *result) {
 
-  printf("buildkey %d/%d\n", keyIdx, numKeys);
   // if possible - recursive reentry into the next level
   if (keyIdx < numKeys) {
-    printf("numKeys[%d]: %d\n", keyNums[keyIdx]);
+
     for (int i = 0; i < keyNums[keyIdx]; i++) {
       stack[keyIdx] = i;
       buildKey(keys, keyNums, stack, numKeys, keyIdx + 1, result);
@@ -108,21 +107,6 @@ void buildKey(siPlanRangeKey **keys, size_t *keyNums, size_t *stack,
     rng->minExclusive = keys[i][stack[i]].minExclusive;
     rng->maxExclusive = keys[i][stack[i]].maxExclusive;
   }
-
-  printf("Extracted scan key MIN:\n");
-  char buf[1024];
-  for (int i = 0; i < rng->min->size; i++) {
-    SIValue_ToString(rng->min->keys[i], buf, 1024);
-    printf("%s|", buf);
-  }
-  printf("\n");
-
-  printf("Extracted scan key MAX:\n");
-  for (int i = 0; i < rng->max->size; i++) {
-    SIValue_ToString(rng->max->keys[i], buf, 1024);
-    printf("%s|", buf);
-  }
-  printf("\n");
 
   Vector_Push(result, rng);
 }
@@ -204,5 +188,13 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
 
   pln->ranges = (siPlanRange **)scanKeys->data;
   pln->numRanges = Vector_Size(scanKeys);
+
+  printf("Extracted scan keys:\n");
+  for (int i = 0; i < pln->numRanges; i++) {
+    SIMultiKey_Print(pln->ranges[i]->min);
+    printf(" ... ");
+    SIMultiKey_Print(pln->ranges[i]->max);
+    printf("\n");
+  }
   return pln;
 }

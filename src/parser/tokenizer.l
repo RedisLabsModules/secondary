@@ -14,6 +14,9 @@ Token tok;
 "AND"         { return AND; }
 "OR"         { return OR; }
 "IN"         { return IN; }
+"TRUE"      { return TRUE; }
+"FALSE"     { return FALSE; }
+
 \$[0-9]{1} {    
                 tok.intval = atoi(yytext+1); 
                 return ENUMERATOR; 
@@ -26,6 +29,7 @@ Token tok;
 
 [\-\+]?[0-9]+    {   
   tok.intval = atoi(yytext); 
+  printf("INTEGER! %d\n", tok.intval);
   return INTEGER; 
 }
 
@@ -47,6 +51,7 @@ Token tok;
 "("           { return LP; }
 ")"           { return RP; }
 ","           { return COMMA; }
+"LIKE"        { return LIKE; }
 
 [ \t\n]+ /* ignore whitespace */
 %%

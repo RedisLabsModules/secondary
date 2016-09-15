@@ -35,6 +35,8 @@ SIValue SI_StringValC(char *s) {
   return (SIValue){.stringval = SI_WrapString(s), .type = T_STRING};
 }
 
+SIValue SI_BoolVal(int b) { return (SIValue){.boolval = b, .type = T_BOOL}; }
+
 SIString SIString_Copy(SIString s) {
   char *b = malloc(s.len + 1);
   memcpy(b, s.str, s.len);

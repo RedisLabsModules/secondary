@@ -46,6 +46,11 @@ cond(A) ::= prop(B) op(C) value(D). {
     A = NewPredicateNode(B, C, D);
 }
 
+/* special case to make sure LIKE does not occur with non-strings */
+cond(A) ::= prop(B) LIKE STRING(C). { 
+    A = NewPredicateNode(B, LIKE, SI_StringValC(C.strval));
+}
+
 cond(A) ::= prop(B) IN vallist(D). { 
     /* Terminal condition of a single IN predicate */
     A = NewInPredicateNode(B, IN, D);
@@ -70,6 +75,8 @@ cond(A) ::= cond(B) OR cond(C). {
 value(A) ::= INTEGER(B). {  A = SI_IntVal(B.intval); }
 value(A) ::= STRING(B). {  A = SI_StringValC(B.strval); }
 value(A) ::= FLOAT(B). {  A = SI_FloatVal(B.dval); }
+value(A) ::= TRUE. { A = SI_BoolVal(1); }
+value(A) ::= FALSE. { A = SI_BoolVal(0); }
 
 %type vallist {SIValueVector}
 %type multivals {SIValueVector}

@@ -18,9 +18,23 @@ SIQueryNode *toQueryNode(PredicateNode *n) {
   case IN:
     return SI_PredIn(n->lst);
 
+  case LIKE:
+    // support LIKE 'fff%' wildcard
+    if (n->val.stringval.len > 0 &&
+        n->val.stringval.str[n->val.stringval.len - 1] == '%') {
+      SIString min = n->val.stringval, max = n->val.stringval;
+      // disregard the first character.
+      min.len--;
+
+      max.str[max.len - 1] = '\xff';
+      return SI_PredBetween(SI_StringVal(min), SI_StringVal(max), 0, 0);
+    } else {
+      return SI_PredEquals(n->val);
+    }
+
   default:
-    printf("Only EQ supported. PANIC!");
-    exit(-1);
+    printf("Operator %d not supported!", n->op);
+    return NULL;
   }
 }
 

@@ -1,6 +1,7 @@
 #ifndef __SECONDARY_QUERY_H__
 #define __SECONDARY_QUERY_H__
 #include "value.h"
+#include "spec.h"
 
 typedef enum {
   PRED_EQ,
@@ -9,10 +10,16 @@ typedef enum {
   PRED_IN,
 } SIPredicateType;
 
+// query validation errors
 typedef enum {
-  OP_AND,
-  OP_OR,
-} SILogicOperator;
+  QE_OK = 0,
+  QE_INVALID_PROPERTY,
+  QE_INVALID_VALUE,
+  QE_PARSE_ERROR,
+
+} SIQueryError;
+
+typedef enum { OP_AND, OP_OR } SILogicOperator;
 
 typedef enum {
   QN_LOGIC,
@@ -66,6 +73,11 @@ typedef struct {
   struct queryNode *left;
   struct queryNode *right;
   SILogicOperator op;
+  // for each logic node, we need to know if all descendents relate to the same
+  // property. If this node does not satisfy this constraint, the propId is -1.
+  // A number >= 0 means all its descendants deal with that property,
+  // recursively
+  int propId;
 } SILogicNode;
 
 typedef struct queryNode {
@@ -95,6 +107,9 @@ SIQueryNode *SIQuery_SetRoot(SIQuery *q, SIQueryNode *n);
 
 SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,
                                   SIQueryNode *right);
+
+SIQueryError SIQuery_Normalize(SIQuery *q, SISpec *spec);
+
 int SI_ParseQuery(SIQuery *query, const char *q, size_t len);
 void SIQueryNode_Print(SIQueryNode *n, int depth);
 

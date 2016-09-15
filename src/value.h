@@ -5,21 +5,23 @@
 
 typedef char *SIId;
 
-/* Type defines the supported types by the indexing system */
+/* Type defines the supported types by the indexing system. The types are powers
+ * of 2 so they can be used in bitmasks of matching types */
 typedef enum {
   T_NULL = 0,
-  T_STRING,
-  T_INT32,
-  T_INT64,
-  T_UINT,
-  T_BOOL,
-  T_FLOAT,
-  T_DOUBLE,
-  T_TIME,
+  T_STRING = 0x001,
+  T_INT32 = 0x002,
+  T_INT64 = 0x004,
+  T_UINT = 0x008,
+  T_BOOL = 0x010,
+  T_FLOAT = 0x020,
+  T_DOUBLE = 0x040,
+  T_TIME = 0x080,
 
   // special types for +inf and -inf on all types:
-  T_INF,
-  T_NEGINF,
+  T_INF = 0x100,
+  T_NEGINF = 0x200,
+
   //  -- FUTURE TYPES: --
   // T_GEOPOINT
   // T_SET
@@ -75,6 +77,7 @@ SIValue SI_FloatVal(float f);
 SIValue SI_DoubleVal(double d);
 SIValue SI_TimeVal(time_t t);
 SIValue SI_NullVal();
+SIValue SI_BoolVal(int b);
 
 int SIValue_IsNull(SIValue v);
 int SIValue_IsNullPtr(SIValue *v);

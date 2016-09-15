@@ -40,6 +40,7 @@ SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,
   ret->op.left = left;
   ret->op.right = right;
   ret->op.op = op;
+  ret->op.propId = -1;
   return ret;
 }
 
