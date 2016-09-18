@@ -72,9 +72,9 @@ cond(A) ::= cond(B) OR cond(C). {
 %type value {SIValue}
 
 // raw value tokens - int / string / float
-value(A) ::= INTEGER(B). {  A = SI_IntVal(B.intval); }
-value(A) ::= STRING(B). {  A = SI_StringValC(B.strval); }
-value(A) ::= FLOAT(B). {  A = SI_FloatVal(B.dval); }
+value(A) ::= INTEGER(B). {  A = SI_LongVal(B.intval); }
+value(A) ::= STRING(B). {  A = SI_StringValC(strdup(B.strval)); }
+value(A) ::= FLOAT(B). {  A = SI_DoubleVal(B.dval); }
 value(A) ::= TRUE. { A = SI_BoolVal(1); }
 value(A) ::= FALSE. { A = SI_BoolVal(0); }
 
@@ -138,23 +138,4 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
    
 
 
-  // int main( int argc, char **argv )   {
-    
-  //   yy_scan_string("$1 = \"foo bar\" AND $2 = 1337");
-  //   void* pParser = ParseAlloc (malloc);        
-  //   int t = 0;
-
-  // IDX.HGETALL FROM <index_name> WHERE ....
-  // IDX.HMSET index_nmae key elem vale elem value
-
-  // RQL.CREATE_TABLE ... 
-
-  //   //ParserFree(pParser);
-  //   while (0 != (t = yylex())) {
-  //       Parse(pParser, t, tok);                
-  //   }
-  //   Parse (pParser, 0, tok);
-  //   ParseFree(pParser, free);
-  // }
-      
 }

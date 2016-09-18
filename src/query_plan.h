@@ -38,5 +38,6 @@ typedef struct {
 */
 SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec);
 
+void SIQueryPlan_Free(SIQueryPlan *plan);
+
 #endif
- 

@@ -803,17 +803,17 @@ static void yy_reduce(
         break;
       case 13: /* value ::= INTEGER */
 #line 75 "parser.y"
-{  yygotominor.yy22 = SI_IntVal(yymsp[0].minor.yy0.intval); }
+{  yygotominor.yy22 = SI_LongVal(yymsp[0].minor.yy0.intval); }
 #line 808 "parser.c"
         break;
       case 14: /* value ::= STRING */
 #line 76 "parser.y"
-{  yygotominor.yy22 = SI_StringValC(yymsp[0].minor.yy0.strval); }
+{  yygotominor.yy22 = SI_StringValC(strdup(yymsp[0].minor.yy0.strval)); }
 #line 813 "parser.c"
         break;
       case 15: /* value ::= FLOAT */
 #line 77 "parser.y"
-{  yygotominor.yy22 = SI_FloatVal(yymsp[0].minor.yy0.dval); }
+{  yygotominor.yy22 = SI_DoubleVal(yymsp[0].minor.yy0.dval); }
 #line 818 "parser.c"
         break;
       case 16: /* value ::= TRUE */
@@ -1145,23 +1145,4 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
    
 
 
-  // int main( int argc, char **argv )   {
-    
-  //   yy_scan_string("$1 = \"foo bar\" AND $2 = 1337");
-  //   void* pParser = ParseAlloc (malloc);        
-  //   int t = 0;
-
-  // IDX.HGETALL FROM <index_name> WHERE ....
-  // IDX.HMSET index_nmae key elem vale elem value
-
-  // RQL.CREATE_TABLE ... 
-
-  //   //ParserFree(pParser);
-  //   while (0 != (t = yylex())) {
-  //       Parse(pParser, t, tok);                
-  //   }
-  //   Parse (pParser, 0, tok);
-  //   ParseFree(pParser, free);
-  // }
-      
-#line 1168 "parser.c"
+#line 1149 "parser.c"

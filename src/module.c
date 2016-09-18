@@ -61,7 +61,7 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     const char *vstr = RedisModule_StringPtrLen(argv[i + 3], &vlen);
     vals[i].type = idx->spec.properties[i].type;
     if (!SI_ParseValue(&vals[i], (char *)vstr, vlen)) {
-      printf("Could not parse %.*s\n", vlen, vstr);
+      printf("Could not parse %.*s\n", (int)vlen, vstr);
       return RedisModule_ReplyWithError(ctx, "Invalid value given");
     }
   }
@@ -120,6 +120,7 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     RedisModule_ReplyWithError(ctx, "Error performing query");
   }
 
+  SIQuery_Free(&q);
   SICursor_Free(c);
 
   return REDISMODULE_OK;

@@ -66,3 +66,10 @@ void SIQueryNode_Free(SIQueryNode *n) {
   }
   free(n);
 }
+
+void SIQuery_Free(SIQuery *q) {
+  if (q->root) {
+    SIQueryNode_Free(q->root);
+    q->root = NULL;
+  }
+}

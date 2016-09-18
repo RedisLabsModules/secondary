@@ -103,6 +103,8 @@ typedef struct {
 } SIQuery;
 
 SIQuery SI_NewQuery();
+
+void SIQuery_Free(SIQuery *q);
 SIQueryNode *SIQuery_SetRoot(SIQuery *q, SIQueryNode *n);
 
 SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,

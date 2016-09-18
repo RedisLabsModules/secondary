@@ -65,6 +65,12 @@ typedef struct {
 } SIValueVector;
 
 SIValueVector SI_NewValueVector(size_t cap);
+
+/* Free an SIValue. Since we usually allocate values on the stack, this does not
+ * free the actual value object, but the underlying value if needed - basically
+ * when it's a string */
+void SIValue_Free(SIValue *v);
+
 void SIValueVector_Append(SIValueVector *v, SIValue val);
 void SIValueVector_Free(SIValueVector *v);
 
@@ -86,6 +92,14 @@ SIValue SI_InfVal();
 SIValue SI_NegativeInfVal();
 int SIValue_IsInf(SIValue *v);
 int SIValue_IsNegativeInf(SIValue *v);
+
+/*
+ * Convesion functions used to make sure a comparison value in a query is of
+ * the right type
+ */
+int SI_LongVal_Cast(SIValue *v, SIType type);
+int SI_DoubleVal_Cast(SIValue *v, SIType type);
+int SI_StringVal_Cast(SIValue *v, SIType type);
 
 /* Try to parse a value by string. The value's type should be set to
 * anything

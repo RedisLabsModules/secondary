@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include "minunit.h"
 
-#include "../src/tree.h"
 #include "../src/value.h"
 #include "../src/index.h"
 #include "../src/query.h"
@@ -15,27 +14,6 @@
 
 int cmpstr(void *p1, void *p2, void *ctx) {
   return strcmp((char *)p1, (char *)p2);
-}
-
-int testTree() {
-  TreeNode *root = NewTreeNode("hello", "hello");
-  TreeNode_Insert(root, "foo", "foo", cmpstr, NULL);
-  TreeNode_Insert(root, "bar", "bar", cmpstr, NULL);
-  TreeNode_Insert(root, "zoo", "zoo", cmpstr, NULL);
-  TreeNode_Insert(root, "boo", "boo", cmpstr, NULL);
-  TreeNode_Insert(root, "goo", "goo", cmpstr, NULL);
-
-  TreeNode *n = TreeNode_FindGreater(root, "foot", cmpstr, NULL);
-
-  printf("%s\n", n ? n->val : "NULL");
-
-  // TreeIterator it = Tree_IterateFrom(root, SI_WrapString("zoo"));
-  // // it.stack[0].state = 1;
-  // while (NULL != (n = TreeIterator_Next(&it))) {
-  //   printf("%s\n", n ? n->val : "null");
-  // }
-
-  return 0;
 }
 
 SIValue stringValue(char *s) {

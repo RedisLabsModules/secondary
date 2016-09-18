@@ -80,6 +80,7 @@ SIQueryError validateQuery(const char *str, SISpec *spec) {
   printf("return for %s: %d\n", str, e);
   return e;
 }
+
 MU_TEST(testQueryNormalize) {
 
   // test valid query
@@ -98,16 +99,19 @@ MU_TEST(testQueryNormalize) {
   mu_check(validateQuery("$0 = 'foo'", &spec) == QE_INVALID_PROPERTY);
   mu_check(validateQuery("$1 = 'hello'", &spec) == QE_INVALID_VALUE);
 
-  mu_check(validateQuery("$2 = 3", &spec) == QE_INVALID_VALUE);
-  mu_check(validateQuery("$2 = 3.141", &spec) == QE_INVALID_VALUE);
-  mu_check(validateQuery("$2 = TRUE", &spec) == QE_INVALID_VALUE);
+  mu_check(validateQuery("$2 = 3", &spec) == QE_OK);
+  mu_check(validateQuery("$2 = 3.141", &spec) == QE_OK);
+  mu_check(validateQuery("$2 = TRUE", &spec) == QE_OK);
 
   // bool - int should match
   mu_check(validateQuery("$3 = 1", &spec) == QE_OK);
-  mu_check(validateQuery("$3 = 3.14", &spec) == QE_INVALID_VALUE);
+  mu_check(validateQuery("$3 = 3.14", &spec) == QE_OK);
   mu_check(validateQuery("$3 = 'werd'", &spec) == QE_INVALID_VALUE);
 
   mu_check(validateQuery("$4 = 'werd'", &spec) == QE_INVALID_VALUE);
+  mu_check(validateQuery("$4 = 3.141", &spec) == QE_OK);
+  mu_check(validateQuery("$4 = -3.141", &spec) == QE_OK);
+  mu_check(validateQuery("$4 = 1733", &spec) == QE_OK);
 
   mu_check(validateQuery("$5 = 1", &spec) == QE_OK);
   mu_check(validateQuery("$4 = 'werd'", &spec) == QE_INVALID_VALUE);

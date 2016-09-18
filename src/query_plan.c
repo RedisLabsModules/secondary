@@ -19,11 +19,12 @@ SIPredicate *getPredicate(SIQueryNode *node, int propId) {
     }
     break;
   case QN_LOGIC:
-    // we only use AND nodes in building scan ranges. OR nodes that are usable
-    // for scan ranges should be reduced to single IN predicate nodes by the
-    // optimizer
+    // we only use AND nodes in building scan ranges
     if (node->op.op == OP_AND) {
       SIPredicate *p = getPredicate(node->op.left, propId);
+
+      // no predicate from the left node means it's probably a passthru
+      // so let's try the right now
       if (!p) {
         p = getPredicate(node->op.right, propId);
       }
@@ -189,6 +190,12 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
   pln->ranges = (siPlanRange **)scanKeys->data;
   pln->numRanges = Vector_Size(scanKeys);
 
+  for (int i = 0; i < q->numPredicates; i++) {
+    if (keys[i] != NULL) {
+      free(keys[i]);
+    }
+  }
+
   printf("Extracted scan keys:\n");
   for (int i = 0; i < pln->numRanges; i++) {
     SIMultiKey_Print(pln->ranges[i]->min);
@@ -197,4 +204,12 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
     printf("\n");
   }
   return pln;
+}
+
+void SIQueryPlan_Free(SIQueryPlan *plan) {
+  if (plan->ranges) {
+    Vector_Free((Vector *)(plan->ranges));
+  }
+
+  free(plan);
 }

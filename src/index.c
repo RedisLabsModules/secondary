@@ -1,54 +1,37 @@
 #include "index.h"
-#include "tree.h"
-#include "value.h"
+#include "key.h"
+#include "skiplist/skiplist.h"
+#include "query_plan.h"
 #include <stdio.h>
-#include <sys/param.h>
 
 typedef struct {
   SISpec spec;
-  TreeNode *tree;
-  size_t len;
-} simpleIndex;
+  SIKeyCmpFunc *cmpFuncs;
+  u_int8_t numFuncs;
 
-SIString simpleIndex_encode(SIValue *val) {
-  switch (val->type) {
-  case T_STRING:
-    return val->stringval;
-  case T_BOOL:
-    return SI_WrapString(strdup(val->boolval ? "1" : "0"));
+  skiplist *sl;
 
-  case T_INT32: {
-    char *b = malloc(4);
-    b[0] = (char)(val->intval >> 24);
-    b[1] = (char)(val->intval >> 16);
-    b[2] = (char)(val->intval >> 8);
-    b[3] = (char)(val->intval);
-    return (SIString){b, 4};
-  }
-  default:
-    printf("Unsuppported type yet! PANIC!");
-    exit(-1);
-  }
-}
+} compoundIndex;
 
-int simpleIndex_Apply(void *ctx, SIChangeSet cs) {
+int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
 
-  simpleIndex *idx = ctx;
+  compoundIndex *idx = ctx;
 
   for (size_t i = 0; i < cs.numChanges; i++) {
 
     // this value is not applicable to the index
-    if (cs.changes[i].numVals != 1) {
+    if (cs.changes[i].numVals != idx->numFuncs) {
       return SI_INDEX_ERROR;
     }
+
     if (cs.changes[i].type == SI_CHADD) {
 
-      SIString key = simpleIndex_encode(&cs.changes[i].vals[0]);
-      if (idx->tree == NULL) {
-        idx->tree = NewTreeNode(key, cs.changes[i].id);
-      } else {
-        TreeNode_Insert(idx->tree, key, cs.changes[i].id);
-      }
+      SIMultiKey *key =
+          SI_NewMultiKey(cs.changes[i].vals, cs.changes[i].numVals);
+      printf("Inserting key:");
+      SIMultiKey_Print(key);
+      printf("\n");
+      skiplistInsert(idx->sl, key, cs.changes[i].id);
     }
     // TODO: handle remove
   }
@@ -56,108 +39,245 @@ int simpleIndex_Apply(void *ctx, SIChangeSet cs) {
   return SI_INDEX_OK;
 }
 
-typedef struct {
-  SIString minKey;
-  int minExclusive;
-  SIString maxKey;
-  int maxExclusive;
-  TreeIterator it;
+size_t compoundIndex_Len(void *ctx) {
+  return skiplistLength(((compoundIndex *)ctx)->sl);
+}
 
-} rangeIterCtx;
+SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
+void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx);
 
-SIId rangeIter_next(void *ctx) {
-  rangeIterCtx *ic = ctx;
-  TreeNode *n;
-  while (NULL != (n = TreeIterator_Next(&ic->it))) {
-    // compare min key
-    int c =
-        strncmp(n->key.str, ic->minKey.str, MAX(ic->minKey.len, n->key.len));
-    // the key is before the node key or the we want an exclusive range -
-    // continue
-    if (c < 0 || (c == 0 && ic->minExclusive)) {
-      continue;
-    }
+int _cmpIds(void *p1, void *p2) {
+  SIId id1 = p1, id2 = p2;
+  return strcmp(id1, id2);
+}
 
-    c = strncmp(n->key.str, ic->maxKey.str, MAX(ic->maxKey.len, n->key.len));
-    // we are out of range or equal but this is an exclusive range -  stop!
-    if (c > 0 || (c == 0 && ic->maxExclusive)) {
+SIIndex SI_NewCompoundIndex(SISpec spec) {
+
+  compoundIndex *idx = malloc(sizeof(compoundIndex));
+  idx->spec = spec;
+  idx->cmpFuncs = calloc(spec.numProps, sizeof(SIKeyCmpFunc));
+  idx->numFuncs = spec.numProps;
+
+  for (u_int8_t i = 0; i < spec.numProps; i++) {
+    switch (spec.properties[i].type) {
+    case T_STRING:
+      idx->cmpFuncs[i] = si_cmp_string;
       break;
+    case T_INT32:
+      idx->cmpFuncs[i] = si_cmp_int;
+      break;
+    case T_INT64:
+      idx->cmpFuncs[i] = si_cmp_long;
+      break;
+    case T_FLOAT:
+      idx->cmpFuncs[i] = si_cmp_float;
+      break;
+    case T_DOUBLE:
+      idx->cmpFuncs[i] = si_cmp_double;
+      break;
+    case T_BOOL:
+      idx->cmpFuncs[i] = si_cmp_int;
+      break;
+    case T_TIME:
+      idx->cmpFuncs[i] = si_cmp_time;
+      break;
+    case T_UINT:
+      idx->cmpFuncs[i] = si_cmp_uint;
+      break;
+
+    default: // TODO - implement all other types here
+
+      printf("unimplemented type! PANIC!");
+      exit(-1);
     }
-    // this node is within range - return it!
-    return (SIId)n->val;
   }
+
+  SICmpFuncVector *sctx = malloc(sizeof(SICmpFuncVector));
+  sctx->cmpFuncs = idx->cmpFuncs;
+  sctx->numFuncs = idx->numFuncs;
+
+  idx->sl = skiplistCreate(SICmpMultiKey, sctx, _cmpIds);
+
+  SIIndex ret;
+  ret.ctx = idx;
+  ret.Find = compoundIndex_Find;
+  ret.Apply = compoundIndex_Apply;
+  ret.Len = compoundIndex_Len;
+  ret.Traverse = compoundIndex_Traverse;
+
+  return ret;
+}
+
+typedef struct {
+  SIQueryPlan *plan;
+  compoundIndex *idx;
+  // the current scan range we are scanning. we need to scan them all!
+  int currentScanRange;
+
+  skiplistIterator it;
+} ciScanCtx;
+
+siPlanRange *scanCtx_CurrentRange(ciScanCtx *c) {
+  return c->currentScanRange < c->plan->numRanges
+             ? c->plan->ranges[c->currentScanRange]
+             : NULL;
+}
+
+/* Eval a predicate query node against a given key. Returns 1 if the key
+ * staisfies the predicate */
+int evalPredicate(SIPredicate *pred, SIMultiKey *mk, SICmpFuncVector *fv) {
+
+  if (pred->propId < 0 || pred->propId >= mk->size) {
+    return 0;
+  }
+  SIKeyCmpFunc cmp = fv->cmpFuncs[pred->propId];
+
+  switch (pred->t) {
+  // compare equals
+  case PRED_EQ:
+    return 0 == cmp(&mk->keys[pred->propId], &pred->eq.v, NULL);
+
+  // compare IN
+  case PRED_IN:
+    for (int i = 0; i < pred->in.numvals; i++) {
+      if (cmp(&mk->keys[pred->propId], &pred->in.vals[i], NULL) != 0) {
+        return 0;
+      }
+    }
+    // we only return true if the IN actually had values in it
+    return pred->in.numvals > 0;
+    break;
+
+  // compare !=
+  case PRED_NE:
+    return cmp(&mk->keys[pred->propId], &pred->eq.v, NULL) != 0;
+
+  // compare range
+  case PRED_RNG: {
+
+    int minc = cmp(&mk->keys[pred->propId], &pred->rng.min, NULL);
+    if (minc < 0 || (minc == 0 && pred->rng.minExclusive)) {
+      return 0;
+    }
+    int maxc = cmp(&mk->keys[pred->propId], &pred->rng.max, NULL);
+    if (maxc > 0 || (maxc == 0 && pred->rng.maxExclusive)) {
+      return 0;
+    }
+    return 1;
+  }
+  default:
+    printf("Unssupported filter predicate %d\n", pred->t);
+  }
+  return 0;
+}
+
+/* Eval a key against a query node, whether a logical or predicate node. If the
+ * node is a logical operator, its children are evaluated recursivel */
+int evalKey(SIQueryNode *n, SIMultiKey *mk, SICmpFuncVector *fv) {
+  // passthrough nodes always return 1
+  if (n->type == QN_PASSTHRU) {
+    return 1;
+  }
+  // predicate nodes are evaluated one by one
+  if (n->type == QN_PRED) {
+    return evalPredicate(&n->pred, mk, fv);
+  } else if (n->type != QN_LOGIC) {
+    // WTF?
+    return 0;
+  }
+
+  // a logic node always has left and right that are either ORed or ANDed
+  int leftEval = evalKey(n->op.left, mk, fv);
+  // we will not evluate the RHS unless there's a need to
+  if (n->op.op == OP_OR) {
+    return leftEval || evalKey(n->op.right, mk, fv);
+  }
+  return leftEval && evalKey(n->op.right, mk, fv);
+}
+
+SIId scan_next(void *ctx) {
+
+  ciScanCtx *sc = ctx;
+  skiplistNode *n;
+  SIId ret = NULL;
+  SICmpFuncVector fv = {.cmpFuncs = sc->idx->cmpFuncs,
+                        .numFuncs = sc->idx->numFuncs};
+
+  while (sc->currentScanRange < sc->plan->numRanges) {
+
+    while (NULL != (n = skiplistIteratorCurrent(&sc->it))) {
+      // if we have filters beyond the min/max range, we need to explicitly
+      // filter each of them
+      SIMultiKey *mk = n->obj;
+
+      int ok = 1;
+      if (sc->plan->filterTree) {
+        ok = evalKey(sc->plan->filterTree, mk, &fv);
+      }
+
+      // advance the iterator by one - but only return the value if the filter
+      // eval was successful
+      void *nextval = skiplistIterator_Next(&sc->it);
+      if (ok) {
+        return nextval;
+      }
+      // otherwise we just continue to the next node
+    }
+
+    // If we are here - the current range iteration is over. let's see if we can
+    // find a new range
+    sc->currentScanRange++;
+    siPlanRange *cr = scanCtx_CurrentRange(sc);
+    // start iterating the new range
+    if (cr) {
+      sc->it = skiplistIterateRange(sc->idx->sl, cr->min, cr->max,
+                                    cr->minExclusive, cr->maxExclusive);
+    }
+  }
+
   return NULL;
 }
 
-#define new_(T) malloc(sizeof(T))
+SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
 
-void simpleIndex_FindEq(simpleIndex *idx, SIEquals pred, SICursor *c) {
-  SIString key = simpleIndex_encode(&pred.v);
-
-  rangeIterCtx *ictx = new_(rangeIterCtx);
-  ictx->minKey = key;
-  ictx->maxKey = key;
-  ictx->minExclusive = 0;
-  ictx->maxExclusive = 0;
-  c->error = SI_CURSOR_OK;
-  c->Next = rangeIter_next;
-  ictx->it = Tree_IterateFrom(idx->tree, key);
-
-  c->ctx = ictx;
-}
-
-void simpleIndex_FindRange(simpleIndex *idx, SIRange pred, SICursor *c) {
-  SIString key = simpleIndex_encode(&pred.min);
-
-  rangeIterCtx *ictx = new_(rangeIterCtx);
-  ictx->minKey = simpleIndex_encode(&pred.min);
-  ictx->maxKey = simpleIndex_encode(&pred.max);
-
-  ictx->minExclusive = pred.minExclusive;
-  ictx->maxExclusive = pred.maxExclusive;
-
-  c->error = SI_CURSOR_OK;
-  c->Next = rangeIter_next;
-  ictx->it = Tree_IterateFrom(idx->tree, key);
-
-  c->ctx = ictx;
-}
-
-SICursor *simpleIndex_Find(void *ctx, SIQuery *q) {
-  simpleIndex *idx = ctx;
+  compoundIndex *idx = ctx;
   SICursor *c = SI_NewCursor(NULL);
-  if (q->numPredicates != 1) {
-    c->error = SI_CURSOR_ERROR;
-    return c;
+  if (q->numPredicates == 0) {
+    goto error;
   }
 
-  switch (q->predicates[0].t) {
-  case PRED_EQ:
-    simpleIndex_FindEq(idx, q->predicates[0].eq, c);
-    break;
-  case PRED_RNG:
-    simpleIndex_FindRange(idx, q->predicates[0].rng, c);
-    break;
-  default:
-    printf("Unsupported predicate type %d\n", q->predicates[0].t);
-    c->error = SI_CURSOR_ERROR;
+  SIQueryPlan *plan = SI_BuildQueryPlan(q, &idx->spec);
+  if (!plan) {
+    goto error;
   }
+
+  ciScanCtx *sctx = malloc(sizeof(ciScanCtx));
+  sctx->currentScanRange = 0;
+  sctx->plan = plan;
+  sctx->idx = idx;
+  siPlanRange *cr = scanCtx_CurrentRange(sctx);
+  if (cr) {
+    sctx->it = skiplistIterateRange(sctx->idx->sl, cr->min, cr->max,
+                                    cr->minExclusive, cr->maxExclusive);
+  }
+  c->ctx = sctx;
+  c->Next = scan_next;
+  return c;
+
+error:
+  c->error = SI_CURSOR_ERROR;
   return c;
 }
 
-size_t simpleIndex_Len(void *ctx) { return ((simpleIndex *)ctx)->len; }
+void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
 
-SIIndex NewSimpleIndex(SISpec spec) {
+  compoundIndex *idx = ctx;
 
-  simpleIndex *si = new_(simpleIndex);
-  si->len = 0;
-  si->spec = spec;
-  si->tree = NULL;
-
-  SIIndex ret;
-  ret.Find = simpleIndex_Find;
-  ret.Len = simpleIndex_Len;
-  ret.Apply = simpleIndex_Apply;
-  ret.ctx = si;
-  return ret;
+  skiplistIterator it = skiplistIterateAll(idx->sl);
+  skiplistNode *n = skiplistIteratorCurrent(&it);
+  while (n) {
+    for (u_int i = 0; i < n->numVals; i++) {
+      cb(n->vals[i], n->obj, visitCtx);
+    }
+  }
 }
