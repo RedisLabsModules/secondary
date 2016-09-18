@@ -136,9 +136,9 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
 
   cs.numChanges = 1;
   cs.changes = calloc(1, sizeof(SIChange));
-  cs.changes[0].numVals = idx->spec.numProps;
+  cs.changes[0].v = SI_NewValueVector(idx->spec.numProps);
   cs.changes[0].id = NULL;
-  cs.changes[0].vals = calloc(idx->spec.numProps, sizeof(SIValue));
+
   while (elements--) {
 
     // create an ADD change
@@ -148,7 +148,7 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
     cs.changes[0].id = id;
 
     for (int i = 0; i < idx->spec.numProps; i++) {
-      cs.changes[0].vals[i] = __readValue(rdb);
+      SIValueVector_Append(&cs.changes[0].v, __readValue(rdb));
     }
 
     idx->idx.Apply(idx->idx.ctx, cs);

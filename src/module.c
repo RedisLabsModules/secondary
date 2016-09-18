@@ -55,19 +55,19 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   char *id = (char *)RedisModule_StringPtrLen(argv[2], &len);
   id = strndup(id, len);
 
-  SIValue vals[argc - 3];
+  SIValueVector vals = SI_NewValueVector(argc - 3);
   for (int i = 0; i < argc - 3; i++) {
     size_t vlen;
     const char *vstr = RedisModule_StringPtrLen(argv[i + 3], &vlen);
-    vals[i].type = idx->spec.properties[i].type;
-    if (!SI_ParseValue(&vals[i], (char *)vstr, vlen)) {
+    SIValue val = {.type = idx->spec.properties[i].type};
+    if (!SI_ParseValue(&val, (char *)vstr, vlen)) {
       printf("Could not parse %.*s\n", (int)vlen, vstr);
       return RedisModule_ReplyWithError(ctx, "Invalid value given");
     }
+    SIValueVector_Append(&vals, val);
   }
 
-  SIChange ch = {
-      .type = SI_CHADD, .id = (SIId)id, .vals = vals, .numVals = argc - 3};
+  SIChange ch = (SIChange){.type = SI_CHADD, .id = (SIId)id, .v = vals};
 
   SIChangeSet cs = SI_NewChangeSet(1);
   SIChangeSet_AddCahnge(&cs, ch);

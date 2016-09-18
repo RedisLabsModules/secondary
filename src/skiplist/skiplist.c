@@ -221,7 +221,7 @@ void skiplistDeleteNode(skiplist *sl, skiplistNode *x, skiplistNode **update) {
 
 /* Delete an element from the skiplist. If the element was found and deleted
  * 1 is returned, otherwise if the element was not there, 0 is returned. */
-int skiplistDelete(skiplist *sl, void *obj) {
+int skiplistDelete(skiplist *sl, void *obj, void *val) {
   skiplistNode *update[SKIPLIST_MAXLEVEL], *x;
   int i;
 
@@ -235,8 +235,28 @@ int skiplistDelete(skiplist *sl, void *obj) {
   }
   x = x->level[0].forward;
   if (x && sl->compare(x->obj, obj, sl->cmpCtx) == 0) {
-    skiplistDeleteNode(sl, x, update);
-    skiplistFreeNode(x);
+
+    if (val) {
+      // try to delete the value itself from the vallist
+      for (int i = 0; i < x->numVals; i++) {
+        printf("finding %s <> %s\n", val, x->vals[i]);
+        // found the value - let's delete it
+        if (!sl->valcmp(val, x->vals[i])) {
+          printf("found val!\n");
+          while (i < x->numVals - 1) {
+            x->vals[i] = x->vals[i + 1];
+            i++;
+          }
+          x->numVals--;
+          break;
+        }
+      }
+    }
+
+    if (!val || x->numVals == 0) {
+      skiplistDeleteNode(sl, x, update);
+      skiplistFreeNode(x);
+    }
     return 1;
   }
   return 0; /* not found */
@@ -294,7 +314,7 @@ void *skiplistPopHead(skiplist *sl) {
   if (!x)
     return NULL;
   void *ptr = x->obj;
-  skiplistDelete(sl, ptr);
+  skiplistDelete(sl, ptr, NULL);
   return ptr;
 }
 
@@ -306,7 +326,7 @@ void *skiplistPopTail(skiplist *sl) {
   if (!x)
     return NULL;
   void *ptr = x->obj;
-  skiplistDelete(sl, ptr);
+  skiplistDelete(sl, ptr, NULL);
   return ptr;
 }
 

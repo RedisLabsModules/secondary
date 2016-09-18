@@ -9,14 +9,12 @@ SIChange SI_NewAddChange(SIId id, size_t num, ...) {
 
   // initializing the change with {nun} values capacity
   SIChange ch = {.type = SI_CHADD, .id = id};
-  ch.vals = calloc(num, sizeof(SIValue));
-  // we'll use this as our counter
-  ch.numVals = 0;
+  ch.v = SI_NewValueVector(num);
 
   // read SIValues from the va_list into the change
   va_start(ap, num);
-  while (ch.numVals < num) {
-    ch.vals[ch.numVals++] = va_arg(ap, SIValue);
+  while (ch.v.len < num) {
+    SIValueVector_Append(&ch.v, va_arg(ap, SIValue));
   }
   va_end(ap);
 

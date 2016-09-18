@@ -11,8 +11,7 @@ typedef enum {
 typedef struct {
   SIChangeType type;
   SIId id;
-  SIValue *vals;
-  size_t numVals;
+  SIValueVector v;
 } SIChange;
 
 /*

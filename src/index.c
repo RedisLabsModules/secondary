@@ -1,6 +1,7 @@
 #include "index.h"
 #include "key.h"
 #include "skiplist/skiplist.h"
+#include "reverse_index.h"
 #include "query_plan.h"
 #include <stdio.h>
 
@@ -11,8 +12,41 @@ typedef struct {
 
   skiplist *sl;
 
+  SIReverseIndex *ri;
 } compoundIndex;
 
+int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
+
+  SIValueVector vec;
+  // if the id is already in the index, we need to delete the old index entry
+  // and replace with a new one.
+  //
+  // TODO: Optimize this to make sure we don't delete and insert if the records
+  // are the same
+  SIMultiKey *oldkey = NULL;
+  int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
+  if (exists) {
+    printf("id %s already exists, removing key: ", ch.id);
+
+    // compose the old key and delete it from the skiplist
+    SIMultiKey_Print(oldkey);
+    printf("\n");
+    skiplistDelete(idx->sl, oldkey, ch.id);
+
+    free(oldkey);
+  }
+  // insert the id and values to the reverse index
+  // TODO: check memory management of all this stuff
+  SIMultiKey *key = SI_NewMultiKey(ch.v.vals, ch.v.len);
+  SIReverseIndex_Insert(idx->ri, ch.id, key);
+
+  printf("Inserting key:");
+  SIMultiKey_Print(key);
+  printf("\n");
+  skiplistInsert(idx->sl, key, ch.id);
+
+  return 1;
+}
 int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
 
   compoundIndex *idx = ctx;
@@ -20,18 +54,13 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
   for (size_t i = 0; i < cs.numChanges; i++) {
 
     // this value is not applicable to the index
-    if (cs.changes[i].numVals != idx->numFuncs) {
+    if (cs.changes[i].v.len != idx->numFuncs) {
       return SI_INDEX_ERROR;
     }
 
     if (cs.changes[i].type == SI_CHADD) {
 
-      SIMultiKey *key =
-          SI_NewMultiKey(cs.changes[i].vals, cs.changes[i].numVals);
-      printf("Inserting key:");
-      SIMultiKey_Print(key);
-      printf("\n");
-      skiplistInsert(idx->sl, key, cs.changes[i].id);
+      compoundIndex_applyAdd(idx, cs.changes[i]);
     }
     // TODO: handle remove
   }
@@ -57,6 +86,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
   idx->spec = spec;
   idx->cmpFuncs = calloc(spec.numProps, sizeof(SIKeyCmpFunc));
   idx->numFuncs = spec.numProps;
+  idx->ri = SI_NewReverseIndex();
 
   for (u_int8_t i = 0; i < spec.numProps; i++) {
     switch (spec.properties[i].type) {

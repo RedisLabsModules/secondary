@@ -216,7 +216,8 @@ SIValueVector SI_NewValueVector(size_t cap) {
   return (SIValueVector){
       .vals = calloc(cap, sizeof(SIValue)), .cap = cap, .len = 0};
 }
-void SIValueVector_Append(SIValueVector *v, SIValue val) {
+
+inline void SIValueVector_Append(SIValueVector *v, SIValue val) {
   if (v->len == v->cap) {
     v->cap = v->cap ? MIN(v->cap * 2, 1000) : v->cap + 1;
     v->vals = realloc(v->vals, v->cap * sizeof(SIValue));

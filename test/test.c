@@ -6,8 +6,9 @@
 #include "../src/value.h"
 #include "../src/index.h"
 #include "../src/query.h"
-#include "minunit.h"
+#include "../src/reverse_index.h"
 
+#include "minunit.h"
 // SIString SI_WrapString(const char *s) {
 //   return (SIString){(char *)s, strlen(s)};
 // }
@@ -64,15 +65,57 @@ MU_TEST(testChangeSet) {
   mu_check(cs.cap == 0);
 
   SIChange ch = SI_NewAddChange("id1", 2, SI_StringValC("foo"), SI_IntVal(32));
-  mu_check(ch.numVals == 2);
-  mu_check(ch.vals[0].type == T_STRING);
-  mu_check(ch.vals[1].type == T_INT32);
+  mu_check(ch.v.len == 2);
+  mu_check(ch.v.vals[0].type == T_STRING);
+  mu_check(ch.v.vals[1].type == T_INT32);
 
   SIChangeSet_AddCahnge(&cs, ch);
 
   mu_check(cs.cap == 1);
   mu_check(cs.numChanges == 1);
 }
+
+MU_TEST(testReverseIndex) {
+  SIReverseIndex *idx = SI_NewReverseIndex();
+  mu_check(idx != NULL);
+
+  SIValueVector v = SI_NewValueVector(1);
+  SIValueVector_Append(&v, SI_StringValC("hello"));
+  SIValueVector_Append(&v, SI_IntVal(1337));
+
+  SIMultiKey *k = SI_NewMultiKey(v.vals, v.len);
+  SIId id = "id1", id2 = "id1"; // not a mistake!
+  int rc = SIReverseIndex_Insert(idx, id, k);
+  mu_check(rc == 1);
+
+  rc = SIReverseIndex_Insert(idx, id2, k);
+  mu_check(rc == 0);
+
+  SIMultiKey *k2;
+
+  rc = SIReverseIndex_Exists(idx, id, &k2);
+  mu_check(rc);
+  mu_check(k2->size == k->size);
+  mu_check(k2->keys == k->keys);
+
+  rc = SIReverseIndex_Exists(idx, id2, NULL);
+  mu_check(rc);
+
+  rc = SIReverseIndex_Delete(idx, id2);
+  mu_check(rc);
+  rc = SIReverseIndex_Delete(idx, id2);
+  mu_check(!rc);
+
+  rc = SIReverseIndex_Exists(idx, id2, NULL);
+  mu_check(!rc);
+  rc = SIReverseIndex_Exists(idx, id, NULL);
+  mu_check(!rc);
+
+  SIReverseIndex_Free(idx);
+  printf("%d\n", rc);
+}
+
+///////////////////////////////////
 
 MU_TEST_SUITE(test_index) {
   // MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
@@ -82,7 +125,8 @@ MU_TEST_SUITE(test_index) {
 
 int main(int argc, char **argv) {
   // return testIndex();
-  MU_RUN_TEST(testIndex);
+  // MU_RUN_TEST(testIndex);
+  MU_RUN_TEST(testReverseIndex);
   // MU_RUN_SUITE(test_query);
   // MU_REPORT();
   return minunit_status;
