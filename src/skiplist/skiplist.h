@@ -46,6 +46,7 @@ typedef struct skiplistNode {
 } skiplistNode;
 
 typedef int (*skiplistCmpFunc)(void *p1, void *p2, void *ctx);
+
 typedef int (*skiplistValCmpFunc)(void *p1, void *p2);
 
 typedef struct skiplist {
