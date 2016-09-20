@@ -83,9 +83,10 @@ int _parseInt(SIValue *v, char *str, size_t len) {
     fprintf(stderr, "No digits were found\n");
     return 0;
   }
+
   switch (v->type) {
   case T_INT32:
-    v->intval = (int32_t)val;
+    v->intval = val;
     break;
   case T_INT64:
     v->longval = val;
@@ -249,7 +250,7 @@ int SI_LongVal_Cast(SIValue *v, SIType type) {
     v->floatval = (float)v->longval;
     break;
   case T_DOUBLE:
-    v->doubleval = (double)v->doubleval;
+    v->doubleval = (double)v->longval;
     break;
   case T_STRING: {
     char *buf = malloc(21);

@@ -9,19 +9,8 @@
 #include "../src/reverse_index.h"
 #include "../src/rmutil/alloc.h"
 
-// SIString SI_WrapString(const char *s) {
-//   return (SIString){(char *)s, strlen(s)};
-// }
-
 int cmpstr(void *p1, void *p2, void *ctx) {
   return strcmp((char *)p1, (char *)p2);
-}
-
-SIValue stringValue(char *s) {
-  SIValue ret;
-  ret.type = T_STRING;
-  ret.stringval = SI_WrapString(s);
-  return ret;
 }
 
 MU_TEST(testIndex) {
@@ -125,10 +114,9 @@ MU_TEST_SUITE(test_index) {
 
 int main(int argc, char **argv) {
   // RMUTil_InitAlloc();
-  // return testIndex();
-  // MU_RUN_TEST(testIndex);
+  MU_RUN_TEST(testIndex);
   MU_RUN_TEST(testReverseIndex);
-  // MU_RUN_SUITE(test_query);
-  // MU_REPORT();
+
+  MU_REPORT();
   return minunit_status;
 }
