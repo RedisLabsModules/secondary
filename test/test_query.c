@@ -6,6 +6,7 @@
 #include "../src/index.h"
 #include "../src/query.h"
 #include "../src/query_plan.h"
+#include "../src/rmutil/alloc.h"
 
 MU_TEST(testQueryParser) {
   char *str =
@@ -118,6 +119,7 @@ MU_TEST(testQueryNormalize) {
 }
 
 int main(int argc, char **argv) {
+  RMUTil_InitAlloc();
   // return testIndex();
   // MU_RUN_TEST(testQueryParser);
   // MU_RUN_TEST(testQueryPlan);

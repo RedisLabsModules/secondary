@@ -2,6 +2,7 @@
 #include "index.h"
 #include "key.h"
 #include "index_type.h"
+#include "rmutil/alloc.h"
 
 RedisModuleType *IndexType;
 
@@ -9,18 +10,23 @@ void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
 
   RedisModule_SaveUnsigned(io, (u_int64_t)idx->spec.numProps);
   for (size_t i = 0; i < idx->spec.numProps; i++) {
-    RedisModule_SaveUnsigned(io, (int)idx->spec.properties[i].type);
-    RedisModule_SaveUnsigned(io, (int)idx->spec.properties[i].flags);
+    printf("saving prop type %d flags %x\n", idx->spec.properties[i].type,
+           idx->spec.properties[i].flags);
+    RedisModule_SaveSigned(io, (int)idx->spec.properties[i].type);
+    RedisModule_SaveSigned(io, (int)idx->spec.properties[i].flags);
   }
 }
 
 void __redisIndex_LoadSpec(RedisIndex *idx, RedisModuleIO *io) {
   idx->spec.numProps = RedisModule_LoadUnsigned(io);
   idx->spec.properties = calloc(idx->spec.numProps, sizeof(SIIndexProperty));
+  printf("loading index with %d props!\n", idx->spec.numProps);
 
   for (size_t i = 0; i < idx->spec.numProps; i++) {
-    idx->spec.properties[i].type = RedisModule_LoadUnsigned(io);
-    idx->spec.properties[i].flags = RedisModule_LoadUnsigned(io);
+    idx->spec.properties[i].type = RedisModule_LoadSigned(io);
+    idx->spec.properties[i].flags = RedisModule_LoadSigned(io);
+    printf("loaded prop type %d flags %x\n", idx->spec.properties[i].type,
+           idx->spec.properties[i].flags);
   }
 }
 
@@ -101,6 +107,7 @@ void __writeValue(void *v, SIType t, RedisModuleIO *rdb) {
 typedef struct {
   RedisModuleIO *w;
   RedisIndex *idx;
+  int num;
 } __redisIndexVisitorCtx;
 
 void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
@@ -110,16 +117,20 @@ void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
 
   for (int i = 0; i < vx->idx->spec.numProps; i++) {
     __writeValue(&mk->keys[i], vx->idx->spec.properties[i].type, vx->w);
+    vx->num++;
   }
 }
 void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
 
   size_t len = idx->idx.Len(idx->idx.ctx);
+  printf("saving index len %zd\n", len);
   // save the number of elements in the indes
   RedisModule_SaveUnsigned(w, (u_int64_t)len);
 
-  __redisIndexVisitorCtx vx = {w, idx};
+  __redisIndexVisitorCtx vx = {w, idx, 0};
+
   idx->idx.Traverse(idx->idx.ctx, __redisIndex_Visitor, &vx);
+  printf("saved %d elemets\n", vx.num);
 }
 
 int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
@@ -130,7 +141,7 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
 
   // read the total number of elements in the index
   u_int64_t elements = RedisModule_LoadUnsigned(rdb);
-
+  printf("oading index len %zd\n", elements);
   // create a mock changeset
   SIChangeSet cs;
 
@@ -144,10 +155,11 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
     // create an ADD change
     size_t idlen;
     char *id = RedisModule_LoadStringBuffer(rdb, &idlen);
-
+    printf("inserting id %s\n", id);
     cs.changes[0].id = id;
-
+    cs.changes[0].v.len = 0;
     for (int i = 0; i < idx->spec.numProps; i++) {
+
       SIValueVector_Append(&cs.changes[0].v, __readValue(rdb));
     }
 
@@ -185,7 +197,7 @@ int SI_ParseSpec(RedisModuleString **argv, int argc, SISpec *spec) {
     }
 
     if (!ok) {
-      printf("could not parse %.*s\n", len, str);
+      printf("could not parse %.*s\n", (int)len, str);
       free(spec->properties);
       spec->properties = NULL;
       return REDISMODULE_ERR;
@@ -225,7 +237,8 @@ void *RedisIndex_RdbLoad(RedisModuleIO *rdb, int encver) {
 
 void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
   RedisIndex *idx = value;
-  RedisModule_SaveUnsigned(rdb, idx->idx.Len(idx->idx.ctx));
+  RedisModule_SaveUnsigned(rdb, idx->kind);
+  RedisModule_SaveUnsigned(rdb, idx->flags);
 
   // save the spec
   __redisIndex_SaveSpec(idx, rdb);
@@ -241,7 +254,11 @@ void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
 
 void RedisIndex_Digest(RedisModuleDigest *digest, void *value) {}
 
-void RedisIndex_Free(void *value) {}
+void RedisIndex_Free(void *value) {
+  RedisIndex *idx = value;
+  idx->idx.Free(idx->idx.ctx);
+  free(idx);
+}
 
 int RedisIndex_Register(RedisModuleCtx *ctx) {
   IndexType = RedisModule_CreateDataType(

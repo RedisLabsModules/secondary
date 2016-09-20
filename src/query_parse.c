@@ -1,5 +1,6 @@
 #include "query.h"
 #include "parser/parser_common.h"
+#include "rmutil/alloc.h"
 
 SIQueryNode *toQueryNode(PredicateNode *n) {
   switch (n->op) {

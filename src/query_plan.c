@@ -1,7 +1,7 @@
 #include "query_plan.h"
 #include "rmutil/vector.h"
-
 #include <stdio.h>
+#include "rmutil/alloc.h"
 
 /* Get the most relevant predicate for the current leftmost property id. Returns
  * NULL if no such predicate exists */

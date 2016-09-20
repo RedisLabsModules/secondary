@@ -4,6 +4,8 @@
 #include "parser.h"
 #include <string.h>
 #include <math.h>
+#include "../rmutil/alloc.h"
+
 
 Token tok;
 

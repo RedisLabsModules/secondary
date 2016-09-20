@@ -1,24 +1,34 @@
 
+# The file list for building the secondary index library.
+# They can be used directly for unit tests.
+# the ../src part is so that they can be accessed from outside the src tree
+set(_secondary_files 
+            ../src/key.c 
+            ../src/value.c 
+            ../src/changeset.c
+            ../src/query.c
+            ../src/cursor.c
+            ../src/index.c
+            ../src/reverse_index.c
+            ../src/query_parse.c
+            ../src/query_plan.c
+            ../src/query_normalize.c
+            ../src/parser/ast.c
+            ../src/parser/parser.c
+            ../src/parser/lex.yy.c
 
+            ../src/rmutil/vector.c
+            ../src/rmutil/alloc.c
+            ../src/skiplist/skiplist.c
+            )
+
+set (secondary_files ${_secondary_files} PARENT_SCOPE)            
+
+# Libsecondary target - a static library for secondary indexing that can be linked in any module
 add_library(libsecondary STATIC 
-            key.c 
-            value.c 
-            changeset.c
-            query.c
-            cursor.c
-            index.c
-            reverse_index.c
-            query_parse.c
-            query_plan.c
-            query_normalize.c
-            parser/ast.c
-            parser/parser.c
-            parser/lex.yy.c
-
-            rmutil/vector.c
-            skiplist/skiplist.c            
+                ${_secondary_files}      
         )
-target_compile_options(libsecondary PUBLIC "-fPIC")
+target_compile_options(libsecondary PUBLIC "-fPIC" "-DREDIS_MODULE_TARGET")
 
 # build the parser source code before building libsecondary
 # TODO: remove this
@@ -34,4 +44,6 @@ add_library(module MODULE
     index_type.c
     module.c
 )
+target_compile_options(module PUBLIC "-DREDIS_MODULE_TARGET")
+
 target_link_libraries(module libsecondary)

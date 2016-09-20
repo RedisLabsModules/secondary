@@ -50,7 +50,7 @@
 #define zmalloc malloc
 #define zfree free
 #include <stdlib.h>
-
+#include "../rmutil/alloc.h"
 /* Create a skip list node with the specified number of levels, pointing to
  * the specified object. */
 skiplistNode *skiplistCreateNode(int level, void *obj, void *val) {
@@ -98,11 +98,13 @@ skiplist *skiplistCreate(skiplistCmpFunc cmp, void *cmpCtx,
     sl->header->level[j].forward = NULL;
     sl->header->level[j].span = 0;
   }
+  sl->header->numVals = 0;
   sl->header->backward = NULL;
   sl->tail = NULL;
   sl->compare = cmp;
   sl->cmpCtx = cmpCtx;
   sl->valcmp = vcmp;
+
   return sl;
 }
 
@@ -385,7 +387,6 @@ void *skiplistIterator_Next(skiplistIterator *it) {
     // make sure we don't pass the range max. NULL means +inf
     if (it->current && it->rangeMax) {
       int c = it->sl->compare(it->current->obj, it->rangeMax, it->sl->cmpCtx);
-      printf("cmp: %d\n", c);
       if (c > 0 || (c == 0 && it->maxExclusive)) {
         it->current = NULL;
       }

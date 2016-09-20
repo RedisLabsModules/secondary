@@ -2,6 +2,7 @@
 #include "index.h"
 #include "value.h"
 #include <stdio.h>
+#include "rmutil/alloc.h"
 
 // /*
 // * Query normalization and validation, before building the query plan.

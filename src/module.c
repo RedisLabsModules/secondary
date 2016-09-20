@@ -1,5 +1,6 @@
 #include "index_type.h"
 #include "redismodule.h"
+#include "rmutil/alloc.h"
 
 /*
 * IDX.CREATE <index_name> {options} SCHEMA

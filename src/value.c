@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <sys/param.h>
+#include "rmutil/alloc.h"
 
 SIValue SI_IntVal(int i) { return (SIValue){.intval = i, .type = T_INT32}; }
 

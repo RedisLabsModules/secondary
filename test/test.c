@@ -7,8 +7,8 @@
 #include "../src/index.h"
 #include "../src/query.h"
 #include "../src/reverse_index.h"
+#include "../src/rmutil/alloc.h"
 
-#include "minunit.h"
 // SIString SI_WrapString(const char *s) {
 //   return (SIString){(char *)s, strlen(s)};
 // }
@@ -124,6 +124,7 @@ MU_TEST_SUITE(test_index) {
 }
 
 int main(int argc, char **argv) {
+  // RMUTil_InitAlloc();
   // return testIndex();
   // MU_RUN_TEST(testIndex);
   MU_RUN_TEST(testReverseIndex);

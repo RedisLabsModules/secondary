@@ -1,4 +1,5 @@
 #include "index.h"
+#include "rmutil/alloc.h"
 
 void SICursor_Free(SICursor *c) { free(c); }
 

@@ -1,4 +1,5 @@
 #include "query.h"
+#include "rmutil/alloc.h"
 
 SIQueryNode *__newQueryNode(SIQueryNodeType t) {
   SIQueryNode *ret = malloc(sizeof(SIQueryNode));

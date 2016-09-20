@@ -1,6 +1,7 @@
 
 #include <stdarg.h>
 #include "changeset.h"
+#include "rmutil/alloc.h"
 
 SIChange SI_NewAddChange(SIId id, size_t num, ...) {
 

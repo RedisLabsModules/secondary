@@ -13,10 +13,12 @@
 #include "token.h"
 #include "parser.h"
 #include "ast.h"
+#include "../rmutil/alloc.h"
+
 
 void yyerror(char *s);
 
-#line 20 "parser.c"
+#line 22 "parser.c"
 /* Next is all token values, in a form suitable for use by makeheaders.
 ** This section will be null unless lemon is run with the -m switch.
 */
@@ -398,17 +400,17 @@ static void yy_destructor(
     */
     case 22: /* cond */
 {
-#line 42 "parser.y"
+#line 44 "parser.y"
  ParseNode_Free((yypminor->yy40)); 
-#line 404 "parser.c"
+#line 406 "parser.c"
 }
       break;
     case 26: /* vallist */
     case 27: /* multivals */
 {
-#line 83 "parser.y"
+#line 85 "parser.y"
 SIValueVector_Free(&(yypminor->yy33));
-#line 412 "parser.c"
+#line 414 "parser.c"
 }
       break;
     default:  break;   /* If no destructor action specified: do nothing */
@@ -723,138 +725,138 @@ static void yy_reduce(
   **     break;
   */
       case 0: /* query ::= cond */
-#line 31 "parser.y"
+#line 33 "parser.y"
 { *root = yymsp[0].minor.yy40; }
-#line 729 "parser.c"
+#line 731 "parser.c"
         break;
       case 1: /* op ::= EQ */
-#line 34 "parser.y"
+#line 36 "parser.y"
 { yygotominor.yy4 = EQ; }
-#line 734 "parser.c"
+#line 736 "parser.c"
         break;
       case 2: /* op ::= GT */
-#line 35 "parser.y"
+#line 37 "parser.y"
 { yygotominor.yy4 = GT; }
-#line 739 "parser.c"
+#line 741 "parser.c"
         break;
       case 3: /* op ::= LT */
-#line 36 "parser.y"
+#line 38 "parser.y"
 { yygotominor.yy4 = LT; }
-#line 744 "parser.c"
+#line 746 "parser.c"
         break;
       case 4: /* op ::= LE */
-#line 37 "parser.y"
+#line 39 "parser.y"
 { yygotominor.yy4 = LE; }
-#line 749 "parser.c"
+#line 751 "parser.c"
         break;
       case 5: /* op ::= GE */
-#line 38 "parser.y"
+#line 40 "parser.y"
 { yygotominor.yy4 = GE; }
-#line 754 "parser.c"
+#line 756 "parser.c"
         break;
       case 6: /* op ::= NE */
-#line 39 "parser.y"
+#line 41 "parser.y"
 { yygotominor.yy4 = NE; }
-#line 759 "parser.c"
+#line 761 "parser.c"
         break;
       case 7: /* cond ::= prop op value */
-#line 44 "parser.y"
+#line 46 "parser.y"
 { 
     /* Terminal condition of a single predicate */
     yygotominor.yy40 = NewPredicateNode(yymsp[-2].minor.yy4, yymsp[-1].minor.yy4, yymsp[0].minor.yy22);
 }
-#line 767 "parser.c"
+#line 769 "parser.c"
         break;
       case 8: /* cond ::= prop LIKE STRING */
-#line 50 "parser.y"
+#line 52 "parser.y"
 { 
     yygotominor.yy40 = NewPredicateNode(yymsp[-2].minor.yy4, LIKE, SI_StringValC(yymsp[0].minor.yy0.strval));
 }
-#line 774 "parser.c"
+#line 776 "parser.c"
         break;
       case 9: /* cond ::= prop IN vallist */
-#line 54 "parser.y"
+#line 56 "parser.y"
 { 
     /* Terminal condition of a single IN predicate */
     yygotominor.yy40 = NewInPredicateNode(yymsp[-2].minor.yy4, IN, yymsp[0].minor.yy33);
 }
-#line 782 "parser.c"
+#line 784 "parser.c"
         break;
       case 10: /* cond ::= LP cond RP */
-#line 59 "parser.y"
+#line 61 "parser.y"
 { 
   yygotominor.yy40 = yymsp[-1].minor.yy40;
 }
-#line 789 "parser.c"
+#line 791 "parser.c"
         break;
       case 11: /* cond ::= cond AND cond */
-#line 63 "parser.y"
+#line 65 "parser.y"
 {
   yygotominor.yy40 = NewConditionNode(yymsp[-2].minor.yy40, AND, yymsp[0].minor.yy40);
 }
-#line 796 "parser.c"
+#line 798 "parser.c"
         break;
       case 12: /* cond ::= cond OR cond */
-#line 67 "parser.y"
+#line 69 "parser.y"
 {
   yygotominor.yy40 = NewConditionNode(yymsp[-2].minor.yy40, OR, yymsp[0].minor.yy40);
 }
-#line 803 "parser.c"
+#line 805 "parser.c"
         break;
       case 13: /* value ::= INTEGER */
-#line 75 "parser.y"
+#line 77 "parser.y"
 {  yygotominor.yy22 = SI_LongVal(yymsp[0].minor.yy0.intval); }
-#line 808 "parser.c"
+#line 810 "parser.c"
         break;
       case 14: /* value ::= STRING */
-#line 76 "parser.y"
+#line 78 "parser.y"
 {  yygotominor.yy22 = SI_StringValC(strdup(yymsp[0].minor.yy0.strval)); }
-#line 813 "parser.c"
+#line 815 "parser.c"
         break;
       case 15: /* value ::= FLOAT */
-#line 77 "parser.y"
+#line 79 "parser.y"
 {  yygotominor.yy22 = SI_DoubleVal(yymsp[0].minor.yy0.dval); }
-#line 818 "parser.c"
+#line 820 "parser.c"
         break;
       case 16: /* value ::= TRUE */
-#line 78 "parser.y"
+#line 80 "parser.y"
 { yygotominor.yy22 = SI_BoolVal(1); }
-#line 823 "parser.c"
+#line 825 "parser.c"
         break;
       case 17: /* value ::= FALSE */
-#line 79 "parser.y"
+#line 81 "parser.y"
 { yygotominor.yy22 = SI_BoolVal(0); }
-#line 828 "parser.c"
+#line 830 "parser.c"
         break;
       case 18: /* vallist ::= LP multivals RP */
-#line 86 "parser.y"
+#line 88 "parser.y"
 {
     yygotominor.yy33 = yymsp[-1].minor.yy33;
     
 }
-#line 836 "parser.c"
+#line 838 "parser.c"
         break;
       case 19: /* multivals ::= value COMMA value */
-#line 90 "parser.y"
+#line 92 "parser.y"
 {
       yygotominor.yy33 = SI_NewValueVector(2);
       SIValueVector_Append(&yygotominor.yy33, yymsp[-2].minor.yy22);
       SIValueVector_Append(&yygotominor.yy33, yymsp[0].minor.yy22);
 }
-#line 845 "parser.c"
+#line 847 "parser.c"
         break;
       case 20: /* multivals ::= multivals COMMA value */
-#line 96 "parser.y"
+#line 98 "parser.y"
 {
     SIValueVector_Append(&yymsp[-2].minor.yy33, yymsp[0].minor.yy22);
     yygotominor.yy33 = yymsp[-2].minor.yy33;
 }
-#line 853 "parser.c"
+#line 855 "parser.c"
         break;
       case 21: /* prop ::= ENUMERATOR */
-#line 104 "parser.y"
+#line 106 "parser.y"
 { yygotominor.yy4 = yymsp[0].minor.yy0.intval; }
-#line 858 "parser.c"
+#line 860 "parser.c"
         break;
       default:
         break;
@@ -919,7 +921,7 @@ static void yy_syntax_error(
 #line 11 "parser.y"
   
 yyerror("WAT?");
-#line 923 "parser.c"
+#line 925 "parser.c"
   ParseARG_STORE; /* Suppress warning about unused %extra_argument variable */
 }
 
@@ -1110,7 +1112,7 @@ void Parse(
   }while( yymajor!=YYNOCODE && yypParser->yyidx>=0 );
   return;
 }
-#line 107 "parser.y"
+#line 109 "parser.y"
 
 
   /* Definitions of flex stuff */
@@ -1145,4 +1147,4 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
    
 
 
-#line 1149 "parser.c"
+#line 1151 "parser.c"

@@ -1,5 +1,6 @@
 #include "reverse_index.h"
 #include "util/khash.h"
+#include "rmutil/alloc.h"
 
 SIReverseIndex *SI_NewReverseIndex() { return kh_init(khSIId); }
 

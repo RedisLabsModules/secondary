@@ -1,5 +1,5 @@
 #include "ast.h"
-
+#include "../rmutil/alloc.h"
 void ParseNode_Free(ParseNode *pn) {
   if (!pn)
     return;

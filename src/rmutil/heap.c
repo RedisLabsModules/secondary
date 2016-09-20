@@ -1,4 +1,5 @@
 #include "heap.h"
+#include "alloc.h"
 
 /* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)                      \

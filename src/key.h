@@ -45,6 +45,8 @@ void SIMultiKey_Print(SIMultiKey *mk);
 
 void *__valueToKey(SIValue *v);
 SIMultiKey *SI_NewMultiKey(SIValue *vals, u_int8_t numvals);
+void SIMultiKey_Free(SIMultiKey *k);
+
 int SICmpMultiKey(void *p1, void *p2, void *ctx);
 
 #endif

@@ -20,6 +20,8 @@ yyerror("WAT?");
 #include "token.h"
 #include "parser.h"
 #include "ast.h"
+#include "../rmutil/alloc.h"
+
 
 void yyerror(char *s);
 

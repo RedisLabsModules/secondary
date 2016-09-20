@@ -2,6 +2,7 @@
 #include "key.h"
 #include <stdio.h>
 #include <sys/param.h>
+#include "rmutil/alloc.h"
 
 // Comparators for all simple types
 GENERIC_CMP_FUNC_IMPL(si_cmp_float, floatval);
@@ -67,4 +68,11 @@ int SICmpMultiKey(void *p1, void *p2, void *ctx) {
       return rc;
   }
   return 0;
+}
+
+void SIMultiKey_Free(SIMultiKey *k) {
+  for (int i = 0; i < k->size; i++) {
+    SIValue_Free(&k->keys[i]);
+  }
+  free(k);
 }

@@ -4,6 +4,7 @@
 #include "reverse_index.h"
 #include "query_plan.h"
 #include <stdio.h>
+#include "rmutil/alloc.h"
 
 typedef struct {
   SISpec spec;
@@ -73,6 +74,7 @@ size_t compoundIndex_Len(void *ctx) {
 }
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
+void compoundIndex_Free(void *ctx);
 void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx);
 
 int _cmpIds(void *p1, void *p2) {
@@ -117,7 +119,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
 
     default: // TODO - implement all other types here
 
-      printf("unimplemented type! PANIC!");
+      printf("unimplemented type %d! PANIC!\n", spec.properties[i].type);
       exit(-1);
     }
   }
@@ -134,7 +136,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
   ret.Apply = compoundIndex_Apply;
   ret.Len = compoundIndex_Len;
   ret.Traverse = compoundIndex_Traverse;
-
+  ret.Free = compoundIndex_Free;
   return ret;
 }
 
@@ -304,10 +306,37 @@ void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
   compoundIndex *idx = ctx;
 
   skiplistIterator it = skiplistIterateAll(idx->sl);
-  skiplistNode *n = skiplistIteratorCurrent(&it);
-  while (n) {
+  skiplistNode *n;
+
+  while (NULL != (n = skiplistIteratorCurrent(&it))) {
+
     for (u_int i = 0; i < n->numVals; i++) {
       cb(n->vals[i], n->obj, visitCtx);
     }
+
+    skiplistIterator_Next(&it);
   }
+}
+
+void compoundIndex_Free(void *ctx) {
+  compoundIndex *idx = ctx;
+
+  SIReverseIndex_Free(idx->ri);
+
+  // free up all keys in the skiplist
+  skiplistIterator it = skiplistIterateAll(idx->sl);
+  skiplistNode *n;
+
+  while (NULL != (n = skiplistIteratorCurrent(&it))) {
+
+    for (u_int i = 0; i < n->numVals; i++) {
+      free(n->vals[i]);
+    }
+    if (n->obj)
+      SIMultiKey_Free(n->obj);
+
+    skiplistIterator_Next(&it);
+  }
+  skiplistFree(idx->sl);
+  free(idx);
 }

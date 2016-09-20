@@ -34,6 +34,7 @@ typedef struct {
   SICursor *(*Find)(void *ctx, SIQuery *q);
   void (*Traverse)(void *ctx, IndexVisitor cb, void *visitCtx);
   size_t (*Len)(void *ctx);
+  void (*Free)(void *ctx);
 } SIIndex;
 
 SIIndex SI_NewCompoundIndex(SISpec spec);
