@@ -841,14 +841,13 @@ YY_RULE_SETUP
 #line 32 "tokenizer.l"
 {   
   tok.intval = atoi(yytext); 
-  printf("INTEGER! %d\n", tok.intval);
   return INTEGER; 
 }
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 38 "tokenizer.l"
+#line 37 "tokenizer.l"
 {
   /* String literals, with escape sequences - enclosed by "" or '' */
   *(yytext+strlen(yytext)-1) = '\0';
@@ -859,66 +858,66 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 47 "tokenizer.l"
+#line 46 "tokenizer.l"
 {  return EQ; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 48 "tokenizer.l"
+#line 47 "tokenizer.l"
 {  return NE; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 49 "tokenizer.l"
+#line 48 "tokenizer.l"
 {  return GE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 50 "tokenizer.l"
+#line 49 "tokenizer.l"
 {  return LE; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 51 "tokenizer.l"
+#line 50 "tokenizer.l"
 {  return GT; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 52 "tokenizer.l"
+#line 51 "tokenizer.l"
 {  return LT; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 53 "tokenizer.l"
+#line 52 "tokenizer.l"
 { return LP; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 54 "tokenizer.l"
+#line 53 "tokenizer.l"
 { return RP; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 55 "tokenizer.l"
+#line 54 "tokenizer.l"
 { return COMMA; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 56 "tokenizer.l"
+#line 55 "tokenizer.l"
 { return LIKE; }
 	YY_BREAK
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 58 "tokenizer.l"
+#line 57 "tokenizer.l"
 /* ignore whitespace */
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 59 "tokenizer.l"
+#line 58 "tokenizer.l"
 ECHO;
 	YY_BREAK
-#line 922 "lex.yy.c"
+#line 921 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1913,7 +1912,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 58 "tokenizer.l"
+#line 57 "tokenizer.l"
 
 
 

@@ -30,6 +30,9 @@ char *rmalloc_strndup(const char *s, size_t n);
 
 // /* More overriding */
 // // needed to avoid calling strndup->malloc
+#ifdef strndup
+#undef strndup
+#endif
 #define strndup(s, n) rmalloc_strndup(s, n)
 
 #else

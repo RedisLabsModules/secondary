@@ -27,11 +27,11 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   SIMultiKey *oldkey = NULL;
   int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
   if (exists) {
-    printf("id %s already exists, removing key: ", ch.id);
+    // printf("id %s already exists, removing key: ", ch.id);
 
-    // compose the old key and delete it from the skiplist
-    SIMultiKey_Print(oldkey);
-    printf("\n");
+    // // compose the old key and delete it from the skiplist
+    // SIMultiKey_Print(oldkey);
+    // printf("\n");
     skiplistDelete(idx->sl, oldkey, ch.id);
 
     free(oldkey);
@@ -41,9 +41,9 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   SIMultiKey *key = SI_NewMultiKey(ch.v.vals, ch.v.len);
   SIReverseIndex_Insert(idx->ri, ch.id, key);
 
-  printf("Inserting key:");
-  SIMultiKey_Print(key);
-  printf("\n");
+  // printf("Inserting key:");
+  // SIMultiKey_Print(key);
+  // printf("\n");
   skiplistInsert(idx->sl, key, ch.id);
 
   return 1;

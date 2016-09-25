@@ -241,10 +241,8 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
     if (val) {
       // try to delete the value itself from the vallist
       for (int i = 0; i < x->numVals; i++) {
-        printf("finding %s <> %s\n", val, x->vals[i]);
         // found the value - let's delete it
         if (!sl->valcmp(val, x->vals[i])) {
-          printf("found val!\n");
           while (i < x->numVals - 1) {
             x->vals[i] = x->vals[i + 1];
             i++;

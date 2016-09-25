@@ -129,7 +129,6 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
     ParseNode *ret = NULL;
     //ParserFree(pParser);
     while (0 != (t = yylex())) {
-      printf("Token %d\n", t);
         Parse(pParser, t, tok, &ret);                
     }
     Parse (pParser, 0, tok, &ret);

@@ -15,7 +15,8 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return RedisModule_WrongArity(ctx);
 
   SISpec spec;
-  if (SI_ParseSpec(&argv[3], argc - 3, &spec) == REDISMODULE_ERR) {
+  SIIndexKind kind;
+  if (SI_ParseSpec(ctx, argv, argc, &spec, &kind) == REDISMODULE_ERR) {
     return RedisModule_ReplyWithError(ctx, "Invalid schema");
   }
 
@@ -106,14 +107,12 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   }
 
   SICursor *c = idx->idx.Find(idx->idx.ctx, &q);
-  printf("%d\n", c->error);
   if (c->error == SI_CURSOR_OK) {
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     SIId id;
     int i = 0;
     while (NULL != (id = c->Next(c->ctx))) {
       i++;
-      printf("%s\n", id);
       RedisModule_ReplyWithStringBuffer(ctx, id, strlen(id));
     }
     RedisModule_ReplySetArrayLength(ctx, i);

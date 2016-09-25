@@ -3,6 +3,7 @@
 #include "key.h"
 #include "index_type.h"
 #include "rmutil/alloc.h"
+#include "rmutil/util.h"
 
 RedisModuleType *IndexType;
 
@@ -171,37 +172,82 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
   return REDISMODULE_OK;
 }
 
-int SI_ParseSpec(RedisModuleString **argv, int argc, SISpec *spec) {
+static const char *types[] = {"STRING", "INT32",  "INT64", "UINT", "BOOL",
+                              "FLOAT",  "DOUBLE", "TIME",  NULL};
+static SIType typeEnums[] = {
+    T_STRING, T_INT32,  T_INT64, T_UINT, T_BOOL,
+    T_FLOAT,  T_DOUBLE, T_TIME,  T_NULL,
+};
 
-  spec->numProps = argc;
-  spec->properties = calloc(argc, sizeof(SIIndexProperty));
+/* IDX.CREATE {name} [TYPE [HASH|STRING]] [UNIQUE] SCHEMA [{t1} ...
+ * ]|[{p1} {t1} ...] */
+int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
+                 SISpec *spec, SIIndexKind *kind) {
 
-  const char *types[] = {"STRING", "INT32",  "INT64", "UINT", "BOOL",
-                         "FLOAT",  "DOUBLE", "TIME",  NULL};
-  SIType typeEnums[] = {
-      T_STRING, T_INT32,  T_INT64, T_UINT, T_BOOL,
-      T_FLOAT,  T_DOUBLE, T_TIME,  T_NULL,
-  };
+  // the index kind
+  *kind = SI_AbstractIndex;
 
-  for (int i = 0; i < spec->numProps; i++) {
+  // is the schema named or not
+  int named = 0;
+
+  int unique = RMUtil_ArgExists("UNIQUE", argv, argc, 2);
+
+  RedisModuleString *typestr = NULL;
+  RMUtil_ParseArgsAfter("TYPE", argv, argc, "s", &typestr);
+  if (typestr != NULL) {
+    const char *cts = RedisModule_StringPtrLen(typestr, NULL);
+    if (!strcasecmp(cts, "HASH")) {
+      *kind = SI_HashIndex;
+      named = 1;
+    }
+  }
+
+  int schemaPos =
+      RMUtil_ArgExists("SCHEMA", argv, argc, unique ? unique + 1 : 2);
+  if (!schemaPos) {
+    RedisModule_Log(ctx, "warning", "No schema found");
+    return REDISMODULE_ERR;
+  }
+
+  if (named && (argc - (schemaPos + 1)) % 2 != 0) {
+    RedisModule_Log(ctx, "warning", "Invalid schema argument count");
+    return REDISMODULE_ERR;
+  }
+
+  spec->flags =
+      0 | (unique ? SI_INDEX_UNIQUE : 0) | (named ? SI_INDEX_NAMED : 0);
+
+  spec->numProps = named ? (argc - (schemaPos + 1)) / 2 : argc - schemaPos + 1;
+  spec->properties = calloc(spec->numProps, sizeof(SIIndexProperty));
+
+  int p = 0, i = schemaPos + 1;
+  while (p < spec->numProps) {
 
     size_t len;
-    const char *str = RedisModule_StringPtrLen(argv[i], &len);
+
+    if (named) {
+      const char *propName = RedisModule_StringPtrLen(argv[i++], &len);
+      spec->properties[p].name = strndup(propName, len);
+    } else {
+      spec->properties[p].name = NULL;
+    }
+
+    const char *str = RedisModule_StringPtrLen(argv[i++], &len);
     int ok = 0;
     for (int t = 0; types[t] != NULL; t++) {
       if (strlen(types[t]) == len && !strncasecmp(str, types[t], len)) {
-        spec->properties[i].type = typeEnums[t];
+        spec->properties[p].type = typeEnums[t];
         ok = 1;
         break;
       }
     }
 
     if (!ok) {
-      printf("could not parse %.*s\n", (int)len, str);
-      free(spec->properties);
-      spec->properties = NULL;
+      RedisModule_Log(ctx, "warning", "could not parse %.*s", (int)len, str);
+      SISpec_Free(spec);
       return REDISMODULE_ERR;
     }
+    p++;
   }
 
   return REDISMODULE_OK;
@@ -249,7 +295,23 @@ void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
 
 void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
                            void *value) {
-  printf("AOF rewrite not implemented!");
+
+  // WE CANNOT IMPLEMENT THIS RIGHT NOW BECAUSE THE API DOES NOT SUPPORT WHAT
+  // WE
+  // NEED
+  // RedisIndex *idx = value;
+  // RedisModuleString *args[idx->spec.numProps];
+  // for (int i = 0; i < idx->spec.numProps; i++) {
+  //   args[i] =
+  //       RedisModule_CreateString(aof->ctx,
+  //       types[idx->spec.properties[i].type],
+  //                                strlen(types[idx->spec.properties[i].type]));
+  //   ;
+  //   fmt[i] = 'c';
+  // }
+  // RedisModule_EmitAOF(aof, "IDX.CREATE", fmt, key, str, len,
+  // // (double)score);
+  // printf("AOF rewrite not implemented!");
 }
 
 void RedisIndex_Digest(RedisModuleDigest *digest, void *value) {}

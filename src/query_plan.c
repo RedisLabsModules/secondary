@@ -183,8 +183,8 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
     SIQueryNode_Print(q->root, 0);
     cleanQueryNode(&q->root);
     pln->filterTree = q->root;
-    printf("Filter tree:\n");
-    SIQueryNode_Print(q->root, 0);
+    // printf("Filter tree:\n");
+    // SIQueryNode_Print(q->root, 0);
   }
 
   pln->ranges = (siPlanRange **)scanKeys->data;
@@ -196,13 +196,13 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
     }
   }
 
-  printf("Extracted scan keys:\n");
-  for (int i = 0; i < pln->numRanges; i++) {
-    SIMultiKey_Print(pln->ranges[i]->min);
-    printf(" ... ");
-    SIMultiKey_Print(pln->ranges[i]->max);
-    printf("\n");
-  }
+  // printf("Extracted scan keys:\n");
+  // for (int i = 0; i < pln->numRanges; i++) {
+  //   SIMultiKey_Print(pln->ranges[i]->min);
+  //   printf(" ... ");
+  //   SIMultiKey_Print(pln->ranges[i]->max);
+  //   printf("\n");
+  // }
   return pln;
 }
 

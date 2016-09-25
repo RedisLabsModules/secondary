@@ -128,10 +128,8 @@ The API includes three layers that can be used separately but are orthogonal to 
 * For sorted sets, the index indexes values and scores.
 * The index DOES NOT track changes in keys implicitly.
 * Instead, write operations to the keys are done **through** the index.
-
-    i.e. in the case of a HASH, the indexing module implements HSET/HMSET/HINCRBY so it knows which key is updated automatically.
-
-* The index also implements the GET family of functions for the type, using WHERE clauses.
+* This is done by piping write commands via the index.
+* Reading is done by applying generic redis commands using the index.
 
     Proposed API:
 
@@ -141,74 +139,36 @@ The API includes three layers that can be used separately but are orthogonal to 
 
     * Generic index based execution:
 
-            IDX.FOREACH <index_name> WHERE <predicates> DO [ANY REDIS COMMAND]
+            IDX.FROM <index_name> WHERE <predicates> [LIMIT offset num] [ANY REDIS READONLY COMMAND]
+            IDX.INTO <index_name> [WHERE <predicates>] DO [ANY REDIS WRITE COMMAND]  
 
             we denote the id using something like $, * or _
             e.g.:
+        
+            IDX.FROM myidx WHERE "name='foofi'" HGETALL $
+            IDX.FROM myidx WHERE "$1='foofi'" GET $
 
-            IDX.FOREACH myidx WHERE "name='foofi'" DO HMSET $ age 13 salary 1337
-            IDX.FOREACH myidx WHERE "name='foofi'" DO HINCRBY $ num_visits 1
-
-        **Note:** more options TBD
-
-    * Writing syntax - HASH values:
-
-            HSET <key> <element> <value>
-
-            IDX.HSET <element> <value> USING <index_name> [<index_name> ...] WHERE <predicates>
-
-            IDX.HMSET <num_pairs> <element> <value> ... USING <index_name> [<index_name> ...] WHERE <predicates>
-
-            IDX.HDEL <index_name> <key> USING <index_name> [<index_name> ...] WHERE <predicates>
-
-            IDX.HINCRBY <element> <amount> USING <index_name> [<index_name> ...] WHERE <predicates>
-
-    * Reading - HASH values:
-
-            IDX.HGETALL USING <index_name>  WHERE <predicates> [LIMIT <offset> <num>] 
+            IDX.INTO users HMSET user1 name foo last bar
+            IDX.INTO users WHERE "name='foo'" HSET $ last_access = NOW()
             
-        returns an array of interleaved key, values, where values is a nested array of all the hash values.
-            
-            IDX.HMGET USING <index_name> <num_elements> <elem> <elem> ... WHERE <predicates> [LIMIT offset num]
-            
-        same as HGETALL but gets only some of the elements, and does not return the element names, just the values.
-            
-            IDX.HGET USING <index_name> <elem> WHERE <predicates> [LIMIT offset num]
-            
-        same as HGETALL but gets only one element's value for each matching HASH.
+    * Index Rebuilding
 
-    * Writing - strings:
+        Creating an index doesn't do anything, but we provide a mechanism for rebuilding indexes in a non blocking way:
 
-            IDX.SET USING <index_name> <key> <value> <key> <value> ...
-            IDX.SETNX USING <index_name> <key> <value> <key> <value> ...
-            IDX.SETEX USING <index_name> <key> <value> <key> <value> ...
-            IDX.INCRBY USING <index_name> <key> <value> <key> <value> ...
-            IDX.DEL USING <index_name> WHERE <predicates> [LIMIT offset num]
+            IDX.REBUILD <index_name> [MATCH <key pattern>] [ASYNC <cursor id>]
 
-    * Reading - strings:
-            
-            IDX.GET USING <index_name> WHERE <predicates> [LIMIT offset num]
+        The MATCH is used to tell the index which id pattern should be scanned to rebuild it. 
+        If it is an existing index that's been corrupted due to bugs or consistency issues, we don't need to use pattern,
+        and can just use the index's backwards reference table of ids to recreate itself automatically. 
 
-        > ### TBD: how do we handle expires? 
-        > 
-        > for now we simply assume no expiration support, until redis has keyspace notifications for modules. 
+        ASYNC tells the index not to block redis entirely, but do this iteratively using SCAN. In this case the command returns 
+        SCAN iterator ids, and works just like SCAN does. This means the client needs to call REBUILD many times with cursor ids, 
+        but each REBUILD call is very short and will not block redis.
+
+        **NOTE**: When redis will include asynchronous operations this complexity will not be needed, and we will be able to do
+        index rebuilding and maintenance on a separate thread.   
+
     
-    * Example Usage:
-
-            > IDX.CREATE myidx TYPE HASH SCHEMA name STRING last STRING age INT32
-            
-            # an index for age only
-            > IDX.CREATE age_idx TYPE HASH SCHEMA age INT32
-            
-            # Inserting a user into a HASH key via the index. This is an UPSERT query, like HMSET
-            > IDX.HMSET 3 name "Jeff" last "Lebowski" age 45 USING myidx WHERE "_ = 'user3'"
-
-            # Selecting the last name and age of all users named Jeff
-            > IDX.HMGET USING myidx 2 last age WHERE "name = 'Lebowski'" 
-
-            # Getting all HASH elements and values of users over 18
-            > IDX.HGETALL USING age_idx WHER "age >= 18" LIMIT 0 10
-
 ## 3. Aggregations:
 
 The above indexing scheme also allows us to do aggregations on HASH properties or complete string values. This is useful for analytics, for example.
@@ -217,7 +177,7 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
 
 * Proposed Aggregation Syntax: 
 
-            IDX.AGGREGATE USING <index_name> <aggregation_func> ... WHERE <predicates> 
+            IDX.AGGREGATE <index_name> <aggregation_func> ... WHERE <predicates> 
     
 * Aggregation Function Grammar:
 
@@ -239,7 +199,7 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
     * Example Usage
 
             # Getting age distribution of users named Jeff:
-            > IDX.AGGREGATE USING myidx COUNT_DISTINCT(FLOOR(age)) WHERE "name = 'Jeff'
+            > IDX.AGGREGATE users COUNT_DISTINCT(FLOOR(age)) WHERE "name = 'Jeff'
             (returns a list of age,count pairs)
 
     * Proposed Aggregation functions:

@@ -64,7 +64,7 @@ int SI_ParseQuery(SIQuery *query, const char *q, size_t len) {
   if (!root) {
     return 0;
   }
-  ParseNode_print(root, 0);
+  // ParseNode_print(root, 0);
 
   query->root = traverseNode(query, root);
   ParseNode_Free(root);

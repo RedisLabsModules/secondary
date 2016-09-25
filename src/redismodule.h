@@ -148,6 +148,9 @@ RedisModuleString *REDISMODULE_API_FUNC(RedisModule_CreateStringFromLongLong)(
     RedisModuleCtx *ctx, long long ll);
 RedisModuleString *REDISMODULE_API_FUNC(RedisModule_CreateStringFromString)(
     RedisModuleCtx *ctx, const RedisModuleString *str);
+RedisModuleString *
+    REDISMODULE_API_FUNC(RedisModule_CreateStringPrintf)(RedisModuleCtx *ctx,
+                                                         const char *fmt, ...);
 void REDISMODULE_API_FUNC(RedisModule_FreeString)(RedisModuleCtx *ctx,
                                                   RedisModuleString *str);
 const char *
@@ -268,6 +271,14 @@ double REDISMODULE_API_FUNC(RedisModule_LoadDouble)(RedisModuleIO *io);
 void REDISMODULE_API_FUNC(RedisModule_Log)(RedisModuleCtx *ctx,
                                            const char *level, const char *fmt,
                                            ...);
+int REDISMODULE_API_FUNC(RedisModule_StringAppendBuffer)(RedisModuleCtx *ctx,
+                                                         RedisModuleString *str,
+                                                         const char *buf,
+                                                         size_t len);
+void REDISMODULE_API_FUNC(RedisModule_RetainString)(RedisModuleCtx *ctx,
+                                                    RedisModuleString *str);
+int REDISMODULE_API_FUNC(RedisModule_StringCompare)(RedisModuleString *a,
+                                                    RedisModuleString *b);
 
 /* This is included inline inside each Redis module. */
 static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver,
@@ -318,6 +329,7 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver,
   REDISMODULE_GET_API(CreateString);
   REDISMODULE_GET_API(CreateStringFromLongLong);
   REDISMODULE_GET_API(CreateStringFromString);
+  REDISMODULE_GET_API(CreateStringPrintf);
   REDISMODULE_GET_API(FreeString);
   REDISMODULE_GET_API(StringPtrLen);
   REDISMODULE_GET_API(AutoMemory);
@@ -364,6 +376,9 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver,
   REDISMODULE_GET_API(LoadDouble);
   REDISMODULE_GET_API(EmitAOF);
   REDISMODULE_GET_API(Log);
+  REDISMODULE_GET_API(StringAppendBuffer);
+  REDISMODULE_GET_API(RetainString);
+  REDISMODULE_GET_API(StringCompare);
 
   RedisModule_SetModuleAttribs(ctx, name, ver, apiver);
   return REDISMODULE_OK;

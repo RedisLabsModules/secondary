@@ -31,7 +31,6 @@ Token tok;
 
 [\-\+]?[0-9]+    {   
   tok.intval = atoi(yytext); 
-  printf("INTEGER! %d\n", tok.intval);
   return INTEGER; 
 }
 

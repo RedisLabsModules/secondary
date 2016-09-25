@@ -8,6 +8,7 @@ set(_secondary_files
             ../src/changeset.c
             ../src/query.c
             ../src/cursor.c
+            ../src/spec.c
             ../src/index.c
             ../src/reverse_index.c
             ../src/query_parse.c
@@ -16,11 +17,13 @@ set(_secondary_files
             ../src/parser/ast.c
             ../src/parser/parser.c
             ../src/parser/lex.yy.c
+            
 
             ../src/rmutil/vector.c
             ../src/rmutil/alloc.c
             ../src/skiplist/skiplist.c
             )
+
 
 set (secondary_files ${_secondary_files} PARENT_SCOPE)            
 
@@ -28,7 +31,7 @@ set (secondary_files ${_secondary_files} PARENT_SCOPE)
 add_library(libsecondary STATIC 
                 ${_secondary_files}      
         )
-target_compile_options(libsecondary PUBLIC "-fPIC" "-DREDIS_MODULE_TARGET")
+target_compile_options(libsecondary PUBLIC "-fPIC" "-DREDIS_MODULE_TARGET" "-I${CMAKE_CURRENT_LIST_DIR}")
 
 # build the parser source code before building libsecondary
 # TODO: remove this
@@ -43,7 +46,14 @@ add_custom_command(
 add_library(module MODULE
     index_type.c
     module.c
+    rmutil/util.c
+    rmutil/strings.c
+
 )
+
+
+add_library(librmutil STATIC IMPORTED ../../src/rmutil/librmutil.a)
+
 target_compile_options(module PUBLIC "-DREDIS_MODULE_TARGET")
 
 target_link_libraries(module libsecondary)

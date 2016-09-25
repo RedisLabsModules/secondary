@@ -4,8 +4,7 @@
 #include "index.h"
 
 extern RedisModuleType *IndexType;
-
-typedef enum { SI_CompoundIndex, SI_SimpleIndex, SI_HashIndex } SIIndexKind;
+typedef enum { SI_AbstractIndex, SI_HashIndex, SI_StringIndex } SIIndexKind;
 
 typedef struct {
   SIIndexKind kind;
@@ -22,7 +21,9 @@ void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
 void RedisIndex_Digest(RedisModuleDigest *digest, void *value);
 void RedisIndex_Free(void *value);
 
-int SI_ParseSpec(RedisModuleString **argv, int argc, SISpec *spec);
+int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
+                 SISpec *spec, SIIndexKind *kind);
+
 void *NewRedisIndex(SIIndexKind kind, u_int32_t flags, SISpec spec);
 int RedisIndex_Register(RedisModuleCtx *ctx);
 #endif // !__SI_INDEX_TYPE_
