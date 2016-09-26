@@ -1,6 +1,8 @@
 #include "ast.h"
 #include "../rmutil/alloc.h"
+
 void ParseNode_Free(ParseNode *pn) {
+  printf("freeing %p\n", pn);
   if (!pn)
     return;
   switch (pn->t) {
@@ -25,25 +27,24 @@ ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right) {
   return n;
 }
 
-ParseNode *NewPredicateNode(int propId, int op, SIValue v) {
+ParseNode *NewPredicateNode(property p, int op, SIValue v) {
 
   ParseNode *n = malloc(sizeof(ParseNode));
   n->t = N_PRED;
-  n->pn.propId = propId;
+  n->pn.prop = p;
   n->pn.op = op;
   n->pn.val = v;
 
   return n;
 }
 
-ParseNode *NewInPredicateNode(int propId, int op, SIValueVector v) {
+ParseNode *NewInPredicateNode(property p, int op, SIValueVector v) {
 
   ParseNode *n = malloc(sizeof(ParseNode));
   n->t = N_PRED;
-  n->pn.propId = propId;
+  n->pn.prop = p;
   n->pn.op = op;
   n->pn.lst = v;
-
   return n;
 }
 
@@ -102,7 +103,11 @@ void conditionNode_print(ConditionNode *n, int depth) {
 void predicateNode_print(PredicateNode *n, int depth) {
   char buf[1024];
 
-  printf("$%d ", n->propId);
+  if (n->prop.name == NULL) {
+    printf("$%d ", n->prop.id);
+  } else {
+    printf("%s ", n->prop.name);
+  }
   printOp(n->op);
   if (n->op != IN) {
     SIValue_ToString(n->val, buf, 1024);

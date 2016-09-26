@@ -140,7 +140,7 @@ The API includes three layers that can be used separately but are orthogonal to 
     * Generic index based execution:
 
             IDX.FROM <index_name> WHERE <predicates> [LIMIT offset num] [ANY REDIS READONLY COMMAND]
-            IDX.INTO <index_name> [WHERE <predicates>] DO [ANY REDIS WRITE COMMAND]  
+            IDX.INTO <index_name> [WHERE <predicates>] [ANY REDIS WRITE COMMAND]  
 
             we denote the id using something like $, * or _
             e.g.:

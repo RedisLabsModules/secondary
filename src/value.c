@@ -79,6 +79,7 @@ int _parseInt(SIValue *v, char *str, size_t len) {
     return 0;
   }
 
+  printf("str: %s, val: %lld\n", str, val);
   if (endptr == str) {
     fprintf(stderr, "No digits were found\n");
     return 0;

@@ -39,34 +39,44 @@ SIQueryNode *toQueryNode(PredicateNode *n) {
   }
 }
 
-SIQueryNode *traverseNode(SIQuery *q, ParseNode *n) {
+SIQueryNode *traverseNode(SIQuery *q, ParseNode *n, SISpec *spec) {
   if (!n)
     return NULL;
 
   if (n->t == N_COND) {
 
-    return SIQuery_NewLogicNode(traverseNode(q, n->cn.left),
+    return SIQuery_NewLogicNode(traverseNode(q, n->cn.left, spec),
                                 n->cn.op == OR ? OP_OR : OP_AND,
-                                traverseNode(q, n->cn.right));
+                                traverseNode(q, n->cn.right, spec));
   } else {
     SIQueryNode *ret = toQueryNode(&n->pn);
     // prop ids start at index 1, here we convert them to zero-index
-    ret->pred.propId = n->pn.propId - 1;
+    if (n->pn.prop.name && spec != NULL) {
+      SIIndexProperty *ip =
+          SISpec_PropertyByName(spec, n->pn.prop.name, &ret->pred.propId);
+      // if we couldn't find the property name, we set the id to -1, which will
+      // make query validation fail
+      if (!ip) {
+        ret->pred.propId = -1;
+      }
+    } else {
+      ret->pred.propId = n->pn.prop.id - 1;
+    }
     q->numPredicates++;
     return ret;
   }
 }
 
-int SI_ParseQuery(SIQuery *query, const char *q, size_t len) {
+int SI_ParseQuery(SIQuery *query, const char *q, size_t len, SISpec *spec) {
   // TODO: Query validation!
   query->numPredicates = 0;
   ParseNode *root = ParseQuery(q, len);
   if (!root) {
     return 0;
   }
-  // ParseNode_print(root, 0);
+  ParseNode_print(root, 0);
 
-  query->root = traverseNode(query, root);
+  query->root = traverseNode(query, root, spec);
   ParseNode_Free(root);
   return 1;
 }

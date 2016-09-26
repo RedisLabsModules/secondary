@@ -20,10 +20,11 @@ Token tok;
 "FALSE"     { return FALSE; }
 
 \$[0-9]{1} {    
-                tok.intval = atoi(yytext+1); 
-                return ENUMERATOR; 
+    tok.intval = atoi(yytext+1); 
+    return ENUMERATOR; 
 }
- 
+
+
 [0-9]*\.[0-9]+    {  
                     tok.dval = atof(yytext); 
                     return FLOAT; 
@@ -53,6 +54,13 @@ Token tok;
 ")"           { return RP; }
 ","           { return COMMA; }
 "LIKE"        { return LIKE; }
+
+
+[A-Za-z_][_A-Za-z0-9]* {	
+  	tok.strval= strdup(yytext);
+  	return IDENT;
+}
+ 
 
 [ \t\n]+ /* ignore whitespace */
 %%

@@ -9,7 +9,8 @@
    
 
 %syntax_error {  
-yyerror("WAT?");
+
+    yyerror(yytext);
 }   
    
 %include {   
@@ -22,6 +23,8 @@ yyerror("WAT?");
 #include "ast.h"
 #include "../rmutil/alloc.h"
 
+extern int yylineno;
+extern char *yytext;
 
 void yyerror(char *s);
 
@@ -41,7 +44,7 @@ op(A) ::= GE. { A = GE; }
 op(A) ::= NE. { A = NE; } 
 
 %type cond {ParseNode*}
-%destructor cond { ParseNode_Free($$); }
+%destructor cond { printf("Destructing %p\n", $$); ParseNode_Free($$); }
 
 cond(A) ::= prop(B) op(C) value(D). { 
     /* Terminal condition of a single predicate */
@@ -101,9 +104,11 @@ multivals(A) ::= multivals(B) COMMA value(C). {
 }
 
 
-%type prop {int}
+%type prop {property}
+%destructor prop { if ($$.name != NULL) { free($$.name); } }
 // property enumerator
-prop(A) ::= ENUMERATOR(B). { A = B.intval; }
+prop(A) ::= ENUMERATOR(B). { A.id = B.intval; A.name = NULL; }
+prop(A) ::= IDENT(B). { A.name = B.strval; A.id = 0; }
 
 
 %code {
@@ -115,8 +120,7 @@ prop(A) ::= ENUMERATOR(B). { A = B.intval; }
   YY_BUFFER_STATE yy_scan_string( const char * );
   YY_BUFFER_STATE yy_scan_bytes( const char *, size_t );
   void            yy_delete_buffer( YY_BUFFER_STATE );
-  extern int yylineno;
-  extern char *yytext;
+  
   
 
 ParseNode *ParseQuery(const char *c, size_t len)  {
@@ -132,7 +136,7 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
         Parse(pParser, t, tok, &ret);                
     }
     Parse (pParser, 0, tok, &ret);
-    ParseFree(pParser, free);
+   // ParseFree(pParser, free);
 
     return ret;
   }

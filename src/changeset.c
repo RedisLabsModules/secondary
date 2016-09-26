@@ -22,6 +22,14 @@ SIChange SI_NewAddChange(SIId id, size_t num, ...) {
   return ch;
 }
 
+SIChange SI_NewEmptyAddChange(SIId id, size_t cap) {
+
+  // initializing the change with {nun} values capacity
+  SIChange ch = {.type = SI_CHADD, .id = id, .v = SI_NewValueVector(cap)};
+  // read SIValues from the va_list into the change
+  return ch;
+}
+
 SIChangeSet SI_NewChangeSet(size_t cap) {
   SIChangeSet ret = {
       .numChanges = 0, .cap = cap, .changes = calloc(cap, sizeof(SIChange))};
@@ -42,3 +50,5 @@ void SIChangeSet_Free(SIChangeSet *cs) {
   if (cs->changes)
     free(cs->changes);
 }
+
+  

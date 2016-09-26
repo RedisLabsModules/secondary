@@ -36,7 +36,7 @@ MU_TEST(testIndex) {
 
   SIQuery q = SI_NewQuery();
 
-  mu_check(SI_ParseQuery(&q, str, strlen(str)));
+  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec));
   SICursor *c = idx.Find(idx.ctx, &q);
   mu_check(c->error == SI_CURSOR_OK);
   printf("%d\n", c->error);

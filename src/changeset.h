@@ -19,6 +19,8 @@ typedef struct {
 * SIValues, and the size of the list must match num
 */
 SIChange SI_NewAddChange(SIId id, size_t num, ...);
+/* Create an empty add change with a given capacity */
+SIChange SI_NewEmptyAddChange(SIId id, size_t cap);
 
 typedef struct {
   SIChange *changes;
@@ -29,6 +31,7 @@ typedef struct {
 SIChangeSet SI_NewChangeSet(size_t cap);
 
 void SIChangeSet_AddCahnge(SIChangeSet *cs, SIChange ch);
+
 void SIChangeSet_Free(SIChangeSet *cs);
 
 #endif // !1

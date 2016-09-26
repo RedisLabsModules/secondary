@@ -17,3 +17,4 @@
 #define FALSE                           17
 #define COMMA                           18
 #define ENUMERATOR                      19
+#define IDENT                           20

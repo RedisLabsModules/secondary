@@ -112,7 +112,7 @@ SIQueryNode *SIQuery_NewLogicNode(SIQueryNode *left, SILogicOperator op,
 
 SIQueryError SIQuery_Normalize(SIQuery *q, SISpec *spec);
 
-int SI_ParseQuery(SIQuery *query, const char *q, size_t len);
+int SI_ParseQuery(SIQuery *query, const char *q, size_t len, SISpec *spec);
 void SIQueryNode_Print(SIQueryNode *n, int depth);
 
 void SIQueryNode_Free(SIQueryNode *n);

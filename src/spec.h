@@ -27,6 +27,6 @@ void SISpec_Free(SISpec *sp);
 
 /* Get a spec property by name, returns NULL if no such property exists or the
  * spec is not named */
-SIIndexProperty *SISpec_PropertyByName(SISpec *spec, const char *name);
+SIIndexProperty *SISpec_PropertyByName(SISpec *spec, const char *name, int *id);
 
 #endif

@@ -17,7 +17,12 @@ typedef enum {
 struct parseNode;
 
 typedef struct {
-  int propId;
+  char *name;
+  int id;
+} property;
+
+typedef struct {
+  property prop;
   int op;
   union {
     SIValue val;
@@ -41,7 +46,7 @@ typedef struct parseNode {
 
 void ParseNode_Free(ParseNode *pn);
 ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right);
-ParseNode *NewPredicateNode(int propId, int op, SIValue v);
+ParseNode *NewPredicateNode(property p, int op, SIValue v);
 void ParseNode_print(ParseNode *n, int depth);
 
 #endif

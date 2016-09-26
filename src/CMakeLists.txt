@@ -45,6 +45,7 @@ add_custom_command(
 
 add_library(module MODULE
     index_type.c
+    hash_index.c
     module.c
     rmutil/util.c
     rmutil/strings.c

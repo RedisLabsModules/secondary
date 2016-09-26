@@ -144,6 +144,7 @@ void cleanQueryNode(SIQueryNode **pn) {
 SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
 
   siPlanRangeKey *keys[q->numPredicates];
+  memset(keys, 0, q->numPredicates * sizeof(siPlanRangeKey));
   size_t keyNums[q->numPredicates];
 
   // extract an array of all key ranges we need to traverse from this tree
@@ -155,6 +156,7 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
     int isLast = 0;
     siPlanRangeKey *ka = predicateToRanges(pred, &(keyNums[propId]), &isLast);
     if (!ka) {
+      keys[propId] = NULL;
       break;
     }
 

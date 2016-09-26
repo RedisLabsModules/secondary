@@ -1,7 +1,8 @@
 #include "index_type.h"
 #include "redismodule.h"
+#include "rmutil/util.h"
 #include "rmutil/alloc.h"
-
+#include "hash_index.h"
 /*
 * IDX.CREATE <index_name> {options} SCHEMA
 * [[STRING|INT32|INT64|UINT|BOOL|FLOAT|DOUBLE|TIME] ...]
@@ -59,11 +60,17 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
   SIValueVector vals = SI_NewValueVector(argc - 3);
   for (int i = 0; i < argc - 3; i++) {
+    if (i == idx->spec.numProps) {
+      SIValueVector_Free(&vals);
+      return RedisModule_ReplyWithError(ctx, "Invalid value given");
+    }
+
     size_t vlen;
     const char *vstr = RedisModule_StringPtrLen(argv[i + 3], &vlen);
     SIValue val = {.type = idx->spec.properties[i].type};
     if (!SI_ParseValue(&val, (char *)vstr, vlen)) {
-      printf("Could not parse %.*s\n", (int)vlen, vstr);
+      SIValueVector_Free(&vals);
+      RedisModule_Log(ctx, "error", "Could not parse %.*s\n", (int)vlen, vstr);
       return RedisModule_ReplyWithError(ctx, "Invalid value given");
     }
     SIValueVector_Append(&vals, val);
@@ -75,9 +82,11 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   SIChangeSet_AddCahnge(&cs, ch);
 
   if (idx->idx.Apply(idx->idx.ctx, cs) != SI_INDEX_OK) {
+    SIValueVector_Free(&vals);
     return RedisModule_ReplyWithError(ctx, "Could not apply change to index");
   }
 
+  SIValueVector_Free(&vals);
   return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
@@ -102,7 +111,7 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   size_t len;
   char *qstr = (char *)RedisModule_StringPtrLen(argv[4], &len);
   SIQuery q = SI_NewQuery();
-  if (!SI_ParseQuery(&q, qstr, len)) {
+  if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
     return RedisModule_ReplyWithError(ctx, "Error parsing query string");
   }
 
@@ -126,20 +135,95 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   return REDISMODULE_OK;
 }
 
-// int TestDoubleFormatting(RedisModuleCtx *ctx, RedisModuleString **argv,
-//                          int argc) {
+/* IDX.FROM {index_name} WHERE {predicates} ANY REDIS READ COMMAND */
+int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
-//   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
-//   if (argc < 2) {
-//     return RedisModule_WrongArity(ctx);
-//   }
+  RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-//   RedisModuleCallReply *r =
-//       RedisModule_Call(ctx, "INCRBYFLOAT", "sd", argv[1], 3.14159265359);
-//   return RedisModule_ReplyWithCallReply(ctx, r);
-// }
+  if (argc < 6)
+    return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+
+  // make sure it's an index key
+  if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY ||
+      RedisModule_ModuleTypeGetType(key) != IndexType) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
+
+  int wherePos = RMUtil_ArgExists("WHERE", argv, argc, 0);
+  if (!wherePos || wherePos >= argc - 1) {
+    RedisModule_ReplyWithError(ctx, "No Where clause given");
+  }
+  size_t len;
+  char *qstr = (char *)RedisModule_StringPtrLen(argv[wherePos + 1], &len);
+
+  SIQuery q = SI_NewQuery();
+  if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
+    return RedisModule_ReplyWithError(ctx, "Error parsing query string");
+  }
+
+  int rc = HashIndex_ExecuteReadCommand(ctx, idx, &q, &argv[wherePos + 2],
+                                        argc - (wherePos + 2));
+  SIQuery_Free(&q);
+  return rc;
+}
+
+/* IDX.INTO {index_name} [HMSET|HSET|etc...] */
+int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+
+  RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+
+  // make sure it's an index key
+  if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY ||
+      RedisModule_ModuleTypeGetType(key) != IndexType) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
+
+  // TODO: dynamic cmdPos if WHERE exists
+  int cmdPos = 2;
+  RedisModuleString *hkey = HashIndex_GetKey(&argv[cmdPos], argc - cmdPos);
+  if (!hkey) {
+    RedisModule_ReplyWithError(ctx, "Command not suported!");
+  }
+  printf("Operating on key %s\n", RedisModule_StringPtrLen(hkey, NULL));
+
+  // execute the trailing command
+  RedisModuleCallReply *rep =
+      RedisModule_Call(ctx, RedisModule_StringPtrLen(argv[cmdPos], NULL), "v",
+                       &argv[cmdPos + 1], argc - (cmdPos + 1));
+
+  if (RedisModule_CallReplyType(rep) != REDISMODULE_REPLY_ERROR) {
+
+    if (HashIndex_IndexHashObject(ctx, idx, hkey) != REDISMODULE_OK) {
+      return RedisModule_ReplyWithError(
+          ctx, "Command performed but updating index failed");
+    }
+  }
+
+  return RedisModule_ReplyWithCallReply(ctx, rep);
+}
+
+int TestReplyGeneric(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+
+  RedisModule_AutoMemory(ctx);
+
+  return RedisModule_ReplyWithCallReply(
+      ctx, RedisModule_Call(ctx, RedisModule_StringPtrLen(argv[1], NULL), "v",
+                            &argv[2], argc - 2));
+}
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
+
   // LOGGING_INIT(0xFFFFFFFF);
   if (RedisModule_Init(ctx, "idx", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
@@ -161,6 +245,22 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   if (RedisModule_CreateCommand(ctx, "idx.select", IndexSelectCommand,
                                 "readonly no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
 
-    return REDISMODULE_OK;
+  if (RedisModule_CreateCommand(ctx, "idx.from", IndexFromCommand,
+                                "readonly no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+
+  // TODO: this is not a "key at 1" command - needs better handling
+  if (RedisModule_CreateCommand(ctx, "idx.into", IndexIntoCommand,
+                                "write deny-oom no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+  if (RedisModule_CreateCommand(ctx, "idx.wat", TestReplyGeneric,
+                                "write deny-oom no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+
+  return REDISMODULE_OK;
 }
