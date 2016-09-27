@@ -51,4 +51,6 @@ void SIChangeSet_Free(SIChangeSet *cs) {
     free(cs->changes);
 }
 
-  
+SIChange SI_NewDelChange(SIId id) {
+  return (SIChange){.type = SI_CHDEL, .id = id};
+}

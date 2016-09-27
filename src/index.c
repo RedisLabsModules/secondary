@@ -16,6 +16,22 @@ typedef struct {
   SIReverseIndex *ri;
 } compoundIndex;
 
+/* Delete an id from the index. return 1 if it was in the index, 0 otherwise */
+int compoundIndex_applyDel(compoundIndex *idx, SIChange ch) {
+  SIMultiKey *oldkey = NULL;
+  // TODO: Hanlde cases where no reverse entry exists but the id is in index.
+  // TODO: What happens if an id exists mutiple times? e.g. indexing sets/lists
+  int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
+  if (exists) {
+    skiplistDelete(idx->sl, oldkey, ch.id);
+    free(oldkey);
+    SIReverseIndex_Delete(idx->ri, ch.id);
+    return 1;
+  }
+
+  return 0;
+}
+
 int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
 
   SIValueVector vec;
@@ -54,16 +70,16 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
 
   for (size_t i = 0; i < cs.numChanges; i++) {
 
-    // this value is not applicable to the index
-    if (cs.changes[i].v.len != idx->numFuncs) {
-      return SI_INDEX_ERROR;
-    }
-
     if (cs.changes[i].type == SI_CHADD) {
+      // this value is not applicable to the index
+      if (cs.changes[i].v.len != idx->numFuncs) {
+        return SI_INDEX_ERROR;
+      }
 
       compoundIndex_applyAdd(idx, cs.changes[i]);
+    } else if (cs.changes[i].type == SI_CHDEL) {
+      compoundIndex_applyDel(idx, cs.changes[i]);
     }
-    // TODO: handle remove
   }
 
   return SI_INDEX_OK;

@@ -90,6 +90,40 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
+/* IDX.DEL <index_name> <id> [<id> ...] */
+int IndexDelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+
+  RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+
+  if (argc < 3)
+    return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key =
+      RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+
+  // make sure it's an index key
+  if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY ||
+      RedisModule_ModuleTypeGetType(key) != IndexType) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
+
+  SIChangeSet cs = SI_NewChangeSet(argc - 2);
+  for (int i = 2; i < argc; i++) {
+    SIId id = (char *)RedisModule_StringPtrLen(argv[2], NULL);
+    SIChangeSet_AddCahnge(&cs, SI_NewDelChange(id));
+  }
+
+  if (idx->idx.Apply(idx->idx.ctx, cs) != SI_INDEX_OK) {
+    SIChangeSet_Free(&cs);
+    return RedisModule_ReplyWithError(ctx, "Could not apply change to index");
+  }
+
+  SIChangeSet_Free(&cs);
+  return RedisModule_ReplyWithSimpleString(ctx, "OK");
+}
+
 /* IDX.SELECT FROM <index_name> WHERE <predicates> [LIMIT offset num] */
 int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                        int argc) {
@@ -213,15 +247,6 @@ int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   return RedisModule_ReplyWithCallReply(ctx, rep);
 }
 
-int TestReplyGeneric(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-
-  RedisModule_AutoMemory(ctx);
-
-  return RedisModule_ReplyWithCallReply(
-      ctx, RedisModule_Call(ctx, RedisModule_StringPtrLen(argv[1], NULL), "v",
-                            &argv[2], argc - 2));
-}
-
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 
   // LOGGING_INIT(0xFFFFFFFF);
@@ -237,7 +262,12 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
-  if (RedisModule_CreateCommand(ctx, "idx.add", IndexAddCommand,
+  if (RedisModule_CreateCommand(ctx, "idx.insert", IndexAddCommand,
+                                "write deny-oom no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+
+  if (RedisModule_CreateCommand(ctx, "idx.del", IndexDelCommand,
                                 "write deny-oom no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
@@ -254,10 +284,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
 
   // TODO: this is not a "key at 1" command - needs better handling
   if (RedisModule_CreateCommand(ctx, "idx.into", IndexIntoCommand,
-                                "write deny-oom no-cluster", 1, 1,
-                                1) == REDISMODULE_ERR)
-    return REDISMODULE_ERR;
-  if (RedisModule_CreateCommand(ctx, "idx.wat", TestReplyGeneric,
                                 "write deny-oom no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;

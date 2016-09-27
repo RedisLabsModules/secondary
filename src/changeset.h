@@ -21,6 +21,8 @@ typedef struct {
 SIChange SI_NewAddChange(SIId id, size_t num, ...);
 /* Create an empty add change with a given capacity */
 SIChange SI_NewEmptyAddChange(SIId id, size_t cap);
+/* Create a DEL change for a singel id */
+SIChange SI_NewDelChange(SIId id);
 
 typedef struct {
   SIChange *changes;
