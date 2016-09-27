@@ -2,7 +2,6 @@
 #include "../rmutil/alloc.h"
 
 void ParseNode_Free(ParseNode *pn) {
-  printf("freeing %p\n", pn);
   if (!pn)
     return;
   switch (pn->t) {
@@ -19,6 +18,7 @@ void ParseNode_Free(ParseNode *pn) {
 
 ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right) {
   ParseNode *n = malloc(sizeof(ParseNode));
+
   n->t = N_COND;
   n->cn.left = left;
   n->cn.right = right;
@@ -45,6 +45,7 @@ ParseNode *NewInPredicateNode(property p, int op, SIValueVector v) {
   n->pn.prop = p;
   n->pn.op = op;
   n->pn.lst = v;
+
   return n;
 }
 

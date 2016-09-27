@@ -406,7 +406,7 @@ static void yy_destructor(
     case 23: /* cond */
 {
 #line 47 "parser.y"
- printf("Destructing %p\n", (yypminor->yy32)); ParseNode_Free((yypminor->yy32)); 
+ ParseNode_Free((yypminor->yy32)); 
 #line 411 "parser.c"
 }
       break;
@@ -1157,7 +1157,7 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
         Parse(pParser, t, tok, &ret);                
     }
     Parse (pParser, 0, tok, &ret);
-   // ParseFree(pParser, free);
+    ParseFree(pParser, free);
 
     return ret;
   }

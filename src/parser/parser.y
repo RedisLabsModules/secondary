@@ -44,7 +44,7 @@ op(A) ::= GE. { A = GE; }
 op(A) ::= NE. { A = NE; } 
 
 %type cond {ParseNode*}
-%destructor cond { printf("Destructing %p\n", $$); ParseNode_Free($$); }
+%destructor cond { ParseNode_Free($$); }
 
 cond(A) ::= prop(B) op(C) value(D). { 
     /* Terminal condition of a single predicate */
@@ -136,7 +136,7 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
         Parse(pParser, t, tok, &ret);                
     }
     Parse (pParser, 0, tok, &ret);
-   // ParseFree(pParser, free);
+    ParseFree(pParser, free);
 
     return ret;
   }
