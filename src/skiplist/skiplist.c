@@ -243,9 +243,10 @@ int skiplistDelete(skiplist *sl, void *obj, void *val) {
       for (int i = 0; i < x->numVals; i++) {
         // found the value - let's delete it
         if (!sl->valcmp(val, x->vals[i])) {
-          while (i < x->numVals - 1) {
-            x->vals[i] = x->vals[i + 1];
-            i++;
+
+          // switch the found value with the top value
+          if (i < x->numVals - 1) {
+            x->vals[i] = x->vals[x->numVals - 1];
           }
           x->numVals--;
           break;

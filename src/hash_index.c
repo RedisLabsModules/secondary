@@ -32,7 +32,6 @@ int HashIndex_ExecuteReadCommand(RedisModuleCtx *ctx, RedisIndex *idx,
   int num = 0;
   SIId id;
   while (NULL != (id = c->Next(c->ctx))) {
-    printf("Id: %s\n", id);
     RedisModule_ReplyWithCallReply(
         ctx, __callParametricCommand(ctx, id, argv, argc));
     num++;
@@ -60,6 +59,15 @@ RedisModuleString *HashIndex_GetKey(RedisModuleString **argv, int argc) {
     }
   }
   return NULL;
+}
+
+IndexedTransaction CreateIndexedTransaction(RedisModuleCtx *ctx,
+                                            RedisIndex *idx,
+                                            RedisModuleString **argv,
+                                            int argc) {
+
+  IndexedTransaction ret;
+  ret.cmd = NULL;
 }
 
 int HashIndex_IndexHashObject(RedisModuleCtx *ctx, RedisIndex *idx,

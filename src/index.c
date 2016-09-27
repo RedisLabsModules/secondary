@@ -13,6 +13,7 @@ typedef struct {
 
   skiplist *sl;
 
+  size_t length;
   SIReverseIndex *ri;
 } compoundIndex;
 
@@ -26,6 +27,7 @@ int compoundIndex_applyDel(compoundIndex *idx, SIChange ch) {
     skiplistDelete(idx->sl, oldkey, ch.id);
     free(oldkey);
     SIReverseIndex_Delete(idx->ri, ch.id);
+    --idx->length;
     return 1;
   }
 
@@ -49,7 +51,7 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
     // SIMultiKey_Print(oldkey);
     // printf("\n");
     skiplistDelete(idx->sl, oldkey, ch.id);
-
+    --idx->length;
     free(oldkey);
   }
   // insert the id and values to the reverse index
@@ -61,7 +63,7 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   // SIMultiKey_Print(key);
   // printf("\n");
   skiplistInsert(idx->sl, key, ch.id);
-
+  ++idx->length;
   return 1;
 }
 int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
@@ -75,7 +77,6 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
       if (cs.changes[i].v.len != idx->numFuncs) {
         return SI_INDEX_ERROR;
       }
-
       compoundIndex_applyAdd(idx, cs.changes[i]);
     } else if (cs.changes[i].type == SI_CHDEL) {
       compoundIndex_applyDel(idx, cs.changes[i]);
@@ -86,7 +87,8 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
 }
 
 size_t compoundIndex_Len(void *ctx) {
-  return skiplistLength(((compoundIndex *)ctx)->sl);
+  // TODO: This is the index CARDINALITY - not length!
+  return ((compoundIndex *)ctx)->length;
 }
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
@@ -105,6 +107,7 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
   idx->cmpFuncs = calloc(spec.numProps, sizeof(SIKeyCmpFunc));
   idx->numFuncs = spec.numProps;
   idx->ri = SI_NewReverseIndex();
+  idx->length = 0;
 
   for (u_int8_t i = 0; i < spec.numProps; i++) {
     switch (spec.properties[i].type) {

@@ -124,6 +124,31 @@ int IndexDelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
+/* IDX.CARD <index_name> */
+int IndexCardinalityCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
+                            int argc) {
+  RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+
+  if (argc != 2)
+    return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+
+  // and empty index - return 0
+  if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+    return RedisModule_ReplyWithLongLong(ctx, 0);
+  }
+
+  // make sure it's an index key
+  if (RedisModule_ModuleTypeGetType(key) != IndexType) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
+
+  return RedisModule_ReplyWithLongLong(ctx, idx->idx.Len(idx->idx.ctx));
+}
+
 /* IDX.SELECT FROM <index_name> WHERE <predicates> [LIMIT offset num] */
 int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                        int argc) {
@@ -285,6 +310,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   // TODO: this is not a "key at 1" command - needs better handling
   if (RedisModule_CreateCommand(ctx, "idx.into", IndexIntoCommand,
                                 "write deny-oom no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+
+  if (RedisModule_CreateCommand(ctx, "idx.card", IndexCardinalityCommand,
+                                "readonly no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
