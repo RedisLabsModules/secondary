@@ -1,21 +1,33 @@
 #include "hash_index.h"
 #include "rmutil/strings.h"
 #include "rmutil/alloc.h"
+
 #define ID_SUB_TOKEN "$"
 
 RedisModuleCallReply *__callParametricCommand(RedisModuleCtx *ctx, SIId id,
                                               RedisModuleString **argv,
                                               int argc) {
 
-  for (int i = 0; i < argc; i++) {
+  // we save the substitution token so we won't actually change argv
+  RedisModuleString *subToken = NULL;
+  int i;
+  for (i = 0; i < argc; i++) {
     if (RMUtil_StringEqualsC(argv[i], ID_SUB_TOKEN)) {
+      subToken = argv[i];
       argv[i] = RedisModule_CreateString(ctx, id, strlen(id));
       break;
     }
   }
 
-  return RedisModule_Call(ctx, RedisModule_StringPtrLen(argv[0], NULL), "v",
-                          &argv[1], argc - 1);
+  RedisModuleCallReply *r = RedisModule_Call(
+      ctx, RedisModule_StringPtrLen(argv[0], NULL), "v", &argv[1], argc - 1);
+
+  // if we've replaced the substitution token, we must put it back in argv
+  if (subToken) {
+    argv[i] = subToken;
+  }
+
+  return r;
 }
 
 int HashIndex_ExecuteReadCommand(RedisModuleCtx *ctx, RedisIndex *idx,
@@ -41,37 +53,66 @@ int HashIndex_ExecuteReadCommand(RedisModuleCtx *ctx, RedisIndex *idx,
   return REDISMODULE_OK;
 }
 
-static const char *supportedWriteCommands[] = {
-    "HDEL", "HINCRBY", "HINCRBYFLOAT", "HMSET", "HSET", "HSETNX", NULL};
-// TODO - support these as well "DEL",  "EXPIRE",  "EXPIREAT",     "PEXPIRE",
-// "PEXPIREAT", NULL};
+typedef struct {
+  const char *name;
+  IndexedCommandProxy handler;
+  int variadic;
+} commandDesc;
 
-RedisModuleString *HashIndex_GetKey(RedisModuleString **argv, int argc) {
+int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
+                       RedisModuleString *hkey);
+int deleteHandler(RedisModuleCtx *ctx, RedisIndex *idx,
+                  RedisModuleString *hkey);
+typedef struct {
+  RedisModuleString **keys;
+  int argc;
+  int keystep;
+  int offset;
+} staticIdSourceCtx;
+
+static const commandDesc supportedHashWriteCommands[] = {
+    {"HDEL", reindexHashHandler, 0},         {"HINCRBY", reindexHashHandler, 0},
+    {"HINCRBYFLOAT", reindexHashHandler, 0}, {"HMSET", reindexHashHandler, 0},
+    {"HSET", reindexHashHandler, 0},         {"HSETNX", reindexHashHandler, 0},
+    {"DEL", reindexHashHandler, 0},          {NULL}};
+
+staticIdSourceCtx *HashIndex_GetIdsForCommand(RedisModuleString **argv,
+                                              int argc) {
   if (argc <= 1) {
     return NULL;
   }
   const char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
 
-  for (int i = 0; supportedWriteCommands[i] != NULL; i++) {
-    if (!strcasecmp(cmd, supportedWriteCommands[i])) {
+  for (int i = 0; supportedHashWriteCommands[i].name != NULL; i++) {
+    if (!strcasecmp(cmd, supportedHashWriteCommands[i].name)) {
       // TODO: Support variadic commands
-      return argv[1];
+      staticIdSourceCtx *ctx = malloc(sizeof(staticIdSourceCtx));
+      ctx->keys = &argv[i];
+      ctx->offset = 0;
+      ctx->keystep = 1; // TODO: we might need to support more complex keysteps
+
+      // for variadic commands, we assume the rest of the argv is just keys
+      //
+      // TODO: Use a complex pattern of offset, step, last
+      ctx->argc = supportedHashWriteCommands[i].variadic ? argc - i : 1;
+      return ctx;
     }
+  }
+
+  return NULL;
+}
+
+SIId staticIdSource(void *ctx) {
+  staticIdSourceCtx *c = ctx;
+  if (c->offset < c->argc) {
+    SIId ret = (SIId)RedisModule_StringPtrLen(c->keys[c->offset], NULL);
+    c->offset += c->keystep;
   }
   return NULL;
 }
 
-IndexedTransaction CreateIndexedTransaction(RedisModuleCtx *ctx,
-                                            RedisIndex *idx,
-                                            RedisModuleString **argv,
-                                            int argc) {
-
-  IndexedTransaction ret;
-  ret.cmd = NULL;
-}
-
-int HashIndex_IndexHashObject(RedisModuleCtx *ctx, RedisIndex *idx,
-                              RedisModuleString *hkey) {
+int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
+                       RedisModuleString *hkey) {
 
   RedisModuleKey *k = RedisModule_OpenKey(ctx, hkey, REDISMODULE_READ);
 
@@ -107,7 +148,7 @@ int HashIndex_IndexHashObject(RedisModuleCtx *ctx, RedisIndex *idx,
 
   SIChangeSet_AddCahnge(&cs, ch);
 
-  if (!idx->idx.Apply(idx->idx.ctx, cs)) {
+  if (idx->idx.Apply(idx->idx.ctx, cs) != SI_INDEX_OK) {
     RedisModule_Log(ctx, "error", "Could not index id %s\n", id);
   }
 
@@ -123,4 +164,59 @@ error:
   SIValueVector_Free(&ch.v);
   SIChangeSet_Free(&cs);
   return REDISMODULE_ERR;
+}
+
+int deleteHandler(RedisModuleCtx *ctx, RedisIndex *idx,
+                  RedisModuleString *hkey) {
+
+  SIId id = (char *)RedisModule_StringPtrLen(hkey, NULL);
+  SIChangeSet cs = SI_NewChangeSet(1);
+  SIChangeSet_AddCahnge(&cs, SI_NewDelChange(id));
+
+  if (idx->idx.Apply(idx->idx.ctx, cs) != SI_INDEX_OK) {
+    RedisModule_Log(ctx, "error", "Could not delete id %s\n", id);
+    return REDISMODULE_ERR;
+  }
+  SIChangeSet_Free(&cs);
+  return REDISMODULE_OK;
+}
+
+IndexedCommandProxy HashIndex_GetHandler(RedisModuleString *cmd) {
+  for (int i = 0; supportedHashWriteCommands[i] != NULL; i++) {
+    if (RMUtil_StringEqualsC(cmd, supportedHashWriteCommands[i].name)) {
+
+      return supportedHashWriteCommands[i].cmd;
+    }
+  }
+
+  return NULL;
+}
+
+IndexedTransaction CreateIndexedTransaction(RedisModuleCtx *ctx,
+                                            RedisIndex *idx,
+                                            RedisModuleString **argv,
+                                            int argc) {
+
+  IndexedTransaction ret;
+  ret.ctx = NULL;
+  ret.err = NULL;
+
+  ret.cmd = HashIndex_GetHandler(argv[0]);
+  if (ret.cmd == NULL) {
+    ret.err = "Command not supported";
+    return ret;
+  }
+  RedisModuleString *hkey = HashIndex_GetKey(argv, argc);
+  if (!hkey) {
+    ret.err = "No key for requested command";
+    return ret;
+  }
+
+  ret.ids = SingleIdSource;
+  singleIdSourceCtx *ict = malloc(sizeof(singleIdSourceCtx));
+  ict->id = (char *)RedisModule_StringPtrLen(hkey, NULL);
+  printf("Operating on key %s\n", ict->id);
+  ret.ctx = ict;
+
+  return ret;
 }
