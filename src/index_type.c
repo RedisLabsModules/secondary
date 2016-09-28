@@ -8,7 +8,6 @@
 RedisModuleType *IndexType;
 
 void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
-
   RedisModule_SaveUnsigned(io, (u_int64_t)idx->spec.numProps);
   for (size_t i = 0; i < idx->spec.numProps; i++) {
     printf("saving prop type %d flags %x\n", idx->spec.properties[i].type,
@@ -35,36 +34,36 @@ SIValue __readValue(RedisModuleIO *rdb) {
   SIValue v;
   v.type = RedisModule_LoadUnsigned(rdb);
   switch (v.type) {
-  case T_STRING:
-    v.stringval.str = RedisModule_LoadStringBuffer(rdb, &v.stringval.len);
-    break;
-  case T_INT32:
-    v.intval = (int32_t)RedisModule_LoadSigned(rdb);
-    break;
-  case T_INT64:
-    v.longval = RedisModule_LoadSigned(rdb);
-    break;
-  case T_UINT:
-    v.uintval = RedisModule_LoadUnsigned(rdb);
-    break;
-  case T_BOOL:
-    v.boolval = RedisModule_LoadUnsigned(rdb);
-    break;
-  case T_FLOAT:
-    v.floatval = (float)RedisModule_LoadDouble(rdb);
-    break;
-  case T_DOUBLE:
-    v.doubleval = RedisModule_LoadDouble(rdb);
-    break;
-  case T_TIME:
-    v.timeval = (time_t)RedisModule_LoadSigned(rdb);
-    break;
-  case T_NULL:
-  default:
-    // NULL value for all unsupported stuff
-    // this will probably break the loading for any wrong type
-    v.type = T_NULL;
-    break;
+    case T_STRING:
+      v.stringval.str = RedisModule_LoadStringBuffer(rdb, &v.stringval.len);
+      break;
+    case T_INT32:
+      v.intval = (int32_t)RedisModule_LoadSigned(rdb);
+      break;
+    case T_INT64:
+      v.longval = RedisModule_LoadSigned(rdb);
+      break;
+    case T_UINT:
+      v.uintval = RedisModule_LoadUnsigned(rdb);
+      break;
+    case T_BOOL:
+      v.boolval = RedisModule_LoadUnsigned(rdb);
+      break;
+    case T_FLOAT:
+      v.floatval = (float)RedisModule_LoadDouble(rdb);
+      break;
+    case T_DOUBLE:
+      v.doubleval = RedisModule_LoadDouble(rdb);
+      break;
+    case T_TIME:
+      v.timeval = (time_t)RedisModule_LoadSigned(rdb);
+      break;
+    case T_NULL:
+    default:
+      // NULL value for all unsupported stuff
+      // this will probably break the loading for any wrong type
+      v.type = T_NULL;
+      break;
   }
   return v;
 }
@@ -72,36 +71,36 @@ SIValue __readValue(RedisModuleIO *rdb) {
 void __writeValue(void *v, SIType t, RedisModuleIO *rdb) {
   RedisModule_SaveUnsigned(rdb, t);
   switch (t) {
-  case T_STRING: {
-    SIString *s = v;
-    RedisModule_SaveStringBuffer(rdb, s->str, s->len);
-    break;
-  }
-  case T_INT32:
-    RedisModule_SaveSigned(rdb, *(int32_t *)v);
-    break;
-  case T_INT64:
-    RedisModule_SaveSigned(rdb, *(int64_t *)v);
-    break;
-  case T_UINT:
-    RedisModule_SaveUnsigned(rdb, *(u_int64_t *)v);
-    break;
-  case T_BOOL:
-    RedisModule_SaveUnsigned(rdb, *(int32_t *)v);
-    break;
-  case T_FLOAT:
-    RedisModule_SaveDouble(rdb, *(float *)v);
-    break;
-  case T_DOUBLE:
-    RedisModule_SaveDouble(rdb, *(double *)v);
-    break;
-  case T_TIME:
-    RedisModule_SaveSigned(rdb, *(time_t *)v);
-    break;
-  case T_NULL:
-  default:
-    // NULL value for all unsupported stuff.
-    break;
+    case T_STRING: {
+      SIString *s = v;
+      RedisModule_SaveStringBuffer(rdb, s->str, s->len);
+      break;
+    }
+    case T_INT32:
+      RedisModule_SaveSigned(rdb, *(int32_t *)v);
+      break;
+    case T_INT64:
+      RedisModule_SaveSigned(rdb, *(int64_t *)v);
+      break;
+    case T_UINT:
+      RedisModule_SaveUnsigned(rdb, *(u_int64_t *)v);
+      break;
+    case T_BOOL:
+      RedisModule_SaveUnsigned(rdb, *(int32_t *)v);
+      break;
+    case T_FLOAT:
+      RedisModule_SaveDouble(rdb, *(float *)v);
+      break;
+    case T_DOUBLE:
+      RedisModule_SaveDouble(rdb, *(double *)v);
+      break;
+    case T_TIME:
+      RedisModule_SaveSigned(rdb, *(time_t *)v);
+      break;
+    case T_NULL:
+    default:
+      // NULL value for all unsupported stuff.
+      break;
   }
 }
 
@@ -122,7 +121,6 @@ void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
   }
 }
 void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
-
   size_t len = idx->idx.Len(idx->idx.ctx);
   printf("saving index len %zd\n", len);
   // save the number of elements in the indes
@@ -135,7 +133,6 @@ void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
 }
 
 int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
-
   // 1. create an index
   // TODO: Check idx kind for multiple kind support
   idx->idx = SI_NewCompoundIndex(idx->spec);
@@ -152,7 +149,6 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
   cs.changes[0].id = NULL;
 
   while (elements--) {
-
     // create an ADD change
     size_t idlen;
     char *id = RedisModule_LoadStringBuffer(rdb, &idlen);
@@ -160,7 +156,6 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
     cs.changes[0].id = id;
     cs.changes[0].v.len = 0;
     for (int i = 0; i < idx->spec.numProps; i++) {
-
       SIValueVector_Append(&cs.changes[0].v, __readValue(rdb));
     }
 
@@ -183,7 +178,6 @@ static SIType typeEnums[] = {
  * ]|[{p1} {t1} ...] */
 int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                  SISpec *spec, SIIndexKind *kind) {
-
   // the index kind
   *kind = SI_AbstractIndex;
 
@@ -222,7 +216,6 @@ int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
 
   int p = 0, i = schemaPos + 1;
   while (p < spec->numProps) {
-
     size_t len;
 
     if (named) {
@@ -295,7 +288,6 @@ void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
 
 void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
                            void *value) {
-
   // WE CANNOT IMPLEMENT THIS RIGHT NOW BECAUSE THE API DOES NOT SUPPORT WHAT
   // WE
   // NEED
