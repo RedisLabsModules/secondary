@@ -221,7 +221,7 @@ int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
   SIQuery q = SI_NewQuery();
   if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
-    return RedisModule_ReplyWithError(ctx, "Error parsing query string");
+    return RedisModule_ReplyWithError(ctx, "Error parsing WHERE query string");
   }
 
   int rc = HashIndex_ExecuteReadCommand(ctx, idx, &q, &argv[wherePos + 2],
@@ -230,7 +230,7 @@ int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   return rc;
 }
 
-/* IDX.INTO {index_name} [HMSET|HSET|etc...] */
+/* IDX.INTO {index_name} [WHERE ...] [HMSET|HSET|etc...] */
 int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
@@ -248,28 +248,55 @@ int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
   RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
 
-  // TODO: dynamic cmdPos if WHERE exists
-  int cmdPos = 2;
-  RedisModuleString *hkey = HashIndex_GetKey(&argv[cmdPos], argc - cmdPos);
-  if (!hkey) {
-    RedisModule_ReplyWithError(ctx, "Command not suported!");
-  }
-  printf("Operating on key %s\n", RedisModule_StringPtrLen(hkey, NULL));
+  int wherePos = RMUtil_ArgExists("WHERE", argv, argc, 0);
+  SIQuery q;
+  if (wherePos && wherePos < argc - 1) {
 
-  // execute the trailing command
-  RedisModuleCallReply *rep =
-      RedisModule_Call(ctx, RedisModule_StringPtrLen(argv[cmdPos], NULL), "v",
-                       &argv[cmdPos + 1], argc - (cmdPos + 1));
+    size_t len;
+    char *qstr = (char *)RedisModule_StringPtrLen(argv[wherePos + 1], &len);
 
-  if (RedisModule_CallReplyType(rep) != REDISMODULE_REPLY_ERROR) {
-
-    if (HashIndex_IndexHashObject(ctx, idx, hkey) != REDISMODULE_OK) {
-      return RedisModule_ReplyWithError(
-          ctx, "Command performed but updating index failed");
+    q = SI_NewQuery();
+    if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
+      return RedisModule_ReplyWithError(ctx,
+                                        "Error parsing WHERE query string");
     }
   }
 
-  return RedisModule_ReplyWithCallReply(ctx, rep);
+  // TODO: dynamic cmdPos if WHERE exists
+  int cmdPos = wherePos ? wherePos + 2 : 2;
+
+  IndexedTransaction tx = CreateIndexedTransaction(
+      ctx, idx, wherePos ? &q : NULL, &argv[cmdPos], argc - cmdPos);
+
+  if (tx.err != NULL) {
+    return RedisModule_ReplyWithError(ctx, tx.err);
+  }
+
+  int num = 0;
+  SIId id;
+  while (NULL != (id = tx.ids(tx.ctx))) {
+
+    RedisModuleCallReply *rep =
+        __callParametricCommand(ctx, id, &argv[cmdPos], argc - cmdPos);
+
+    if (RedisModule_CallReplyType(rep) != REDISMODULE_REPLY_ERROR) {
+      num++;
+      if (tx.cmd(ctx, idx, RedisModule_CreateString(ctx, id, strlen(id))) !=
+          REDISMODULE_OK) {
+        RedisModule_ReplyWithError(
+            ctx, "Command performed but updating index failed");
+        goto cleanup;
+      }
+    }
+  }
+
+  RedisModule_ReplyWithLongLong(ctx, num);
+
+cleanup:
+  if (tx.ctx)
+    free(tx.ctx);
+
+  return REDISMODULE_OK;
 }
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {

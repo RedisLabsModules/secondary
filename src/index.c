@@ -23,6 +23,8 @@ int compoundIndex_applyDel(compoundIndex *idx, SIChange ch) {
   // TODO: Hanlde cases where no reverse entry exists but the id is in index.
   // TODO: What happens if an id exists mutiple times? e.g. indexing sets/lists
   int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
+  printf("Applying del on key %s. exists? %s\n", ch.id, exists ? "YES" : "NO");
+
   if (exists) {
     skiplistDelete(idx->sl, oldkey, ch.id);
     free(oldkey);
@@ -71,7 +73,8 @@ int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
   compoundIndex *idx = ctx;
 
   for (size_t i = 0; i < cs.numChanges; i++) {
-
+    printf("applying change %d for key %s\n", cs.changes[i].type,
+           cs.changes[i].id);
     if (cs.changes[i].type == SI_CHADD) {
       // this value is not applicable to the index
       if (cs.changes[i].v.len != idx->numFuncs) {

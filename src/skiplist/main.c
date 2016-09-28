@@ -32,23 +32,23 @@ int main(void) {
   skiplistNode *x;
   x = sl->header;
   x = x->level[0].forward;
-  while (x) {
-    printf("%s\n", x->obj);
-    x = x->level[0].forward;
-  }
-
-  printf("Searching for 'hello': %p\n", skiplistFind(sl, "hello"));
-  printf("Searching for 'pera': %p\n", skiplistFind(sl, "pera"));
-
-  printf("Pop from head: %s\n", skiplistPopHead(sl));
-  printf("Pop from head: %s\n", skiplistPopHead(sl));
-
-  printf("Pop from tail: %s\n", skiplistPopTail(sl));
-  printf("Pop from tail: %s\n", skiplistPopTail(sl));
-  printf("Pop from tail: %s\n", skiplistPopTail(sl));
-  printf("Pop from tail: %s\n", skiplistPopTail(sl));
-  printf("Pop from tail: %s\n", skiplistPopTail(sl));
-  printf("Pop from tail: %s\n", skiplistPopTail(sl));
-
-  printf("Pop from head: %s\n", skiplistPopTail(sl));
+//  while (x) {
+//    printf("%s\n", x->obj);
+//    x = x->level[0].forward;
+//  }
+//
+//  printf("Searching for 'hello': %p\n", skiplistFind(sl, "hello"));
+//  printf("Searching for 'pera': %p\n", skiplistFind(sl, "pera"));
+//
+//  printf("Pop from head: %s\n", skiplistPopHead(sl));
+//  printf("Pop from head: %s\n", skiplistPopHead(sl));
+//
+//  printf("Pop from tail: %s\n", skiplistPopTail(sl));
+//  printf("Pop from tail: %s\n", skiplistPopTail(sl));
+//  printf("Pop from tail: %s\n", skiplistPopTail(sl));
+//  printf("Pop from tail: %s\n", skiplistPopTail(sl));
+//  printf("Pop from tail: %s\n", skiplistPopTail(sl));
+//  printf("Pop from tail: %s\n", skiplistPopTail(sl));
+//
+//  printf("Pop from head: %s\n", skiplistPopTail(sl));
 }

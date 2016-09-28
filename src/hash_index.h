@@ -27,13 +27,21 @@ typedef struct {
   IndexedCommandProxy cmd;
   void *ctx;
   IdSource ids;
+  const char *err;
 } IndexedTransaction;
 
+RedisModuleCallReply *__callParametricCommand(RedisModuleCtx *ctx, SIId id,
+                                              RedisModuleString **argv,
+                                              int argc);
 IndexedTransaction CreateIndexedTransaction(RedisModuleCtx *ctx,
-                                            RedisIndex *idx,
+                                            RedisIndex *idx, SIQuery *q,
                                             RedisModuleString **argv, int argc);
 
-RedisModuleString *HashIndex_GetKey(RedisModuleString **argv, int argc);
+IdSource HashIndex_GetIdsForCommand(RedisModuleString **argv, int argc,
+                                    void **pctx);
 int HashIndex_IndexHashObject(RedisModuleCtx *ctx, RedisIndex *idx,
                               RedisModuleString *hkey);
 #endif
+ 
+        
+        

@@ -40,7 +40,7 @@ add_custom_command(
                 PRE_BUILD
                 COMMAND lex -i tokenizer.l
                 COMMAND lemon -s parser.y 
-                WORKING_DIRECTORY ../../src/parser)
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/parser)
 
 
 add_library(module MODULE
