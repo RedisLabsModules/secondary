@@ -4,12 +4,13 @@
 /* First off, code is included that follows the "include" declaration
 ** in the input grammar file. */
 #include <stdio.h>
-#line 16 "parser.y"
+#line 17 "parser.y"
    
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "token.h"
 #include "parser.h"
 #include "ast.h"
@@ -18,9 +19,15 @@
 extern int yylineno;
 extern char *yytext;
 
-void yyerror(char *s);
+typedef struct {
+    ParseNode *root;
+    int ok;
+}parseCtx;
 
-#line 24 "parser.c"
+
+void yyerror(char *s);
+    
+#line 31 "parser.c"
 /* Next is all token values, in a form suitable for use by makeheaders.
 ** This section will be null unless lemon is run with the -m switch.
 */
@@ -86,10 +93,10 @@ typedef union {
 #ifndef YYSTACKDEPTH
 #define YYSTACKDEPTH 100
 #endif
-#define ParseARG_SDECL  ParseNode **root ;
-#define ParseARG_PDECL , ParseNode **root 
-#define ParseARG_FETCH  ParseNode **root  = yypParser->root 
-#define ParseARG_STORE yypParser->root  = root 
+#define ParseARG_SDECL  parseCtx *ctx ;
+#define ParseARG_PDECL , parseCtx *ctx 
+#define ParseARG_FETCH  parseCtx *ctx  = yypParser->ctx 
+#define ParseARG_STORE yypParser->ctx  = ctx 
 #define YYNSTATE 37
 #define YYNRULE 23
 #define YY_NO_ACTION      (YYNSTATE+YYNRULE+2)
@@ -405,24 +412,30 @@ static void yy_destructor(
     */
     case 23: /* cond */
 {
-#line 47 "parser.y"
+#line 55 "parser.y"
  ParseNode_Free((yypminor->yy32)); 
-#line 411 "parser.c"
+#line 418 "parser.c"
 }
       break;
     case 25: /* prop */
 {
-#line 108 "parser.y"
- if ((yypminor->yy16).name != NULL) { free((yypminor->yy16).name); } 
-#line 418 "parser.c"
+#line 116 "parser.y"
+
+    printf("destructing prop. name:%p, id: %d\n", (yypminor->yy16).name, (yypminor->yy16).id); 
+    if ((yypminor->yy16).name != NULL) { 
+        free((yypminor->yy16).name); 
+        (yypminor->yy16).name = NULL;
+    } 
+
+#line 431 "parser.c"
 }
       break;
     case 27: /* vallist */
     case 28: /* multivals */
 {
-#line 88 "parser.y"
+#line 96 "parser.y"
 SIValueVector_Free(&(yypminor->yy49));
-#line 426 "parser.c"
+#line 439 "parser.c"
 }
       break;
     default:  break;   /* If no destructor action specified: do nothing */
@@ -738,143 +751,143 @@ static void yy_reduce(
   **     break;
   */
       case 0: /* query ::= cond */
-#line 36 "parser.y"
-{ *root = yymsp[0].minor.yy32; }
-#line 744 "parser.c"
+#line 44 "parser.y"
+{ ctx->root = yymsp[0].minor.yy32; }
+#line 757 "parser.c"
         break;
       case 1: /* op ::= EQ */
-#line 39 "parser.y"
+#line 47 "parser.y"
 { yygotominor.yy46 = EQ; }
-#line 749 "parser.c"
+#line 762 "parser.c"
         break;
       case 2: /* op ::= GT */
-#line 40 "parser.y"
+#line 48 "parser.y"
 { yygotominor.yy46 = GT; }
-#line 754 "parser.c"
+#line 767 "parser.c"
         break;
       case 3: /* op ::= LT */
-#line 41 "parser.y"
+#line 49 "parser.y"
 { yygotominor.yy46 = LT; }
-#line 759 "parser.c"
+#line 772 "parser.c"
         break;
       case 4: /* op ::= LE */
-#line 42 "parser.y"
+#line 50 "parser.y"
 { yygotominor.yy46 = LE; }
-#line 764 "parser.c"
+#line 777 "parser.c"
         break;
       case 5: /* op ::= GE */
-#line 43 "parser.y"
+#line 51 "parser.y"
 { yygotominor.yy46 = GE; }
-#line 769 "parser.c"
+#line 782 "parser.c"
         break;
       case 6: /* op ::= NE */
-#line 44 "parser.y"
+#line 52 "parser.y"
 { yygotominor.yy46 = NE; }
-#line 774 "parser.c"
+#line 787 "parser.c"
         break;
       case 7: /* cond ::= prop op value */
-#line 49 "parser.y"
+#line 57 "parser.y"
 { 
     /* Terminal condition of a single predicate */
     yygotominor.yy32 = NewPredicateNode(yymsp[-2].minor.yy16, yymsp[-1].minor.yy46, yymsp[0].minor.yy28);
 }
-#line 782 "parser.c"
+#line 795 "parser.c"
         break;
       case 8: /* cond ::= prop LIKE STRING */
-#line 55 "parser.y"
+#line 63 "parser.y"
 { 
     yygotominor.yy32 = NewPredicateNode(yymsp[-2].minor.yy16, LIKE, SI_StringValC(yymsp[0].minor.yy0.strval));
 }
-#line 789 "parser.c"
+#line 802 "parser.c"
         break;
       case 9: /* cond ::= prop IN vallist */
-#line 59 "parser.y"
+#line 67 "parser.y"
 { 
     /* Terminal condition of a single IN predicate */
     yygotominor.yy32 = NewInPredicateNode(yymsp[-2].minor.yy16, IN, yymsp[0].minor.yy49);
 }
-#line 797 "parser.c"
+#line 810 "parser.c"
         break;
       case 10: /* cond ::= LP cond RP */
-#line 64 "parser.y"
+#line 72 "parser.y"
 { 
   yygotominor.yy32 = yymsp[-1].minor.yy32;
 }
-#line 804 "parser.c"
+#line 817 "parser.c"
         break;
       case 11: /* cond ::= cond AND cond */
-#line 68 "parser.y"
+#line 76 "parser.y"
 {
   yygotominor.yy32 = NewConditionNode(yymsp[-2].minor.yy32, AND, yymsp[0].minor.yy32);
 }
-#line 811 "parser.c"
+#line 824 "parser.c"
         break;
       case 12: /* cond ::= cond OR cond */
-#line 72 "parser.y"
+#line 80 "parser.y"
 {
   yygotominor.yy32 = NewConditionNode(yymsp[-2].minor.yy32, OR, yymsp[0].minor.yy32);
 }
-#line 818 "parser.c"
+#line 831 "parser.c"
         break;
       case 13: /* value ::= INTEGER */
-#line 80 "parser.y"
+#line 88 "parser.y"
 {  yygotominor.yy28 = SI_LongVal(yymsp[0].minor.yy0.intval); }
-#line 823 "parser.c"
+#line 836 "parser.c"
         break;
       case 14: /* value ::= STRING */
-#line 81 "parser.y"
+#line 89 "parser.y"
 {  yygotominor.yy28 = SI_StringValC(strdup(yymsp[0].minor.yy0.strval)); }
-#line 828 "parser.c"
+#line 841 "parser.c"
         break;
       case 15: /* value ::= FLOAT */
-#line 82 "parser.y"
+#line 90 "parser.y"
 {  yygotominor.yy28 = SI_DoubleVal(yymsp[0].minor.yy0.dval); }
-#line 833 "parser.c"
+#line 846 "parser.c"
         break;
       case 16: /* value ::= TRUE */
-#line 83 "parser.y"
+#line 91 "parser.y"
 { yygotominor.yy28 = SI_BoolVal(1); }
-#line 838 "parser.c"
+#line 851 "parser.c"
         break;
       case 17: /* value ::= FALSE */
-#line 84 "parser.y"
+#line 92 "parser.y"
 { yygotominor.yy28 = SI_BoolVal(0); }
-#line 843 "parser.c"
+#line 856 "parser.c"
         break;
       case 18: /* vallist ::= LP multivals RP */
-#line 91 "parser.y"
+#line 99 "parser.y"
 {
     yygotominor.yy49 = yymsp[-1].minor.yy49;
     
 }
-#line 851 "parser.c"
+#line 864 "parser.c"
         break;
       case 19: /* multivals ::= value COMMA value */
-#line 95 "parser.y"
+#line 103 "parser.y"
 {
       yygotominor.yy49 = SI_NewValueVector(2);
       SIValueVector_Append(&yygotominor.yy49, yymsp[-2].minor.yy28);
       SIValueVector_Append(&yygotominor.yy49, yymsp[0].minor.yy28);
 }
-#line 860 "parser.c"
+#line 873 "parser.c"
         break;
       case 20: /* multivals ::= multivals COMMA value */
-#line 101 "parser.y"
+#line 109 "parser.y"
 {
     SIValueVector_Append(&yymsp[-2].minor.yy49, yymsp[0].minor.yy28);
     yygotominor.yy49 = yymsp[-2].minor.yy49;
 }
-#line 868 "parser.c"
+#line 881 "parser.c"
         break;
       case 21: /* prop ::= ENUMERATOR */
-#line 110 "parser.y"
-{ yygotominor.yy16.id = yymsp[0].minor.yy0.intval; yygotominor.yy16.name = NULL; }
-#line 873 "parser.c"
+#line 124 "parser.y"
+{ yygotominor.yy16.id = yymsp[0].minor.yy0.intval; yygotominor.yy16.name = NULL;  }
+#line 886 "parser.c"
         break;
       case 22: /* prop ::= IDENT */
-#line 111 "parser.y"
-{ yygotominor.yy16.name = yymsp[0].minor.yy0.strval; yygotominor.yy16.id = 0; }
-#line 878 "parser.c"
+#line 125 "parser.y"
+{ yygotominor.yy16.name = strdup(yymsp[0].minor.yy0.strval); yygotominor.yy16.id = 0; printf("%p\n", yygotominor.yy16.name);}
+#line 891 "parser.c"
         break;
       default:
         break;
@@ -940,7 +953,8 @@ static void yy_syntax_error(
   
 
     yyerror(yytext);
-#line 944 "parser.c"
+    ctx->ok = 0;
+#line 958 "parser.c"
   ParseARG_STORE; /* Suppress warning about unused %extra_argument variable */
 }
 
@@ -1131,7 +1145,7 @@ void Parse(
   }while( yymajor!=YYNOCODE && yypParser->yyidx>=0 );
   return;
 }
-#line 114 "parser.y"
+#line 128 "parser.y"
 
 
   /* Definitions of flex stuff */
@@ -1151,17 +1165,20 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
     void* pParser = ParseAlloc (malloc);        
     int t = 0;
 
-    ParseNode *ret = NULL;
+    parseCtx ctx = {.root = NULL, .ok = 1};
+    //ParseNode *ret = NULL;
     //ParserFree(pParser);
-    while (0 != (t = yylex())) {
-        Parse(pParser, t, tok, &ret);                
+    while (ctx.ok && 0 != (t = yylex())) {
+        Parse(pParser, t, tok, &ctx);                
     }
-    Parse (pParser, 0, tok, &ret);
+    if (ctx.ok) {
+        Parse (pParser, 0, tok, &ctx);
+    }
     ParseFree(pParser, free);
 
-    return ret;
+    return ctx.root;
   }
    
 
 
-#line 1168 "parser.c"
+#line 1185 "parser.c"

@@ -57,7 +57,7 @@ Token tok;
 
 
 [A-Za-z_][_A-Za-z0-9]* {	
-  	tok.strval= strdup(yytext);
+  	tok.strval= yytext;
   	return IDENT;
 }
  
@@ -74,7 +74,7 @@ Token tok;
  */
 void yyerror(char *s)
 {
-  printf("error: %s at line: %d\n",s,yylineno);
+  printf("error: '%s' at line: %d\n",s,yylineno);
 }
 
 int yywrap(void)

@@ -913,7 +913,7 @@ case 20:
 YY_RULE_SETUP
 #line 59 "tokenizer.l"
 {	
-  	tok.strval= strdup(yytext);
+  	tok.strval= yytext;
   	return IDENT;
 }
 	YY_BREAK
@@ -1936,7 +1936,7 @@ void yyfree (void * ptr )
  */
 void yyerror(char *s)
 {
-  printf("error: %s at line: %d\n",s,yylineno);
+  printf("error: '%s' at line: %d\n",s,yylineno);
 }
 
 int yywrap(void)

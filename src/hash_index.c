@@ -7,7 +7,6 @@
 RedisModuleCallReply *__callParametricCommand(RedisModuleCtx *ctx, SIId id,
                                               RedisModuleString **argv,
                                               int argc) {
-
   // we save the substitution token so we won't actually change argv
   RedisModuleString *subToken = NULL;
   int i;
@@ -33,7 +32,6 @@ RedisModuleCallReply *__callParametricCommand(RedisModuleCtx *ctx, SIId id,
 int HashIndex_ExecuteReadCommand(RedisModuleCtx *ctx, RedisIndex *idx,
                                  SIQuery *query, RedisModuleString **argv,
                                  int argc) {
-
   SICursor *c = idx->idx.Find(idx->idx.ctx, query);
   if (c->error != QE_OK) {
     // TODO: proper error reporting in cursor
@@ -101,10 +99,8 @@ SIId queryIdSource(void *ctx) {
 }
 
 IdSource HashIndex_GetIdsFromQuery(RedisIndex *idx, SIQuery *q, void **pctx) {
-
   *pctx = NULL;
-  if (!q)
-    return NULL;
+  if (!q) return NULL;
 
   SICursor *c = idx->idx.Find(idx->idx.ctx, q);
   if (c->error != QE_OK) {
@@ -126,12 +122,10 @@ IdSource HashIndex_GetIdsForCommand(RedisModuleString **argv, int argc,
 
   for (int i = 0; supportedHashWriteCommands[i].name != NULL; i++) {
     if (!strcasecmp(cmd, supportedHashWriteCommands[i].name)) {
-      printf("returning handler for command %s\n", cmd);
-      // TODO: Support variadic commands
       staticIdSourceCtx *ctx = malloc(sizeof(staticIdSourceCtx));
       ctx->keys = &argv[1];
       ctx->offset = 0;
-      ctx->keystep = 1; // TODO: we might need to support more complex keysteps
+      ctx->keystep = 1;  // TODO: we might need to support more complex keysteps
 
       // for variadic commands, we assume the rest of the argv is just keys
       //
@@ -147,7 +141,6 @@ IdSource HashIndex_GetIdsForCommand(RedisModuleString **argv, int argc,
 
 int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
                        RedisModuleString *hkey) {
-
   RedisModuleKey *k = RedisModule_OpenKey(ctx, hkey, REDISMODULE_READ);
 
   if (k == NULL || RedisModule_KeyType(k) != REDISMODULE_KEYTYPE_HASH ||
@@ -160,7 +153,6 @@ int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
   SIChange ch = SI_NewEmptyAddChange(id, idx->spec.numProps);
 
   for (int i = 0; i < idx->spec.numProps; i++) {
-
     RedisModuleString *vstr;
 
     int rc = RedisModule_HashGet(k, REDISMODULE_HASH_CFIELDS,
@@ -192,8 +184,7 @@ int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
   return REDISMODULE_OK;
 
 error:
-  if (k)
-    RedisModule_CloseKey(k);
+  if (k) RedisModule_CloseKey(k);
 
   SIValueVector_Free(&ch.v);
   SIChangeSet_Free(&cs);
@@ -202,7 +193,6 @@ error:
 
 int deleteHandler(RedisModuleCtx *ctx, RedisIndex *idx,
                   RedisModuleString *hkey) {
-
   SIId id = (char *)RedisModule_StringPtrLen(hkey, NULL);
   SIChangeSet cs = SI_NewChangeSet(1);
   SIChangeSet_AddCahnge(&cs, SI_NewDelChange(id));
@@ -218,7 +208,6 @@ int deleteHandler(RedisModuleCtx *ctx, RedisIndex *idx,
 IndexedCommandProxy HashIndex_GetHandler(RedisModuleString *cmd) {
   for (int i = 0; supportedHashWriteCommands[i].name != NULL; i++) {
     if (RMUtil_StringEqualsC(cmd, supportedHashWriteCommands[i].name)) {
-
       return supportedHashWriteCommands[i].handler;
     }
   }
@@ -230,7 +219,6 @@ IndexedTransaction CreateIndexedTransaction(RedisModuleCtx *ctx,
                                             RedisIndex *idx, SIQuery *q,
                                             RedisModuleString **argv,
                                             int argc) {
-
   IndexedTransaction ret;
   ret.ctx = NULL;
   ret.err = NULL;
@@ -257,9 +245,3 @@ IndexedTransaction CreateIndexedTransaction(RedisModuleCtx *ctx,
 
   return ret;
 }
-        
-             
-             
-
-                  
-                      

@@ -11,6 +11,7 @@
 %syntax_error {  
 
     yyerror(yytext);
+    ctx->ok = 0;
 }   
    
 %include {   
@@ -18,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "token.h"
 #include "parser.h"
 #include "ast.h"
@@ -26,14 +28,20 @@
 extern int yylineno;
 extern char *yytext;
 
-void yyerror(char *s);
+typedef struct {
+    ParseNode *root;
+    int ok;
+}parseCtx;
 
+
+void yyerror(char *s);
+    
 } // END %include  
 
-%extra_argument { ParseNode **root }
+%extra_argument { parseCtx *ctx }
 
 
-query ::= cond(A). { *root = A; }
+query ::= cond(A). { ctx->root = A; }
 
 %type op {int}
 op(A) ::= EQ. { A = EQ; }
@@ -105,10 +113,16 @@ multivals(A) ::= multivals(B) COMMA value(C). {
 
 
 %type prop {property}
-%destructor prop { if ($$.name != NULL) { free($$.name); } }
+%destructor prop {
+    printf("destructing prop. name:%p, id: %d\n", $$.name, $$.id); 
+    if ($$.name != NULL) { 
+        free($$.name); 
+        $$.name = NULL;
+    } 
+}
 // property enumerator
-prop(A) ::= ENUMERATOR(B). { A.id = B.intval; A.name = NULL; }
-prop(A) ::= IDENT(B). { A.name = B.strval; A.id = 0; }
+prop(A) ::= ENUMERATOR(B). { A.id = B.intval; A.name = NULL;  }
+prop(A) ::= IDENT(B). { A.name = strdup(B.strval); A.id = 0; printf("%p\n", A.name);}
 
 
 %code {
@@ -130,15 +144,18 @@ ParseNode *ParseQuery(const char *c, size_t len)  {
     void* pParser = ParseAlloc (malloc);        
     int t = 0;
 
-    ParseNode *ret = NULL;
+    parseCtx ctx = {.root = NULL, .ok = 1};
+    //ParseNode *ret = NULL;
     //ParserFree(pParser);
-    while (0 != (t = yylex())) {
-        Parse(pParser, t, tok, &ret);                
+    while (ctx.ok && 0 != (t = yylex())) {
+        Parse(pParser, t, tok, &ctx);                
     }
-    Parse (pParser, 0, tok, &ret);
+    if (ctx.ok) {
+        Parse (pParser, 0, tok, &ctx);
+    }
     ParseFree(pParser, free);
 
-    return ret;
+    return ctx.root;
   }
    
 
