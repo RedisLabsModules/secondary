@@ -35,8 +35,9 @@ MU_TEST(testIndex) {
   char *str = "$1 = 'foo'";
 
   SIQuery q = SI_NewQuery();
+  char *parseError = NULL;
 
-  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec));
+  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec, &parseError));
   SICursor *c = idx.Find(idx.ctx, &q);
   mu_check(c->error == SI_CURSOR_OK);
   printf("%d\n", c->error);
@@ -73,7 +74,7 @@ MU_TEST(testReverseIndex) {
   SIValueVector_Append(&v, SI_IntVal(1337));
 
   SIMultiKey *k = SI_NewMultiKey(v.vals, v.len);
-  SIId id = "id1", id2 = "id1"; // not a mistake!
+  SIId id = "id1", id2 = "id1";  // not a mistake!
   int rc = SIReverseIndex_Insert(idx, id, k);
   mu_check(rc == 1);
 

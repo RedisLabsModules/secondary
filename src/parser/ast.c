@@ -2,15 +2,14 @@
 #include "../rmutil/alloc.h"
 
 void ParseNode_Free(ParseNode *pn) {
-  if (!pn)
-    return;
+  if (!pn) return;
   switch (pn->t) {
-  case N_PRED:
-    // TODO: free the value
-    break;
-  case N_COND:
-    ParseNode_Free(pn->cn.left);
-    ParseNode_Free(pn->cn.right);
+    case N_PRED:
+      // TODO: free the value
+      break;
+    case N_COND:
+      ParseNode_Free(pn->cn.left);
+      ParseNode_Free(pn->cn.right);
   }
 
   free(pn);
@@ -28,7 +27,6 @@ ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right) {
 }
 
 ParseNode *NewPredicateNode(property p, int op, SIValue v) {
-
   ParseNode *n = malloc(sizeof(ParseNode));
   n->t = N_PRED;
   n->pn.prop = p;
@@ -39,7 +37,6 @@ ParseNode *NewPredicateNode(property p, int op, SIValue v) {
 }
 
 ParseNode *NewInPredicateNode(property p, int op, SIValueVector v) {
-
   ParseNode *n = malloc(sizeof(ParseNode));
   n->t = N_PRED;
   n->pn.prop = p;
@@ -49,40 +46,38 @@ ParseNode *NewInPredicateNode(property p, int op, SIValueVector v) {
   return n;
 }
 
-#define pad(n)                                                                 \
-  {                                                                            \
-    for (int i = 0; i < n; i++)                                                \
-      printf("  ");                                                            \
+#define pad(n)                                \
+  {                                           \
+    for (int i = 0; i < n; i++) printf("  "); \
   }
 
 void printOp(int op) {
   switch (op) {
-  case EQ:
-    printf("=");
-    break;
-  case GT:
-    printf(">");
-    break;
-  case LT:
-    printf("<");
-    break;
-  case GE:
-    printf(">=");
-    break;
-  case LE:
-    printf("<=");
-    break;
-  case NE:
-    printf("!=");
-    break;
-  case IN:
-    printf("IN");
-    break;
+    case EQ:
+      printf("=");
+      break;
+    case GT:
+      printf(">");
+      break;
+    case LT:
+      printf("<");
+      break;
+    case GE:
+      printf(">=");
+      break;
+    case LE:
+      printf("<=");
+      break;
+    case NE:
+      printf("!=");
+      break;
+    case IN:
+      printf("IN");
+      break;
   }
 }
 
 void conditionNode_print(ConditionNode *n, int depth) {
-
   if (n->left) {
     printf("\n");
     ParseNode_print(n->left, depth + 1);
@@ -127,12 +122,12 @@ void ParseNode_print(ParseNode *n, int depth) {
   pad(depth);
   printf("(");
   switch (n->t) {
-  case N_COND:
-    conditionNode_print(&(n->cn), depth + 1);
-    break;
-  case N_PRED:
-    predicateNode_print(&(n->pn), depth + 1);
-    break;
+    case N_COND:
+      conditionNode_print(&(n->cn), depth + 1);
+      break;
+    case N_PRED:
+      predicateNode_print(&(n->pn), depth + 1);
+      break;
   }
   printf(")\n");
 }

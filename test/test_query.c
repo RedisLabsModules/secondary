@@ -12,9 +12,11 @@ MU_TEST(testQueryParser) {
   char *str = "foo = \"hello world\" AND $2 > 3 ";
 
   SIQuery q = SI_NewQuery();
+  char *parseError = NULL;
 
-  mu_check(SI_ParseQuery(&q, str, strlen(str), NULL));
+  mu_check(SI_ParseQuery(&q, str, strlen(str), NULL, &parseError));
   mu_check(q.root != NULL);
+  mu_check(parseError == NULL);
 
   mu_check(q.root->type == QN_LOGIC);
   mu_check(q.root->op.left != NULL);
@@ -39,27 +41,36 @@ MU_TEST(testQueryParser) {
   SIQueryNode_Print(q.root, 0);
 
   SIQueryNode_Free(q.root);
+
+  q = SI_NewQuery();
+  str = "foo = \"hello world ";
+  mu_check(!SI_ParseQuery(&q, str, strlen(str), NULL, &parseError));
+  mu_check(parseError != NULL);
+  mu_check(
+      !strcmp(parseError, "Syntax error in WHERE line 1 near 'hello world'"));
+  free(parseError);
 }
 
 MU_TEST(testQueryPlan) {
-  SISpec spec = {.properties =
-                     (SIIndexProperty[]){{.type = T_INT32, .name = "foo"},
-                                         {T_INT32},
-                                         {T_INT32}},
-                 .numProps = 3};
+  SISpec spec = {
+      .properties =
+          (SIIndexProperty[]){
+              {.type = T_INT32, .name = "foo"}, {T_INT32}, {T_INT32}},
+      .numProps = 3};
 
-  char *str = "foo = 2 AND $2 IN ('hello', 'world')  AND ($3 IN (1, 3.14, "
-              "'foo', 'bar') OR $4 = 'zzz')";
+  char *str =
+      "foo = 2 AND $2 IN ('hello', 'world')  AND ($3 IN (1, 3.14, "
+      "'foo', 'bar') OR $4 = 'zzz')";
 
   SIQuery q = SI_NewQuery();
 
-  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec));
+  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec, NULL));
 
   str = "$1 IN ('bob','alice')";
 
   q = SI_NewQuery();
 
-  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec));
+  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec, NULL));
   // SIQueryPlan *qp = SI_BuildQueryPlan(&q, &spec);
 }
 
@@ -70,17 +81,24 @@ MU_TEST(testQueryExecution) {
   char *str = "$1 = 2 AND $2 > 3";
 
   SIQuery q = SI_NewQuery();
+  char *parseError = NULL;
 
-  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec));
+  mu_check(SI_ParseQuery(&q, str, strlen(str), &spec, &parseError));
 
   SIQueryPlan *qp = SI_BuildQueryPlan(&q, &spec);
 }
 
 SIQueryError validateQuery(const char *str, SISpec *spec) {
   SIQuery q = SI_NewQuery();
+  char *parseError = NULL;
 
-  if (!SI_ParseQuery(&q, str, strlen(str), spec))
+  if (!SI_ParseQuery(&q, str, strlen(str), spec, &parseError)) {
+    if (parseError) {
+      printf("parse error: %s\n", parseError);
+      free(parseError);
+    }
     return QE_PARSE_ERROR;
+  }
 
   SIQueryError e = SIQuery_Normalize(&q, spec);
   SIQueryNode_Free(q.root);
@@ -89,7 +107,6 @@ SIQueryError validateQuery(const char *str, SISpec *spec) {
 }
 
 MU_TEST(testQueryNormalize) {
-
   // test valid query
   SISpec spec = {.properties =
                      (SIIndexProperty[]){
@@ -129,7 +146,7 @@ int main(int argc, char **argv) {
   // return testIndex();
   MU_RUN_TEST(testQueryParser);
   MU_RUN_TEST(testQueryPlan);
-  // MU_RUN_TEST(testQueryNormalize);
+  MU_RUN_TEST(testQueryNormalize);
   MU_REPORT();
   return minunit_status;
 }

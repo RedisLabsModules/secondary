@@ -25,7 +25,7 @@ Token tok;
 }
 
 
-[0-9]*\.[0-9]+    {  
+[\-\+]?[0-9]*\.[0-9]+    {  
                     tok.dval = atof(yytext); 
                     return FLOAT; 
 }

@@ -160,9 +160,15 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 
   size_t len;
   char *qstr = (char *)RedisModule_StringPtrLen(argv[4], &len);
+  char *parseError = NULL;
   SIQuery q = SI_NewQuery();
-  if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
-    return RedisModule_ReplyWithError(ctx, "Error parsing query string");
+  if (!SI_ParseQuery(&q, qstr, len, &idx->spec, &parseError)) {
+    RedisModule_ReplyWithError(
+        ctx, parseError ? parseError : "Error parsing query string");
+    if (parseError) {
+      free(parseError);
+    }
+    return REDISMODULE_OK;
   }
 
   SICursor *c = idx->idx.Find(idx->idx.ctx, &q);
@@ -205,14 +211,20 @@ int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   if (!wherePos || wherePos >= argc - 1) {
     RedisModule_ReplyWithError(ctx, "No Where clause given");
   }
+
   size_t len;
   char *qstr = (char *)RedisModule_StringPtrLen(argv[wherePos + 1], &len);
+  char *parseError = NULL;
 
   SIQuery q = SI_NewQuery();
-  if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
-    return RedisModule_ReplyWithError(ctx, "Error parsing WHERE query string");
+  if (!SI_ParseQuery(&q, qstr, len, &idx->spec, &parseError)) {
+    RedisModule_ReplyWithError(
+        ctx, parseError ? parseError : "Error parsing WHERE query string");
+    if (parseError) {
+      free(parseError);
+    }
+    return REDISMODULE_OK;
   }
-
   int rc = HashIndex_ExecuteReadCommand(ctx, idx, &q, &argv[wherePos + 2],
                                         argc - (wherePos + 2));
   SIQuery_Free(&q);
@@ -240,11 +252,16 @@ int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   if (wherePos && wherePos < argc - 1) {
     size_t len;
     char *qstr = (char *)RedisModule_StringPtrLen(argv[wherePos + 1], &len);
+    char *parseError = NULL;
 
     q = SI_NewQuery();
-    if (!SI_ParseQuery(&q, qstr, len, &idx->spec)) {
-      return RedisModule_ReplyWithError(ctx,
-                                        "Error parsing WHERE query string");
+    if (!SI_ParseQuery(&q, qstr, len, &idx->spec, &parseError)) {
+      RedisModule_ReplyWithError(
+          ctx, parseError ? parseError : "Error parsing WHERE query string");
+      if (parseError) {
+        free(parseError);
+      }
+      return REDISMODULE_OK;
     }
   }
 

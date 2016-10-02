@@ -3,5 +3,5 @@
 #include <stdlib.h>
 #include "ast.h"
 
-ParseNode *ParseQuery(const char *c, size_t len);
+ParseNode *ParseQuery(const char *c, size_t len, char **msg);
 #endif
