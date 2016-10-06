@@ -30,20 +30,31 @@ int compoundIndex_applyDel(compoundIndex *idx, SIChange ch) {
     free(oldkey);
     SIReverseIndex_Delete(idx->ri, ch.id);
     --idx->length;
-    return 1;
+    return SI_INDEX_OK;
   }
 
-  return 0;
+  return SI_INDEX_ERROR;
 }
 
 int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
-
   SIValueVector vec;
   // if the id is already in the index, we need to delete the old index entry
   // and replace with a new one.
   //
   // TODO: Optimize this to make sure we don't delete and insert if the records
   // are the same
+
+  SIMultiKey *key = NULL;
+  // check for duplicate if needed
+  if (idx->spec.flags & SI_INDEX_UNIQUE) {
+    key = SI_NewMultiKey(ch.v.vals, ch.v.len);
+
+    if (skiplistFind(idx->sl, key) != NULL) {
+      SIMultiKey_Free(key);
+      return SI_INDEX_DUPLICATE_KEY;
+    }
+  }
+
   SIMultiKey *oldkey = NULL;
   int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
   if (exists) {
@@ -58,7 +69,9 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   }
   // insert the id and values to the reverse index
   // TODO: check memory management of all this stuff
-  SIMultiKey *key = SI_NewMultiKey(ch.v.vals, ch.v.len);
+  if (!key) {
+    key = SI_NewMultiKey(ch.v.vals, ch.v.len);
+  }
   SIReverseIndex_Insert(idx->ri, ch.id, key);
 
   // printf("Inserting key:");
@@ -66,23 +79,28 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   // printf("\n");
   skiplistInsert(idx->sl, key, ch.id);
   ++idx->length;
-  return 1;
+  return SI_INDEX_OK;
 }
-int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
 
+int compoundIndex_Apply(void *ctx, SIChangeSet cs) {
   compoundIndex *idx = ctx;
 
   for (size_t i = 0; i < cs.numChanges; i++) {
-    printf("applying change %d for key %s\n", cs.changes[i].type,
-           cs.changes[i].id);
+    // printf("applying change %d for key %s\n", cs.changes[i].type,
+    //        cs.changes[i].id);
+    int rc = SI_INDEX_ERROR;
     if (cs.changes[i].type == SI_CHADD) {
       // this value is not applicable to the index
       if (cs.changes[i].v.len != idx->numFuncs) {
         return SI_INDEX_ERROR;
       }
-      compoundIndex_applyAdd(idx, cs.changes[i]);
+      rc = compoundIndex_applyAdd(idx, cs.changes[i]);
+
     } else if (cs.changes[i].type == SI_CHDEL) {
-      compoundIndex_applyDel(idx, cs.changes[i]);
+      rc = compoundIndex_applyDel(idx, cs.changes[i]);
+    }
+    if (rc != SI_INDEX_OK) {
+      return rc;
     }
   }
 
@@ -104,7 +122,6 @@ int _cmpIds(void *p1, void *p2) {
 }
 
 SIIndex SI_NewCompoundIndex(SISpec spec) {
-
   compoundIndex *idx = malloc(sizeof(compoundIndex));
   idx->spec = spec;
   idx->cmpFuncs = calloc(spec.numProps, sizeof(SIKeyCmpFunc));
@@ -114,35 +131,35 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
 
   for (u_int8_t i = 0; i < spec.numProps; i++) {
     switch (spec.properties[i].type) {
-    case T_STRING:
-      idx->cmpFuncs[i] = si_cmp_string;
-      break;
-    case T_INT32:
-      idx->cmpFuncs[i] = si_cmp_int;
-      break;
-    case T_INT64:
-      idx->cmpFuncs[i] = si_cmp_long;
-      break;
-    case T_FLOAT:
-      idx->cmpFuncs[i] = si_cmp_float;
-      break;
-    case T_DOUBLE:
-      idx->cmpFuncs[i] = si_cmp_double;
-      break;
-    case T_BOOL:
-      idx->cmpFuncs[i] = si_cmp_int;
-      break;
-    case T_TIME:
-      idx->cmpFuncs[i] = si_cmp_time;
-      break;
-    case T_UINT:
-      idx->cmpFuncs[i] = si_cmp_uint;
-      break;
+      case T_STRING:
+        idx->cmpFuncs[i] = si_cmp_string;
+        break;
+      case T_INT32:
+        idx->cmpFuncs[i] = si_cmp_int;
+        break;
+      case T_INT64:
+        idx->cmpFuncs[i] = si_cmp_long;
+        break;
+      case T_FLOAT:
+        idx->cmpFuncs[i] = si_cmp_float;
+        break;
+      case T_DOUBLE:
+        idx->cmpFuncs[i] = si_cmp_double;
+        break;
+      case T_BOOL:
+        idx->cmpFuncs[i] = si_cmp_int;
+        break;
+      case T_TIME:
+        idx->cmpFuncs[i] = si_cmp_time;
+        break;
+      case T_UINT:
+        idx->cmpFuncs[i] = si_cmp_uint;
+        break;
 
-    default: // TODO - implement all other types here
+      default:  // TODO - implement all other types here
 
-      printf("unimplemented type %d! PANIC!\n", spec.properties[i].type);
-      exit(-1);
+        printf("unimplemented type %d! PANIC!\n", spec.properties[i].type);
+        exit(-1);
     }
   }
 
@@ -180,47 +197,45 @@ siPlanRange *scanCtx_CurrentRange(ciScanCtx *c) {
 /* Eval a predicate query node against a given key. Returns 1 if the key
  * staisfies the predicate */
 int evalPredicate(SIPredicate *pred, SIMultiKey *mk, SICmpFuncVector *fv) {
-
   if (pred->propId < 0 || pred->propId >= mk->size) {
     return 0;
   }
   SIKeyCmpFunc cmp = fv->cmpFuncs[pred->propId];
 
   switch (pred->t) {
-  // compare equals
-  case PRED_EQ:
-    return 0 == cmp(&mk->keys[pred->propId], &pred->eq.v, NULL);
+    // compare equals
+    case PRED_EQ:
+      return 0 == cmp(&mk->keys[pred->propId], &pred->eq.v, NULL);
 
-  // compare IN
-  case PRED_IN:
-    for (int i = 0; i < pred->in.numvals; i++) {
-      if (cmp(&mk->keys[pred->propId], &pred->in.vals[i], NULL) != 0) {
+    // compare IN
+    case PRED_IN:
+      for (int i = 0; i < pred->in.numvals; i++) {
+        if (cmp(&mk->keys[pred->propId], &pred->in.vals[i], NULL) != 0) {
+          return 0;
+        }
+      }
+      // we only return true if the IN actually had values in it
+      return pred->in.numvals > 0;
+      break;
+
+    // compare !=
+    case PRED_NE:
+      return cmp(&mk->keys[pred->propId], &pred->eq.v, NULL) != 0;
+
+    // compare range
+    case PRED_RNG: {
+      int minc = cmp(&mk->keys[pred->propId], &pred->rng.min, NULL);
+      if (minc < 0 || (minc == 0 && pred->rng.minExclusive)) {
         return 0;
       }
+      int maxc = cmp(&mk->keys[pred->propId], &pred->rng.max, NULL);
+      if (maxc > 0 || (maxc == 0 && pred->rng.maxExclusive)) {
+        return 0;
+      }
+      return 1;
     }
-    // we only return true if the IN actually had values in it
-    return pred->in.numvals > 0;
-    break;
-
-  // compare !=
-  case PRED_NE:
-    return cmp(&mk->keys[pred->propId], &pred->eq.v, NULL) != 0;
-
-  // compare range
-  case PRED_RNG: {
-
-    int minc = cmp(&mk->keys[pred->propId], &pred->rng.min, NULL);
-    if (minc < 0 || (minc == 0 && pred->rng.minExclusive)) {
-      return 0;
-    }
-    int maxc = cmp(&mk->keys[pred->propId], &pred->rng.max, NULL);
-    if (maxc > 0 || (maxc == 0 && pred->rng.maxExclusive)) {
-      return 0;
-    }
-    return 1;
-  }
-  default:
-    printf("Unssupported filter predicate %d\n", pred->t);
+    default:
+      printf("Unssupported filter predicate %d\n", pred->t);
   }
   return 0;
 }
@@ -250,7 +265,6 @@ int evalKey(SIQueryNode *n, SIMultiKey *mk, SICmpFuncVector *fv) {
 }
 
 SIId scan_next(void *ctx) {
-
   ciScanCtx *sc = ctx;
   skiplistNode *n;
   SIId ret = NULL;
@@ -258,7 +272,6 @@ SIId scan_next(void *ctx) {
                         .numFuncs = sc->idx->numFuncs};
 
   while (sc->currentScanRange < sc->plan->numRanges) {
-
     while (NULL != (n = skiplistIteratorCurrent(&sc->it))) {
       // if we have filters beyond the min/max range, we need to explicitly
       // filter each of them
@@ -293,7 +306,6 @@ SIId scan_next(void *ctx) {
 }
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
-
   compoundIndex *idx = ctx;
   SICursor *c = SI_NewCursor(NULL);
   if (q->numPredicates == 0) {
@@ -324,14 +336,12 @@ error:
 }
 
 void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
-
   compoundIndex *idx = ctx;
 
   skiplistIterator it = skiplistIterateAll(idx->sl);
   skiplistNode *n;
 
   while (NULL != (n = skiplistIteratorCurrent(&it))) {
-
     for (u_int i = 0; i < n->numVals; i++) {
       cb(n->vals[i], n->obj, visitCtx);
     }
@@ -350,12 +360,10 @@ void compoundIndex_Free(void *ctx) {
   skiplistNode *n;
 
   while (NULL != (n = skiplistIteratorCurrent(&it))) {
-
     for (u_int i = 0; i < n->numVals; i++) {
       free(n->vals[i]);
     }
-    if (n->obj)
-      SIMultiKey_Free(n->obj);
+    if (n->obj) SIMultiKey_Free(n->obj);
 
     skiplistIterator_Next(&it);
   }

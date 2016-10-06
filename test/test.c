@@ -128,6 +128,25 @@ void testQuery(SIIndex idx, SISpec *spec, const char *str,
   SICursor_Free(c);
 }
 
+MU_TEST(testUniqueIndex) {
+  SISpec spec = {
+      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"}},
+      .numProps = 1,
+      .flags = SI_INDEX_NAMED | SI_INDEX_UNIQUE};
+
+  SIIndex idx = SI_NewCompoundIndex(spec);
+
+  SIChangeSet cs = SI_NewChangeSet(2);
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id1", 1, SI_StringValC("foo")));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id2", 1, SI_StringValC("foo")));
+
+  int rc = idx.Apply(idx.ctx, cs);
+  printf("%d\n", rc);
+
+  mu_check(rc == SI_INDEX_DUPLICATE_KEY);
+  mu_check(idx.Len(idx.ctx) == 1);
+}
+
 MU_TEST(testIndexingQuerying) {
   SISpec spec = {
       .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"},
@@ -190,7 +209,7 @@ int main(int argc, char **argv) {
   // RMUTil_InitAlloc();
   // MU_RUN_TEST(testIndex);
   // MU_RUN_TEST(testReverseIndex);
-  MU_RUN_TEST(testIndexingQuerying);
+  MU_RUN_TEST(testUniqueIndex);
 
   MU_REPORT();
   return minunit_status;

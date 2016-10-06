@@ -8,8 +8,9 @@
 #include "changeset.h"
 #include "spec.h"
 
-#define SI_INDEX_ERROR -1
 #define SI_INDEX_OK 0
+#define SI_INDEX_ERROR -1
+#define SI_INDEX_DUPLICATE_KEY -2
 
 #define SI_CURSOR_OK 0
 #define SI_CURSOR_ERROR 1
@@ -39,4 +40,4 @@ typedef struct {
 
 SIIndex SI_NewCompoundIndex(SISpec spec);
 
-#endif // !__SECONDARY_H__
+#endif  // !__SECONDARY_H__
