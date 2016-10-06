@@ -74,6 +74,9 @@ void printOp(int op) {
     case IN:
       printf("IN");
       break;
+    case LIKE:
+      printf("LIKE");
+      break;
   }
 }
 

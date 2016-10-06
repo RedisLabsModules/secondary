@@ -46,8 +46,8 @@ MU_TEST(testQueryParser) {
   str = "foo = \"hello world ";
   mu_check(!SI_ParseQuery(&q, str, strlen(str), NULL, &parseError));
   mu_check(parseError != NULL);
-  mu_check(
-      !strcmp(parseError, "Syntax error in WHERE line 1 near 'hello world'"));
+  printf("%s\n", parseError);
+  mu_check(!strcmp(parseError, "Syntax error in WHERE line 1 near 'hello'"));
   free(parseError);
 }
 

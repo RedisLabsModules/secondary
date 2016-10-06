@@ -887,7 +887,7 @@ static void yy_reduce(
         break;
       case 22: /* prop ::= IDENT */
 #line 133 "parser.y"
-{ yygotominor.yy16.name = strdup(yymsp[0].minor.yy0.strval); yygotominor.yy16.id = 0; }
+{ yygotominor.yy16.name = yymsp[0].minor.yy0.strval; yygotominor.yy16.id = 0;  }
 #line 892 "parser.c"
         break;
       default:

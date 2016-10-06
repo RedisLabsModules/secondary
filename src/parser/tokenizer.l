@@ -56,12 +56,11 @@ Token tok;
 "LIKE"        { return LIKE; }
 
 
-[A-Za-z_][_A-Za-z0-9]* {	
-  	tok.strval= yytext;
+[A-Za-z_][A-Za-z0-9_]* {	
+  	tok.strval = strdup(yytext);
   	return IDENT;
 }
  
-
 [ \t\n]+ /* ignore whitespace */
 %%
 

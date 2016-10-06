@@ -18,10 +18,8 @@ void SISpec_Free(SISpec *sp) {
 SIIndexProperty *SISpec_PropertyByName(SISpec *spec, const char *name,
                                        int *id) {
   for (int i = 0; i < spec->numProps; i++) {
-    printf("%s<>%s\n", name, spec->properties[i].name);
     if (spec->properties[i].name &&
         !strcasecmp(name, spec->properties[i].name)) {
-      printf("found prop %d for name %s %p\n", i, name, &spec->properties[i]);
       if (id) {
         *id = i;
       }

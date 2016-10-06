@@ -130,7 +130,7 @@ multivals(A) ::= multivals(B) COMMA value(C). {
 }
 // property enumerator
 prop(A) ::= ENUMERATOR(B). { A.id = B.intval; A.name = NULL;  }
-prop(A) ::= IDENT(B). { A.name = strdup(B.strval); A.id = 0; }
+prop(A) ::= IDENT(B). { A.name = B.strval; A.id = 0;  }
 
 
 %code {

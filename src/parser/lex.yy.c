@@ -912,19 +912,19 @@ case 20:
 YY_RULE_SETUP
 #line 59 "tokenizer.l"
 {	
-  	tok.strval= yytext;
+  	tok.strval = strdup(yytext);
   	return IDENT;
 }
 	YY_BREAK
 case 21:
 /* rule 21 can match eol */
 YY_RULE_SETUP
-#line 65 "tokenizer.l"
+#line 64 "tokenizer.l"
 /* ignore whitespace */
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 66 "tokenizer.l"
+#line 65 "tokenizer.l"
 ECHO;
 	YY_BREAK
 #line 931 "lex.yy.c"
@@ -1922,7 +1922,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 65 "tokenizer.l"
+#line 64 "tokenizer.l"
 
 
 
