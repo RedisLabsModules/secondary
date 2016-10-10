@@ -21,7 +21,6 @@ void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
 void __redisIndex_LoadSpec(RedisIndex *idx, RedisModuleIO *io) {
   idx->spec.numProps = RedisModule_LoadUnsigned(io);
   idx->spec.properties = calloc(idx->spec.numProps, sizeof(SIIndexProperty));
-  printf("loading index with %d props!\n", idx->spec.numProps);
 
   for (size_t i = 0; i < idx->spec.numProps; i++) {
     idx->spec.properties[i].type = RedisModule_LoadSigned(io);

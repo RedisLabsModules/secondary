@@ -23,7 +23,6 @@ int compoundIndex_applyDel(compoundIndex *idx, SIChange ch) {
   // TODO: Hanlde cases where no reverse entry exists but the id is in index.
   // TODO: What happens if an id exists mutiple times? e.g. indexing sets/lists
   int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
-  printf("Applying del on key %s. exists? %s\n", ch.id, exists ? "YES" : "NO");
 
   if (exists) {
     skiplistDelete(idx->sl, oldkey, ch.id);
@@ -48,8 +47,18 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   // check for duplicate if needed
   if (idx->spec.flags & SI_INDEX_UNIQUE) {
     key = SI_NewMultiKey(ch.v.vals, ch.v.len);
+    skiplistNode *n = skiplistFind(idx->sl, key);
+    if (n != NULL) {
+      // if we have an existing value, make sure it belongs to the same id!
 
-    if (skiplistFind(idx->sl, key) != NULL) {
+      // there can only be 1 val per node in unique idx
+      if (!strcmp(n->vals[0], ch.id)) {
+        // the same id and key are already in the index, no need to do anything
+        SIMultiKey_Free(key);
+        return SI_INDEX_OK;
+      }
+
+      // the id stored there is of another record. we have a duplicate!
       SIMultiKey_Free(key);
       return SI_INDEX_DUPLICATE_KEY;
     }
@@ -58,11 +67,7 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   SIMultiKey *oldkey = NULL;
   int exists = SIReverseIndex_Exists(idx->ri, ch.id, &oldkey);
   if (exists) {
-    // printf("id %s already exists, removing key: ", ch.id);
-
     // // compose the old key and delete it from the skiplist
-    // SIMultiKey_Print(oldkey);
-    // printf("\n");
     skiplistDelete(idx->sl, oldkey, ch.id);
     --idx->length;
     free(oldkey);
@@ -74,9 +79,6 @@ int compoundIndex_applyAdd(compoundIndex *idx, SIChange ch) {
   }
   SIReverseIndex_Insert(idx->ri, ch.id, key);
 
-  // printf("Inserting key:");
-  // SIMultiKey_Print(key);
-  // printf("\n");
   skiplistInsert(idx->sl, key, ch.id);
   ++idx->length;
   return SI_INDEX_OK;

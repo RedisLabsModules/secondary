@@ -220,7 +220,11 @@ MU_TEST(testNull) {
   int rc = idx.Apply(idx.ctx, cs);
   mu_check(rc == SI_INDEX_OK);
 
-  char *str = "name IS NULL";
+  char *str = "name <= 'bar'";
+  testQuery(idx, &spec, str, (const char *[]){"id2", NULL});
+  str = "name >= 'foo'";
+  testQuery(idx, &spec, str, (const char *[]){"id1", "id3", NULL});
+  str = "name IS NULL";
   testQuery(idx, &spec, str, (const char *[]){"id4", "id5", NULL});
 }
 
@@ -234,9 +238,9 @@ MU_TEST_SUITE(test_index) {
 
 int main(int argc, char **argv) {
   RMUTil_InitAlloc();
-  // MU_RUN_TEST(testIndex);
-  // MU_RUN_TEST(testReverseIndex);
-  // MU_RUN_TEST(testUniqueIndex);
+  MU_RUN_TEST(testIndex);
+  MU_RUN_TEST(testReverseIndex);
+  MU_RUN_TEST(testUniqueIndex);
   MU_RUN_TEST(testNull);
 
   MU_REPORT();

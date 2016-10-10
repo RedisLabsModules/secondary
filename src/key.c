@@ -14,20 +14,20 @@ GENERIC_CMP_FUNC_IMPL(si_cmp_time, timeval);
 
 int si_cmp_string(void *p1, void *p2, void *ctx) {
   SIValue *v1 = p1, *v2 = p2;
-  // we do not need to treat the case of equal values since inf is only in the
-  // query, never in the index itself
-  if (SIValue_IsInf(v1) || SIValue_IsNegativeInf(v2)) return 1;
-  if (SIValue_IsInf(v2) || SIValue_IsNegativeInf(v1)) return -1;
-
   /* Null Handling: NULL == NULL -> 0, left NULL -1, right NULL 1 */
   if (SIValue_IsNullPtr(v1)) {
     if (SIValue_IsNullPtr(v2)) {
       return 0;
     }
-    return -1;
-  } else if (SIValue_IsNullPtr(v2)) {
     return 1;
+  } else if (SIValue_IsNullPtr(v2)) {
+    return -1;
   }
+  // we do not need to treat the case of equal values since inf is only in the
+  // query, never in the index itself
+  if (SIValue_IsInf(v1) || SIValue_IsNegativeInf(v2)) return 1;
+  if (SIValue_IsInf(v2) || SIValue_IsNegativeInf(v1)) return -1;
+
   // compare the longest length possible, which is the shortest length of the
   // two strings
   int cmp = strncmp(v1->stringval.str, v2->stringval.str,
