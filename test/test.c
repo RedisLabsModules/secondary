@@ -117,6 +117,7 @@ void testQuery(SIIndex idx, SISpec *spec, const char *str,
   SIId id;
   int i = 0;
   while (NULL != (id = c->Next(c->ctx))) {
+    printf("%s\n", id);
     int ok = 0;
     for (int n = 0; !ok && expectedIds[n] != NULL; n++) {
       if (!strcmp(id, expectedIds[n])) {
@@ -156,7 +157,7 @@ MU_TEST(testIndexingQuerying) {
 
   SIIndex idx = SI_NewCompoundIndex(spec);
 
-  SIChangeSet cs = SI_NewChangeSet(4);
+  SIChangeSet cs = SI_NewChangeSet(5);
   SIChangeSet_AddCahnge(
       &cs, SI_NewAddChange("id1", 2, SI_StringValC("foo"), SI_IntVal(2)));
   SIChangeSet_AddCahnge(
@@ -165,6 +166,8 @@ MU_TEST(testIndexingQuerying) {
       &cs, SI_NewAddChange("id3", 2, SI_StringValC("foo"), SI_IntVal(5)));
   SIChangeSet_AddCahnge(
       &cs, SI_NewAddChange("id4", 2, SI_StringValC("foxx"), SI_IntVal(10)));
+  SIChangeSet_AddCahnge(&cs,
+                        SI_NewAddChange("id5", 2, SI_NullVal(), SI_IntVal(10)));
 
   int rc = idx.Apply(idx.ctx, cs);
   printf("%d\n", rc);
@@ -195,6 +198,30 @@ MU_TEST(testIndexingQuerying) {
   str = "name <= 'foxx'";
   testQuery(idx, &spec, str,
             (const char *[]){"id1", "id2", "id3", "id4", NULL});
+  str = "name IS NULL";
+  testQuery(idx, &spec, str, (const char *[]){"id5", NULL});
+}
+
+MU_TEST(testNull) {
+  SISpec spec = {
+      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"}},
+      .numProps = 1,
+      .flags = SI_INDEX_NAMED};
+
+  SIIndex idx = SI_NewCompoundIndex(spec);
+
+  SIChangeSet cs = SI_NewChangeSet(5);
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id1", 1, SI_StringValC("foo")));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id2", 1, SI_StringValC("bar")));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id3", 1, SI_StringValC("fooz")));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id4", 1, SI_NullVal()));
+  SIChangeSet_AddCahnge(&cs, SI_NewAddChange("id5", 1, SI_NullVal()));
+
+  int rc = idx.Apply(idx.ctx, cs);
+  mu_check(rc == SI_INDEX_OK);
+
+  char *str = "name IS NULL";
+  testQuery(idx, &spec, str, (const char *[]){"id4", "id5", NULL});
 }
 
 ///////////////////////////////////
@@ -206,10 +233,11 @@ MU_TEST_SUITE(test_index) {
 }
 
 int main(int argc, char **argv) {
-  // RMUTil_InitAlloc();
+  RMUTil_InitAlloc();
   // MU_RUN_TEST(testIndex);
   // MU_RUN_TEST(testReverseIndex);
-  MU_RUN_TEST(testUniqueIndex);
+  // MU_RUN_TEST(testUniqueIndex);
+  MU_RUN_TEST(testNull);
 
   MU_REPORT();
   return minunit_status;

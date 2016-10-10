@@ -63,7 +63,7 @@
 #define REDISMODULE_HASH_DELETE ((RedisModuleString *)(long)1)
 
 /* Error messages. */
-#define REDISMODULE_ERRORMSG_WRONGTYPE                                         \
+#define REDISMODULE_ERRORMSG_WRONGTYPE \
   "WRONGTYPE Operation against a key holding the wrong kind of value"
 
 #define REDISMODULE_POSITIVE_INFINITE (1.0 / 0.0)
@@ -95,7 +95,7 @@ typedef void (*RedisModuleTypeDigestFunc)(RedisModuleDigest *digest,
                                           void *value);
 typedef void (*RedisModuleTypeFreeFunc)(void *value);
 
-#define REDISMODULE_GET_API(name)                                              \
+#define REDISMODULE_GET_API(name) \
   RedisModule_GetApi("RedisModule_" #name, ((void **)&RedisModule_##name))
 
 #define REDISMODULE_API_FUNC(x) (*x)
@@ -125,8 +125,8 @@ int REDISMODULE_API_FUNC(RedisModule_KeyType)(RedisModuleKey *kp);
 size_t REDISMODULE_API_FUNC(RedisModule_ValueLength)(RedisModuleKey *kp);
 int REDISMODULE_API_FUNC(RedisModule_ListPush)(RedisModuleKey *kp, int where,
                                                RedisModuleString *ele);
-RedisModuleString *
-    REDISMODULE_API_FUNC(RedisModule_ListPop)(RedisModuleKey *key, int where);
+RedisModuleString *REDISMODULE_API_FUNC(RedisModule_ListPop)(
+    RedisModuleKey *key, int where);
 RedisModuleCallReply *REDISMODULE_API_FUNC(RedisModule_Call)(
     RedisModuleCtx *ctx, const char *cmdname, const char *fmt, ...);
 const char *REDISMODULE_API_FUNC(RedisModule_CallReplyProto)(
@@ -141,21 +141,18 @@ size_t REDISMODULE_API_FUNC(RedisModule_CallReplyLength)(
     RedisModuleCallReply *reply);
 RedisModuleCallReply *REDISMODULE_API_FUNC(RedisModule_CallReplyArrayElement)(
     RedisModuleCallReply *reply, size_t idx);
-RedisModuleString *
-    REDISMODULE_API_FUNC(RedisModule_CreateString)(RedisModuleCtx *ctx,
-                                                   const char *ptr, size_t len);
+RedisModuleString *REDISMODULE_API_FUNC(RedisModule_CreateString)(
+    RedisModuleCtx *ctx, const char *ptr, size_t len);
 RedisModuleString *REDISMODULE_API_FUNC(RedisModule_CreateStringFromLongLong)(
     RedisModuleCtx *ctx, long long ll);
 RedisModuleString *REDISMODULE_API_FUNC(RedisModule_CreateStringFromString)(
     RedisModuleCtx *ctx, const RedisModuleString *str);
-RedisModuleString *
-    REDISMODULE_API_FUNC(RedisModule_CreateStringPrintf)(RedisModuleCtx *ctx,
-                                                         const char *fmt, ...);
+RedisModuleString *REDISMODULE_API_FUNC(RedisModule_CreateStringPrintf)(
+    RedisModuleCtx *ctx, const char *fmt, ...);
 void REDISMODULE_API_FUNC(RedisModule_FreeString)(RedisModuleCtx *ctx,
                                                   RedisModuleString *str);
-const char *
-    REDISMODULE_API_FUNC(RedisModule_StringPtrLen)(const RedisModuleString *str,
-                                                   size_t *len);
+const char *REDISMODULE_API_FUNC(RedisModule_StringPtrLen)(
+    const RedisModuleString *str, size_t *len);
 int REDISMODULE_API_FUNC(RedisModule_ReplyWithError)(RedisModuleCtx *ctx,
                                                      const char *err);
 int REDISMODULE_API_FUNC(RedisModule_ReplyWithSimpleString)(RedisModuleCtx *ctx,
@@ -232,8 +229,8 @@ int REDISMODULE_API_FUNC(RedisModule_HashGet)(RedisModuleKey *key, int flags,
 int REDISMODULE_API_FUNC(RedisModule_IsKeysPositionRequest)(
     RedisModuleCtx *ctx);
 void REDISMODULE_API_FUNC(RedisModule_KeyAtPos)(RedisModuleCtx *ctx, int pos);
-unsigned long long
-    REDISMODULE_API_FUNC(RedisModule_GetClientId)(RedisModuleCtx *ctx);
+unsigned long long REDISMODULE_API_FUNC(RedisModule_GetClientId)(
+    RedisModuleCtx *ctx);
 void *REDISMODULE_API_FUNC(RedisModule_PoolAlloc)(RedisModuleCtx *ctx,
                                                   size_t bytes);
 RedisModuleType *REDISMODULE_API_FUNC(RedisModule_CreateDataType)(
@@ -244,8 +241,8 @@ RedisModuleType *REDISMODULE_API_FUNC(RedisModule_CreateDataType)(
 int REDISMODULE_API_FUNC(RedisModule_ModuleTypeSetValue)(RedisModuleKey *key,
                                                          RedisModuleType *mt,
                                                          void *value);
-RedisModuleType *
-    REDISMODULE_API_FUNC(RedisModule_ModuleTypeGetType)(RedisModuleKey *key);
+RedisModuleType *REDISMODULE_API_FUNC(RedisModule_ModuleTypeGetType)(
+    RedisModuleKey *key);
 void *REDISMODULE_API_FUNC(RedisModule_ModuleTypeGetValue)(RedisModuleKey *key);
 void REDISMODULE_API_FUNC(RedisModule_SaveUnsigned)(RedisModuleIO *io,
                                                     uint64_t value);
@@ -261,16 +258,22 @@ void REDISMODULE_API_FUNC(RedisModule_SaveString)(RedisModuleIO *io,
 void REDISMODULE_API_FUNC(RedisModule_SaveStringBuffer)(RedisModuleIO *io,
                                                         const char *str,
                                                         size_t len);
-RedisModuleString *
-    REDISMODULE_API_FUNC(RedisModule_LoadString)(RedisModuleIO *io);
+RedisModuleString *REDISMODULE_API_FUNC(RedisModule_LoadString)(
+    RedisModuleIO *io);
 char *REDISMODULE_API_FUNC(RedisModule_LoadStringBuffer)(RedisModuleIO *io,
                                                          size_t *lenptr);
 void REDISMODULE_API_FUNC(RedisModule_SaveDouble)(RedisModuleIO *io,
                                                   double value);
 double REDISMODULE_API_FUNC(RedisModule_LoadDouble)(RedisModuleIO *io);
+void REDISMODULE_API_FUNC(RedisModule_SaveFloat)(RedisModuleIO *io,
+                                                 float value);
+float REDISMODULE_API_FUNC(RedisModule_LoadFloat)(RedisModuleIO *io);
 void REDISMODULE_API_FUNC(RedisModule_Log)(RedisModuleCtx *ctx,
                                            const char *level, const char *fmt,
                                            ...);
+void REDISMODULE_API_FUNC(RedisModule_LogIOError)(RedisModuleIO *io,
+                                                  const char *levelstr,
+                                                  const char *fmt, ...);
 int REDISMODULE_API_FUNC(RedisModule_StringAppendBuffer)(RedisModuleCtx *ctx,
                                                          RedisModuleString *str,
                                                          const char *buf,
@@ -279,6 +282,8 @@ void REDISMODULE_API_FUNC(RedisModule_RetainString)(RedisModuleCtx *ctx,
                                                     RedisModuleString *str);
 int REDISMODULE_API_FUNC(RedisModule_StringCompare)(RedisModuleString *a,
                                                     RedisModuleString *b);
+RedisModuleCtx *REDISMODULE_API_FUNC(RedisModule_GetContextFromIO)(
+    RedisModuleIO *io);
 
 /* This is included inline inside each Redis module. */
 static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver,
@@ -374,11 +379,16 @@ static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver,
   REDISMODULE_GET_API(LoadStringBuffer);
   REDISMODULE_GET_API(SaveDouble);
   REDISMODULE_GET_API(LoadDouble);
+  REDISMODULE_GET_API(SaveFloat);
+  REDISMODULE_GET_API(LoadFloat);
   REDISMODULE_GET_API(EmitAOF);
   REDISMODULE_GET_API(Log);
+  REDISMODULE_GET_API(LogIOError);
   REDISMODULE_GET_API(StringAppendBuffer);
   REDISMODULE_GET_API(RetainString);
   REDISMODULE_GET_API(StringCompare);
+  REDISMODULE_GET_API(GetContextFromIO);
+  //    REDISMODULE_GET_API(FreeIOContext);
 
   RedisModule_SetModuleAttribs(ctx, name, ver, apiver);
   return REDISMODULE_OK;

@@ -31,6 +31,13 @@ SIQueryNode *SI_PredIn(SIValueVector v) {
   return ret;
 }
 
+SIQueryNode *SI_PredIsNull() {
+  SIQueryNode *ret = __newQueryNode(QN_PRED);
+  ret->pred.t = PRED_ISNULL;
+  ret->pred.eq.v = SI_NullVal();
+  return ret;
+}
+
 SIQuery SI_NewQuery() {
   return (SIQuery){.root = NULL, .offset = 0, .num = 0, .numPredicates = 0};
 }
@@ -51,19 +58,18 @@ SIQueryNode *SIQuery_SetRoot(SIQuery *q, SIQueryNode *n) {
 }
 
 void SIQueryNode_Free(SIQueryNode *n) {
-  if (!n)
-    return;
+  if (!n) return;
 
   switch (n->type) {
-  case QN_LOGIC:
-    SIQueryNode_Free(n->op.left);
-    SIQueryNode_Free(n->op.right);
-    break;
-  case QN_PRED:
-  case QN_PASSTHRU:
-  default:
-    // TODO: see about freeing predicate values
-    break;
+    case QN_LOGIC:
+      SIQueryNode_Free(n->op.left);
+      SIQueryNode_Free(n->op.right);
+      break;
+    case QN_PRED:
+    case QN_PASSTHRU:
+    default:
+      // TODO: see about freeing predicate values
+      break;
   }
   free(n);
 }

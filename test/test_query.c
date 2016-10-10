@@ -60,7 +60,7 @@ MU_TEST(testQueryPlan) {
 
   char *str =
       "foo = 2 AND $2 IN ('hello', 'world')  AND ($3 IN (1, 3.14, "
-      "'foo', 'bar') OR $4 = 'zzz')";
+      "'foo', 'bar') OR $4 IS NULL)";
 
   SIQuery q = SI_NewQuery();
 

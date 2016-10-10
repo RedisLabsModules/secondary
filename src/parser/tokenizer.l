@@ -6,7 +6,6 @@
 #include <math.h>
 #include "../rmutil/alloc.h"
 
-
 Token tok;
 
 %}
@@ -18,6 +17,7 @@ Token tok;
 "IN"         { return IN; }
 "TRUE"      { return TRUE; }
 "FALSE"     { return FALSE; }
+
 
 \$[0-9]{1} {    
     tok.intval = atoi(yytext+1); 
@@ -53,6 +53,8 @@ Token tok;
 "("           { return LP; }
 ")"           { return RP; }
 ","           { return COMMA; }
+"IS"          { return IS; }
+"NULL"        { return TK_NULL; }
 "LIKE"        { return LIKE; }
 
 

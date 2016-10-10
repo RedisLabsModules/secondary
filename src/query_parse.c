@@ -33,6 +33,12 @@ SIQueryNode *toQueryNode(PredicateNode *n) {
         return SI_PredEquals(n->val);
       }
 
+    case IS:
+
+      if (SIValue_IsNull(n->val)) {
+        return SI_PredIsNull();
+      }
+
     default:
       printf("Operator %d not supported!", n->op);
       return NULL;

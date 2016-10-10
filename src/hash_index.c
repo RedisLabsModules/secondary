@@ -157,17 +157,21 @@ int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
 
     int rc = RedisModule_HashGet(k, REDISMODULE_HASH_CFIELDS,
                                  idx->spec.properties[i].name, &vstr, NULL);
-    if (rc == REDISMODULE_ERR || vstr == NULL) {
+    if (rc == REDISMODULE_ERR) {
       goto error;
     }
 
-    char *val = (char *)RedisModule_StringPtrLen(vstr, NULL);
-
-    SIValue v = (SIValue){.type = idx->spec.properties[i].type};
-    if (!SI_ParseValue(&v, val, strlen(val))) {
-      RedisModule_Log(ctx, "error", "could not parse value from hash %s\n",
-                      val);
-      goto error;
+    SIValue v = SI_NullVal();
+    size_t vlen;
+    char *val = vstr ? (char *)RedisModule_StringPtrLen(vstr, &vlen) : NULL;
+    // if the hash element did not exist, we put a NULL value
+    if (val) {
+      v = (SIValue){.type = idx->spec.properties[i].type};
+      if (!SI_ParseValue(&v, val, vlen)) {
+        RedisModule_Log(ctx, "error", "could not parse value from hash %s\n",
+                        val);
+        goto error;
+      }
     }
     SIValueVector_Append(&ch.v, v);
   }

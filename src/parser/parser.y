@@ -1,7 +1,7 @@
 
 %left AND.
 %left OR.
-%nonassoc EQ NE GT GE LT LE IN.
+%nonassoc EQ NE GT GE LT LE IN IS.
 //%left PLUS MINUS.
 //%right EXP NOT.
 
@@ -70,6 +70,11 @@ cond(A) ::= prop(B) op(C) value(D). {
 /* special case to make sure LIKE does not occur with non-strings */
 cond(A) ::= prop(B) LIKE STRING(C). { 
     A = NewPredicateNode(B, LIKE, SI_StringValC(C.strval));
+}
+
+/* special case to make sure LIKE does not occur with non-strings */
+cond(A) ::= prop(B) IS TK_NULL. { 
+    A = NewPredicateNode(B, IS, SI_NullVal());
 }
 
 cond(A) ::= prop(B) IN vallist(D). { 

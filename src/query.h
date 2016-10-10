@@ -8,6 +8,7 @@ typedef enum {
   PRED_NE,
   PRED_RNG,
   PRED_IN,
+  PRED_ISNULL,
 } SIPredicateType;
 
 // query validation errors
@@ -88,6 +89,7 @@ typedef struct queryNode {
   SIQueryNodeType type;
 } SIQueryNode;
 
+SIQueryNode *SI_PredIsNull();
 SIQueryNode *SI_PredEquals(SIValue v);
 SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
                             int maxExclusive);

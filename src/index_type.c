@@ -2,8 +2,9 @@
 #include "index.h"
 #include "key.h"
 #include "index_type.h"
-#include "rmutil/alloc.h"
 #include "rmutil/util.h"
+#include "rmutil/vector.h"
+#include "rmutil/alloc.h"
 
 RedisModuleType *IndexType;
 
@@ -210,7 +211,7 @@ int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
 
   spec->flags =
       0 | (unique ? SI_INDEX_UNIQUE : 0) | (named ? SI_INDEX_NAMED : 0);
-
+  printf("flags: %x\n", spec->flags);
   spec->numProps = named ? (argc - (schemaPos + 1)) / 2 : argc - schemaPos + 1;
   spec->properties = calloc(spec->numProps, sizeof(SIIndexProperty));
 
@@ -286,24 +287,34 @@ void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
   __redisIndex_SaveIndex(idx, rdb);
 }
 
+#define __vpushStr(v, ctx, str) \
+  Vector_Push(v, RedisModule_CreateString(ctx, str, strlen(str)))
+;
+
 void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
                            void *value) {
-  // WE CANNOT IMPLEMENT THIS RIGHT NOW BECAUSE THE API DOES NOT SUPPORT WHAT
-  // WE
-  // NEED
-  // RedisIndex *idx = value;
-  // RedisModuleString *args[idx->spec.numProps];
-  // for (int i = 0; i < idx->spec.numProps; i++) {
-  //   args[i] =
-  //       RedisModule_CreateString(aof->ctx,
-  //       types[idx->spec.properties[i].type],
-  //                                strlen(types[idx->spec.properties[i].type]));
-  //   ;
-  //   fmt[i] = 'c';
-  // }
-  // RedisModule_EmitAOF(aof, "IDX.CREATE", fmt, key, str, len,
-  // // (double)score);
-  // printf("AOF rewrite not implemented!");
+  RedisIndex *idx = value;
+  Vector *args = NewVector(RedisModuleString *, idx->spec.numProps);
+
+  RedisModuleCtx *ctx = RedisModule_GetContextFromIO(aof);
+  RedisModule_AutoMemory(ctx);
+
+  if (idx->kind == SI_HashIndex) {
+    __vpushStr(args, ctx, "TYPE");
+    __vpushStr(args, ctx, "HASH");
+  }
+
+  for (int i = 0; i < idx->spec.numProps; i++) {
+    if (idx->spec.flags & SI_INDEX_NAMED) {
+      __vpushStr(args, ctx, idx->spec.properties[i].name);
+    }
+
+    __vpushStr(args, ctx, types[idx->spec.properties[i].type]);
+  }
+  RedisModule_EmitAOF(aof, "IDX.CREATE", "sv", key,
+                      (RedisModuleString *)args->data, Vector_Size(args));
+
+  Vector_Free(args);
 }
 
 void RedisIndex_Digest(RedisModuleDigest *digest, void *value) {}
