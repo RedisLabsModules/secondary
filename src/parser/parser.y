@@ -1,7 +1,7 @@
 
 %left AND.
 %left OR.
-%nonassoc EQ NE GT GE LT LE IN IS.
+%nonassoc EQ NE GT GE LT LE IN IS NOW.
 //%left PLUS MINUS.
 //%right EXP NOT.
 
@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 #include "token.h"
 #include "parser.h"
 #include "ast.h"
@@ -103,6 +104,7 @@ value(A) ::= STRING(B). {  A = SI_StringValC(strdup(B.strval)); }
 value(A) ::= FLOAT(B). {  A = SI_DoubleVal(B.dval); }
 value(A) ::= TRUE. { A = SI_BoolVal(1); }
 value(A) ::= FALSE. { A = SI_BoolVal(0); }
+value(A) ::= timestamp(B). { A = SI_TimeVal(B); }
 
 %type vallist {SIValueVector}
 %type multivals {SIValueVector}
@@ -137,6 +139,47 @@ multivals(A) ::= multivals(B) COMMA value(C). {
 prop(A) ::= ENUMERATOR(B). { A.id = B.intval; A.name = NULL;  }
 prop(A) ::= IDENT(B). { A.name = B.strval; A.id = 0;  }
 
+%type timestamp {time_t}
+
+timestamp(A) ::= NOW. {
+    A = time(NULL);
+}
+
+timestamp(A) ::= TODAY. {
+    time_t t = time(NULL);
+    A = t - t % 86400;
+}
+
+timestamp(A) ::= TIME LP INTEGER(B) RP. {
+    A = (time_t)B.intval;
+}
+
+timestamp(A) ::= UNIXTIME LP INTEGER(B) RP. {
+    A = (time_t)B.intval;
+}
+
+timestamp(A) ::= TIME_ADD LP timestamp(B) COMMA duration(C) RP. {
+    A = B + C;
+}
+
+timestamp(A) ::= TIME_SUB LP timestamp(B) COMMA duration(C) RP. {
+    A = B - C;
+}
+
+
+%type duration {int}
+duration(A) ::= DAYS LP INTEGER(B) RP. {
+    A = B.intval * 86400;
+}
+duration(A) ::= HOURS LP INTEGER(B) RP. {
+    A = B.intval * 3600;
+}
+duration(A) ::= MINUTES LP INTEGER(B) RP. {
+    A = B.intval * 60;
+}
+duration(A) ::= SECONDS LP INTEGER(B) RP. {
+    A = B.intval;
+}    
 
 %code {
 

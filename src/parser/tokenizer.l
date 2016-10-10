@@ -58,6 +58,16 @@ Token tok;
 "LIKE"        { return LIKE; }
 
 
+"NOW" { return NOW; }
+"TODAY" { return TODAY; }
+"TIME_ADD" { return TIME_ADD; }
+"TIME_SUB" { return TIME_SUB; }
+"SECONDS" { return SECONDS; } 
+"DAYS" { return DAYS; }
+"HOURS" { return HOURS; }
+"MINUTES" { return MINUTES; }
+"UNIX" { return UNIXTIME; }
+
 [A-Za-z_][A-Za-z0-9_]* {	
   	tok.strval = strdup(yytext);
   	return IDENT;

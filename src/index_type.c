@@ -5,24 +5,42 @@
 #include "rmutil/util.h"
 #include "rmutil/vector.h"
 #include "rmutil/alloc.h"
+#include "rmutil/logging.h"
 
 RedisModuleType *IndexType;
 
 void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
+  RedisModule_SaveUnsigned(io, (u_int64_t)idx->spec.flags);
   RedisModule_SaveUnsigned(io, (u_int64_t)idx->spec.numProps);
+  RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
+
   for (size_t i = 0; i < idx->spec.numProps; i++) {
-    printf("saving prop type %d flags %x\n", idx->spec.properties[i].type,
-           idx->spec.properties[i].flags);
+    RM_LOG_NOTICE(ctx, "saving prop '%s'' type %d flags %x\n",
+                  idx->spec.properties[i].name, idx->spec.properties[i].type,
+                  idx->spec.properties[i].flags);
+
+    if (idx->spec.flags & SI_INDEX_NAMED) {
+      char *name = idx->spec.properties[i].name;
+      RedisModule_SaveStringBuffer(io, name ? name : "",
+                                   name ? strlen(name) : 0);
+    }
     RedisModule_SaveSigned(io, (int)idx->spec.properties[i].type);
     RedisModule_SaveSigned(io, (int)idx->spec.properties[i].flags);
   }
 }
 
 void __redisIndex_LoadSpec(RedisIndex *idx, RedisModuleIO *io) {
+  idx->spec.flags = RedisModule_LoadUnsigned(io);
   idx->spec.numProps = RedisModule_LoadUnsigned(io);
   idx->spec.properties = calloc(idx->spec.numProps, sizeof(SIIndexProperty));
 
   for (size_t i = 0; i < idx->spec.numProps; i++) {
+    if (idx->spec.flags & SI_INDEX_NAMED) {
+      size_t slen;
+      char *s = idx->spec.properties[i].name =
+          RedisModule_LoadStringBuffer(io, &slen);
+      printf("got property: %s\n", s);
+    }
     idx->spec.properties[i].type = RedisModule_LoadSigned(io);
     idx->spec.properties[i].flags = RedisModule_LoadSigned(io);
     printf("loaded prop type %d flags %x\n", idx->spec.properties[i].type,
@@ -62,7 +80,7 @@ SIValue __readValue(RedisModuleIO *rdb) {
     default:
       // NULL value for all unsupported stuff
       // this will probably break the loading for any wrong type
-      v.type = T_NULL;
+      v = SI_NullVal();
       break;
   }
   return v;
@@ -116,13 +134,15 @@ void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
   RedisModule_SaveStringBuffer(vx->w, id, strlen(id));
 
   for (int i = 0; i < vx->idx->spec.numProps; i++) {
-    __writeValue(&mk->keys[i], vx->idx->spec.properties[i].type, vx->w);
+    __writeValue(&mk->keys[i], mk->keys[i].type, vx->w);
     vx->num++;
   }
 }
 void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
   size_t len = idx->idx.Len(idx->idx.ctx);
-  printf("saving index len %zd\n", len);
+  RedisModuleCtx *ctx = RedisModule_GetContextFromIO(w);
+  RedisModule_Log(ctx, "notice", "saving index of len %zd", len);
+
   // save the number of elements in the indes
   RedisModule_SaveUnsigned(w, (u_int64_t)len);
 

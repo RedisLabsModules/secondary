@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 #include "token.h"
 #include "parser.h"
 #include "ast.h"
@@ -28,7 +29,7 @@ typedef struct {
 
 void yyerror(char *s);
     
-#line 32 "parser.c"
+#line 33 "parser.c"
 /* Next is all token values, in a form suitable for use by makeheaders.
 ** This section will be null unless lemon is run with the -m switch.
 */
@@ -79,17 +80,18 @@ void yyerror(char *s);
 **                       defined, then do no error processing.
 */
 #define YYCODETYPE unsigned char
-#define YYNOCODE 32
+#define YYNOCODE 44
 #define YYACTIONTYPE unsigned char
 #define ParseTOKENTYPE Token
 typedef union {
   int yyinit;
   ParseTOKENTYPE yy0;
-  int yy6;
-  ParseNode* yy22;
-  property yy34;
-  SIValueVector yy35;
-  SIValue yy40;
+  ParseNode* yy8;
+  SIValue yy22;
+  time_t yy23;
+  SIValueVector yy27;
+  property yy44;
+  int yy64;
 } YYMINORTYPE;
 #ifndef YYSTACKDEPTH
 #define YYSTACKDEPTH 100
@@ -98,8 +100,8 @@ typedef union {
 #define ParseARG_PDECL , parseCtx *ctx 
 #define ParseARG_FETCH  parseCtx *ctx  = yypParser->ctx 
 #define ParseARG_STORE yypParser->ctx  = ctx 
-#define YYNSTATE 39
-#define YYNRULE 24
+#define YYNSTATE 78
+#define YYNRULE 35
 #define YY_NO_ACTION      (YYNSTATE+YYNRULE+2)
 #define YY_ACCEPT_ACTION  (YYNSTATE+YYNRULE+1)
 #define YY_ERROR_ACTION   (YYNSTATE+YYNRULE)
@@ -168,41 +170,63 @@ static const YYMINORTYPE yyzerominor = { 0 };
 **                     shifting non-terminals after a reduce.
 **  yy_default[]       Default action for each state.
 */
-#define YY_ACTTAB_COUNT (48)
+#define YY_ACTTAB_COUNT (111)
 static const YYACTIONTYPE yy_action[] = {
- /*     0 */    38,   33,   37,   34,   36,   35,    9,   15,   16,   25,
- /*    10 */    30,   39,    4,    2,   31,   29,   28,   27,    4,    2,
- /*    20 */     3,   26,    6,   64,   11,    2,    5,   18,   17,   23,
- /*    30 */    24,   32,   20,   13,    7,    5,    1,   10,   19,    5,
- /*    40 */     5,   65,   65,   14,   22,   12,   21,    8,
+ /*     0 */    64,   43,   69,   78,    7,    5,   70,   68,   67,   66,
+ /*    10 */    42,    7,    5,   63,   44,   41,   38,   23,   77,   72,
+ /*    20 */    76,   73,   75,   74,   13,   19,   48,   20,   64,   35,
+ /*    30 */    32,   29,   26,   18,   62,   65,   16,   39,   33,    6,
+ /*    40 */    54,   63,   44,   41,   38,   23,   46,   45,  114,   15,
+ /*    50 */    51,    8,   40,   10,   17,    3,    8,   14,   47,    8,
+ /*    60 */     8,   61,   60,   71,   50,   65,   65,   49,   12,   65,
+ /*    70 */    34,   30,   59,   31,   27,   58,   28,   24,   57,   25,
+ /*    80 */    53,   56,    9,    5,   11,   55,    1,   52,    4,    2,
+ /*    90 */   115,   36,   21,   37,  115,  115,  115,  115,  115,  115,
+ /*   100 */   115,  115,  115,  115,  115,  115,  115,  115,  115,  115,
+ /*   110 */    22,
 };
 static const YYCODETYPE yy_lookahead[] = {
- /*     0 */     3,    4,    5,    6,    7,    8,    9,   10,   11,   13,
- /*    10 */    12,    0,    1,    2,   16,   17,   18,   19,    1,    2,
- /*    20 */    14,   12,   20,   24,   25,    2,   27,   21,   22,   15,
- /*    30 */    29,   28,   15,   25,   20,   27,   14,   25,   25,   27,
- /*    40 */    27,   31,   31,   28,   28,   30,   28,   26,
+ /*     0 */    11,   15,   13,    0,    1,    2,   17,   18,   19,   20,
+ /*    10 */    17,    1,    2,   24,   25,   26,   27,   28,    3,    4,
+ /*    20 */     5,    6,    7,    8,    9,   10,   16,   12,   11,   29,
+ /*    30 */    30,   31,   32,   38,   16,   40,   41,   17,   17,   15,
+ /*    40 */    13,   24,   25,   26,   27,   28,   22,   23,   34,   35,
+ /*    50 */    16,   37,   15,   15,   35,   21,   37,   35,   35,   37,
+ /*    60 */    37,   16,   16,   38,   38,   40,   40,   38,   21,   40,
+ /*    70 */    15,   17,   16,   15,   17,   16,   15,   17,   16,   15,
+ /*    80 */    14,   16,   15,    2,   21,   16,   15,   39,   36,   21,
+ /*    90 */    43,   42,   42,   40,   43,   43,   43,   43,   43,   43,
+ /*   100 */    43,   43,   43,   43,   43,   43,   43,   43,   43,   43,
+ /*   110 */    40,
 };
-#define YY_SHIFT_USE_DFLT (-5)
-#define YY_SHIFT_COUNT (16)
-#define YY_SHIFT_MIN   (-4)
-#define YY_SHIFT_MAX   (23)
+#define YY_SHIFT_USE_DFLT (-15)
+#define YY_SHIFT_COUNT (44)
+#define YY_SHIFT_MIN   (-14)
+#define YY_SHIFT_MAX   (81)
 static const signed char yy_shift_ofst[] = {
- /*     0 */     6,   -2,    6,    6,    6,   -3,   -2,   -2,   -2,   22,
- /*    10 */    17,   11,   14,   23,    2,   -4,    9,
+ /*     0 */    24,  -11,  -11,  -11,  -11,   24,   24,   24,   15,   17,
+ /*    10 */    17,    0,    0,   71,   10,    3,   34,   81,   68,   66,
+ /*    20 */    27,   69,   63,   67,   65,   60,   64,   62,   57,   61,
+ /*    30 */    59,   54,   58,   56,   21,   55,   46,   47,   38,   45,
+ /*    40 */    20,   37,   18,   -7,  -14,
 };
-#define YY_REDUCE_USE_DFLT (-2)
-#define YY_REDUCE_COUNT (9)
-#define YY_REDUCE_MIN   (-1)
-#define YY_REDUCE_MAX   (21)
+#define YY_REDUCE_USE_DFLT (-6)
+#define YY_REDUCE_COUNT (13)
+#define YY_REDUCE_MIN   (-5)
+#define YY_REDUCE_MAX   (70)
 static const signed char yy_reduce_ofst[] = {
- /*     0 */    -1,   15,   13,   12,    8,   21,   18,   16,    3,    1,
+ /*     0 */    14,   -5,   29,   26,   25,   23,   22,   19,   52,   70,
+ /*    10 */    53,   50,   49,   48,
 };
 static const YYACTIONTYPE yy_default[] = {
- /*     0 */    63,   63,   63,   63,   63,   63,   63,   63,   63,   63,
- /*    10 */    63,   63,   63,   51,   63,   63,   63,   62,   61,   52,
- /*    20 */    50,   59,   60,   58,   49,   48,   47,   57,   56,   55,
- /*    30 */    54,   53,   46,   45,   44,   43,   42,   41,   40,
+ /*     0 */   113,  113,  113,  113,  113,  113,  113,  113,  113,  113,
+ /*    10 */   113,  113,  113,  113,  113,  113,  113,   90,  113,  113,
+ /*    20 */   113,  113,  113,  113,  113,  113,  113,  113,  113,  113,
+ /*    30 */   113,  113,  113,  113,  113,  113,  113,  113,  113,  113,
+ /*    40 */   113,  113,  113,  113,  113,  102,  101,   91,   89,   99,
+ /*    50 */   100,   98,   88,   87,   86,  108,  112,  111,  110,  109,
+ /*    60 */   107,  106,  105,  104,  103,   97,   96,   95,   94,   93,
+ /*    70 */    92,   85,   84,   83,   82,   81,   80,   79,
 };
 
 /* The next table maps tokens into fallback tokens.  If a construct
@@ -297,12 +321,15 @@ void ParseTrace(FILE *TraceFILE, char *zTracePrompt){
 static const char *const yyTokenName[] = { 
   "$",             "AND",           "OR",            "EQ",          
   "NE",            "GT",            "GE",            "LT",          
-  "LE",            "IN",            "IS",            "LIKE",        
-  "STRING",        "TK_NULL",       "LP",            "RP",          
-  "INTEGER",       "FLOAT",         "TRUE",          "FALSE",       
-  "COMMA",         "ENUMERATOR",    "IDENT",         "error",       
-  "query",         "cond",          "op",            "prop",        
-  "value",         "vallist",       "multivals",   
+  "LE",            "IN",            "IS",            "NOW",         
+  "LIKE",          "STRING",        "TK_NULL",       "LP",          
+  "RP",            "INTEGER",       "FLOAT",         "TRUE",        
+  "FALSE",         "COMMA",         "ENUMERATOR",    "IDENT",       
+  "TODAY",         "TIME",          "UNIXTIME",      "TIME_ADD",    
+  "TIME_SUB",      "DAYS",          "HOURS",         "MINUTES",     
+  "SECONDS",       "error",         "query",         "cond",        
+  "op",            "prop",          "value",         "vallist",     
+  "timestamp",     "multivals",     "duration",    
 };
 #endif /* NDEBUG */
 
@@ -329,11 +356,22 @@ static const char *const yyRuleName[] = {
  /*  16 */ "value ::= FLOAT",
  /*  17 */ "value ::= TRUE",
  /*  18 */ "value ::= FALSE",
- /*  19 */ "vallist ::= LP multivals RP",
- /*  20 */ "multivals ::= value COMMA value",
- /*  21 */ "multivals ::= multivals COMMA value",
- /*  22 */ "prop ::= ENUMERATOR",
- /*  23 */ "prop ::= IDENT",
+ /*  19 */ "value ::= timestamp",
+ /*  20 */ "vallist ::= LP multivals RP",
+ /*  21 */ "multivals ::= value COMMA value",
+ /*  22 */ "multivals ::= multivals COMMA value",
+ /*  23 */ "prop ::= ENUMERATOR",
+ /*  24 */ "prop ::= IDENT",
+ /*  25 */ "timestamp ::= NOW",
+ /*  26 */ "timestamp ::= TODAY",
+ /*  27 */ "timestamp ::= TIME LP INTEGER RP",
+ /*  28 */ "timestamp ::= UNIXTIME LP INTEGER RP",
+ /*  29 */ "timestamp ::= TIME_ADD LP timestamp COMMA duration RP",
+ /*  30 */ "timestamp ::= TIME_SUB LP timestamp COMMA duration RP",
+ /*  31 */ "duration ::= DAYS LP INTEGER RP",
+ /*  32 */ "duration ::= HOURS LP INTEGER RP",
+ /*  33 */ "duration ::= MINUTES LP INTEGER RP",
+ /*  34 */ "duration ::= SECONDS LP INTEGER RP",
 };
 #endif /* NDEBUG */
 
@@ -412,32 +450,32 @@ static void yy_destructor(
     ** which appear on the RHS of the rule, but which are not used
     ** inside the C code.
     */
-    case 25: /* cond */
+    case 35: /* cond */
 {
-#line 63 "parser.y"
- ParseNode_Free((yypminor->yy22)); 
-#line 420 "parser.c"
+#line 64 "parser.y"
+ ParseNode_Free((yypminor->yy8)); 
+#line 458 "parser.c"
 }
       break;
-    case 27: /* prop */
+    case 37: /* prop */
 {
-#line 129 "parser.y"
+#line 131 "parser.y"
 
      
-    if ((yypminor->yy34).name != NULL) { 
-        free((yypminor->yy34).name); 
-        (yypminor->yy34).name = NULL;
+    if ((yypminor->yy44).name != NULL) { 
+        free((yypminor->yy44).name); 
+        (yypminor->yy44).name = NULL;
     } 
 
-#line 433 "parser.c"
+#line 471 "parser.c"
 }
       break;
-    case 29: /* vallist */
-    case 30: /* multivals */
+    case 39: /* vallist */
+    case 41: /* multivals */
 {
-#line 109 "parser.y"
-SIValueVector_Free(&(yypminor->yy35));
-#line 441 "parser.c"
+#line 111 "parser.y"
+SIValueVector_Free(&(yypminor->yy27));
+#line 479 "parser.c"
 }
       break;
     default:  break;   /* If no destructor action specified: do nothing */
@@ -675,30 +713,41 @@ static const struct {
   YYCODETYPE lhs;         /* Symbol on the left-hand side of the rule */
   unsigned char nrhs;     /* Number of right-hand side symbols in the rule */
 } yyRuleInfo[] = {
-  { 24, 1 },
-  { 26, 1 },
-  { 26, 1 },
-  { 26, 1 },
-  { 26, 1 },
-  { 26, 1 },
-  { 26, 1 },
-  { 25, 3 },
-  { 25, 3 },
-  { 25, 3 },
-  { 25, 3 },
-  { 25, 3 },
-  { 25, 3 },
-  { 25, 3 },
-  { 28, 1 },
-  { 28, 1 },
-  { 28, 1 },
-  { 28, 1 },
-  { 28, 1 },
-  { 29, 3 },
-  { 30, 3 },
-  { 30, 3 },
-  { 27, 1 },
-  { 27, 1 },
+  { 34, 1 },
+  { 36, 1 },
+  { 36, 1 },
+  { 36, 1 },
+  { 36, 1 },
+  { 36, 1 },
+  { 36, 1 },
+  { 35, 3 },
+  { 35, 3 },
+  { 35, 3 },
+  { 35, 3 },
+  { 35, 3 },
+  { 35, 3 },
+  { 35, 3 },
+  { 38, 1 },
+  { 38, 1 },
+  { 38, 1 },
+  { 38, 1 },
+  { 38, 1 },
+  { 38, 1 },
+  { 39, 3 },
+  { 41, 3 },
+  { 41, 3 },
+  { 37, 1 },
+  { 37, 1 },
+  { 40, 1 },
+  { 40, 1 },
+  { 40, 4 },
+  { 40, 4 },
+  { 40, 6 },
+  { 40, 6 },
+  { 42, 4 },
+  { 42, 4 },
+  { 42, 4 },
+  { 42, 4 },
 };
 
 static void yy_accept(yyParser*);  /* Forward Declaration */
@@ -754,150 +803,220 @@ static void yy_reduce(
   **     break;
   */
       case 0: /* query ::= cond */
-#line 52 "parser.y"
-{ ctx->root = yymsp[0].minor.yy22; }
-#line 760 "parser.c"
+#line 53 "parser.y"
+{ ctx->root = yymsp[0].minor.yy8; }
+#line 809 "parser.c"
         break;
       case 1: /* op ::= EQ */
-#line 55 "parser.y"
-{ yygotominor.yy6 = EQ; }
-#line 765 "parser.c"
+#line 56 "parser.y"
+{ yygotominor.yy64 = EQ; }
+#line 814 "parser.c"
         break;
       case 2: /* op ::= GT */
-#line 56 "parser.y"
-{ yygotominor.yy6 = GT; }
-#line 770 "parser.c"
+#line 57 "parser.y"
+{ yygotominor.yy64 = GT; }
+#line 819 "parser.c"
         break;
       case 3: /* op ::= LT */
-#line 57 "parser.y"
-{ yygotominor.yy6 = LT; }
-#line 775 "parser.c"
+#line 58 "parser.y"
+{ yygotominor.yy64 = LT; }
+#line 824 "parser.c"
         break;
       case 4: /* op ::= LE */
-#line 58 "parser.y"
-{ yygotominor.yy6 = LE; }
-#line 780 "parser.c"
+#line 59 "parser.y"
+{ yygotominor.yy64 = LE; }
+#line 829 "parser.c"
         break;
       case 5: /* op ::= GE */
-#line 59 "parser.y"
-{ yygotominor.yy6 = GE; }
-#line 785 "parser.c"
-        break;
-      case 6: /* op ::= NE */
 #line 60 "parser.y"
-{ yygotominor.yy6 = NE; }
-#line 790 "parser.c"
-        break;
-      case 7: /* cond ::= prop op value */
-#line 65 "parser.y"
-{ 
-    /* Terminal condition of a single predicate */
-    yygotominor.yy22 = NewPredicateNode(yymsp[-2].minor.yy34, yymsp[-1].minor.yy6, yymsp[0].minor.yy40);
-}
-#line 798 "parser.c"
-        break;
-      case 8: /* cond ::= prop LIKE STRING */
-#line 71 "parser.y"
-{ 
-    yygotominor.yy22 = NewPredicateNode(yymsp[-2].minor.yy34, LIKE, SI_StringValC(yymsp[0].minor.yy0.strval));
-}
-#line 805 "parser.c"
-        break;
-      case 9: /* cond ::= prop IS TK_NULL */
-#line 76 "parser.y"
-{ 
-    yygotominor.yy22 = NewPredicateNode(yymsp[-2].minor.yy34, IS, SI_NullVal());
-}
-#line 812 "parser.c"
-        break;
-      case 10: /* cond ::= prop IN vallist */
-#line 80 "parser.y"
-{ 
-    /* Terminal condition of a single IN predicate */
-    yygotominor.yy22 = NewInPredicateNode(yymsp[-2].minor.yy34, IN, yymsp[0].minor.yy35);
-}
-#line 820 "parser.c"
-        break;
-      case 11: /* cond ::= LP cond RP */
-#line 85 "parser.y"
-{ 
-  yygotominor.yy22 = yymsp[-1].minor.yy22;
-}
-#line 827 "parser.c"
-        break;
-      case 12: /* cond ::= cond AND cond */
-#line 89 "parser.y"
-{
-  yygotominor.yy22 = NewConditionNode(yymsp[-2].minor.yy22, AND, yymsp[0].minor.yy22);
-}
+{ yygotominor.yy64 = GE; }
 #line 834 "parser.c"
         break;
-      case 13: /* cond ::= cond OR cond */
-#line 93 "parser.y"
-{
-  yygotominor.yy22 = NewConditionNode(yymsp[-2].minor.yy22, OR, yymsp[0].minor.yy22);
+      case 6: /* op ::= NE */
+#line 61 "parser.y"
+{ yygotominor.yy64 = NE; }
+#line 839 "parser.c"
+        break;
+      case 7: /* cond ::= prop op value */
+#line 66 "parser.y"
+{ 
+    /* Terminal condition of a single predicate */
+    yygotominor.yy8 = NewPredicateNode(yymsp[-2].minor.yy44, yymsp[-1].minor.yy64, yymsp[0].minor.yy22);
 }
-#line 841 "parser.c"
+#line 847 "parser.c"
         break;
-      case 14: /* value ::= INTEGER */
-#line 101 "parser.y"
-{  yygotominor.yy40 = SI_LongVal(yymsp[0].minor.yy0.intval); }
-#line 846 "parser.c"
+      case 8: /* cond ::= prop LIKE STRING */
+#line 72 "parser.y"
+{ 
+    yygotominor.yy8 = NewPredicateNode(yymsp[-2].minor.yy44, LIKE, SI_StringValC(yymsp[0].minor.yy0.strval));
+}
+#line 854 "parser.c"
         break;
-      case 15: /* value ::= STRING */
-#line 102 "parser.y"
-{  yygotominor.yy40 = SI_StringValC(strdup(yymsp[0].minor.yy0.strval)); }
-#line 851 "parser.c"
-        break;
-      case 16: /* value ::= FLOAT */
-#line 103 "parser.y"
-{  yygotominor.yy40 = SI_DoubleVal(yymsp[0].minor.yy0.dval); }
-#line 856 "parser.c"
-        break;
-      case 17: /* value ::= TRUE */
-#line 104 "parser.y"
-{ yygotominor.yy40 = SI_BoolVal(1); }
+      case 9: /* cond ::= prop IS TK_NULL */
+#line 77 "parser.y"
+{ 
+    yygotominor.yy8 = NewPredicateNode(yymsp[-2].minor.yy44, IS, SI_NullVal());
+}
 #line 861 "parser.c"
         break;
-      case 18: /* value ::= FALSE */
-#line 105 "parser.y"
-{ yygotominor.yy40 = SI_BoolVal(0); }
-#line 866 "parser.c"
-        break;
-      case 19: /* vallist ::= LP multivals RP */
-#line 112 "parser.y"
-{
-    yygotominor.yy35 = yymsp[-1].minor.yy35;
-    
+      case 10: /* cond ::= prop IN vallist */
+#line 81 "parser.y"
+{ 
+    /* Terminal condition of a single IN predicate */
+    yygotominor.yy8 = NewInPredicateNode(yymsp[-2].minor.yy44, IN, yymsp[0].minor.yy27);
 }
-#line 874 "parser.c"
+#line 869 "parser.c"
         break;
-      case 20: /* multivals ::= value COMMA value */
-#line 116 "parser.y"
+      case 11: /* cond ::= LP cond RP */
+#line 86 "parser.y"
+{ 
+  yygotominor.yy8 = yymsp[-1].minor.yy8;
+}
+#line 876 "parser.c"
+        break;
+      case 12: /* cond ::= cond AND cond */
+#line 90 "parser.y"
 {
-      yygotominor.yy35 = SI_NewValueVector(2);
-      SIValueVector_Append(&yygotominor.yy35, yymsp[-2].minor.yy40);
-      SIValueVector_Append(&yygotominor.yy35, yymsp[0].minor.yy40);
+  yygotominor.yy8 = NewConditionNode(yymsp[-2].minor.yy8, AND, yymsp[0].minor.yy8);
 }
 #line 883 "parser.c"
         break;
-      case 21: /* multivals ::= multivals COMMA value */
-#line 122 "parser.y"
+      case 13: /* cond ::= cond OR cond */
+#line 94 "parser.y"
 {
-    SIValueVector_Append(&yymsp[-2].minor.yy35, yymsp[0].minor.yy40);
-    yygotominor.yy35 = yymsp[-2].minor.yy35;
+  yygotominor.yy8 = NewConditionNode(yymsp[-2].minor.yy8, OR, yymsp[0].minor.yy8);
 }
-#line 891 "parser.c"
+#line 890 "parser.c"
         break;
-      case 22: /* prop ::= ENUMERATOR */
-#line 137 "parser.y"
-{ yygotominor.yy34.id = yymsp[0].minor.yy0.intval; yygotominor.yy34.name = NULL;  }
-#line 896 "parser.c"
+      case 14: /* value ::= INTEGER */
+#line 102 "parser.y"
+{  yygotominor.yy22 = SI_LongVal(yymsp[0].minor.yy0.intval); }
+#line 895 "parser.c"
         break;
-      case 23: /* prop ::= IDENT */
-#line 138 "parser.y"
-{ yygotominor.yy34.name = yymsp[0].minor.yy0.strval; yygotominor.yy34.id = 0;  }
-#line 901 "parser.c"
+      case 15: /* value ::= STRING */
+#line 103 "parser.y"
+{  yygotominor.yy22 = SI_StringValC(strdup(yymsp[0].minor.yy0.strval)); }
+#line 900 "parser.c"
+        break;
+      case 16: /* value ::= FLOAT */
+#line 104 "parser.y"
+{  yygotominor.yy22 = SI_DoubleVal(yymsp[0].minor.yy0.dval); }
+#line 905 "parser.c"
+        break;
+      case 17: /* value ::= TRUE */
+#line 105 "parser.y"
+{ yygotominor.yy22 = SI_BoolVal(1); }
+#line 910 "parser.c"
+        break;
+      case 18: /* value ::= FALSE */
+#line 106 "parser.y"
+{ yygotominor.yy22 = SI_BoolVal(0); }
+#line 915 "parser.c"
+        break;
+      case 19: /* value ::= timestamp */
+#line 107 "parser.y"
+{ yygotominor.yy22 = SI_TimeVal(yymsp[0].minor.yy23); }
+#line 920 "parser.c"
+        break;
+      case 20: /* vallist ::= LP multivals RP */
+#line 114 "parser.y"
+{
+    yygotominor.yy27 = yymsp[-1].minor.yy27;
+    
+}
+#line 928 "parser.c"
+        break;
+      case 21: /* multivals ::= value COMMA value */
+#line 118 "parser.y"
+{
+      yygotominor.yy27 = SI_NewValueVector(2);
+      SIValueVector_Append(&yygotominor.yy27, yymsp[-2].minor.yy22);
+      SIValueVector_Append(&yygotominor.yy27, yymsp[0].minor.yy22);
+}
+#line 937 "parser.c"
+        break;
+      case 22: /* multivals ::= multivals COMMA value */
+#line 124 "parser.y"
+{
+    SIValueVector_Append(&yymsp[-2].minor.yy27, yymsp[0].minor.yy22);
+    yygotominor.yy27 = yymsp[-2].minor.yy27;
+}
+#line 945 "parser.c"
+        break;
+      case 23: /* prop ::= ENUMERATOR */
+#line 139 "parser.y"
+{ yygotominor.yy44.id = yymsp[0].minor.yy0.intval; yygotominor.yy44.name = NULL;  }
+#line 950 "parser.c"
+        break;
+      case 24: /* prop ::= IDENT */
+#line 140 "parser.y"
+{ yygotominor.yy44.name = yymsp[0].minor.yy0.strval; yygotominor.yy44.id = 0;  }
+#line 955 "parser.c"
+        break;
+      case 25: /* timestamp ::= NOW */
+#line 144 "parser.y"
+{
+    yygotominor.yy23 = time(NULL);
+}
+#line 962 "parser.c"
+        break;
+      case 26: /* timestamp ::= TODAY */
+#line 148 "parser.y"
+{
+    time_t t = time(NULL);
+    yygotominor.yy23 = t - t % 86400;
+}
+#line 970 "parser.c"
+        break;
+      case 27: /* timestamp ::= TIME LP INTEGER RP */
+      case 28: /* timestamp ::= UNIXTIME LP INTEGER RP */ yytestcase(yyruleno==28);
+#line 153 "parser.y"
+{
+    yygotominor.yy23 = (time_t)yymsp[-1].minor.yy0.intval;
+}
+#line 978 "parser.c"
+        break;
+      case 29: /* timestamp ::= TIME_ADD LP timestamp COMMA duration RP */
+#line 161 "parser.y"
+{
+    yygotominor.yy23 = yymsp[-3].minor.yy23 + yymsp[-1].minor.yy64;
+}
+#line 985 "parser.c"
+        break;
+      case 30: /* timestamp ::= TIME_SUB LP timestamp COMMA duration RP */
+#line 165 "parser.y"
+{
+    yygotominor.yy23 = yymsp[-3].minor.yy23 - yymsp[-1].minor.yy64;
+}
+#line 992 "parser.c"
+        break;
+      case 31: /* duration ::= DAYS LP INTEGER RP */
+#line 171 "parser.y"
+{
+    yygotominor.yy64 = yymsp[-1].minor.yy0.intval * 86400;
+}
+#line 999 "parser.c"
+        break;
+      case 32: /* duration ::= HOURS LP INTEGER RP */
+#line 174 "parser.y"
+{
+    yygotominor.yy64 = yymsp[-1].minor.yy0.intval * 3600;
+}
+#line 1006 "parser.c"
+        break;
+      case 33: /* duration ::= MINUTES LP INTEGER RP */
+#line 177 "parser.y"
+{
+    yygotominor.yy64 = yymsp[-1].minor.yy0.intval * 60;
+}
+#line 1013 "parser.c"
+        break;
+      case 34: /* duration ::= SECONDS LP INTEGER RP */
+#line 180 "parser.y"
+{
+    yygotominor.yy64 = yymsp[-1].minor.yy0.intval;
+}
+#line 1020 "parser.c"
         break;
       default:
         break;
@@ -971,7 +1090,7 @@ static void yy_syntax_error(
 
     ctx->ok = 0;
     ctx->errorMsg = strdup(msg);
-#line 975 "parser.c"
+#line 1094 "parser.c"
   ParseARG_STORE; /* Suppress warning about unused %extra_argument variable */
 }
 
@@ -1162,7 +1281,7 @@ void Parse(
   }while( yymajor!=YYNOCODE && yypParser->yyidx>=0 );
   return;
 }
-#line 141 "parser.y"
+#line 184 "parser.y"
 
 
   /* Definitions of flex stuff */
@@ -1201,4 +1320,4 @@ ParseNode *ParseQuery(const char *c, size_t len, char **err)  {
    
 
 
-#line 1205 "parser.c"
+#line 1324 "parser.c"

@@ -139,6 +139,8 @@ IdSource HashIndex_GetIdsForCommand(RedisModuleString **argv, int argc,
   return NULL;
 }
 
+/* Post command handler that reindexes a HASH object in redis by reading its
+ * current values */
 int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
                        RedisModuleString *hkey) {
   RedisModuleKey *k = RedisModule_OpenKey(ctx, hkey, REDISMODULE_READ);
@@ -195,6 +197,8 @@ error:
   return REDISMODULE_ERR;
 }
 
+/* post command handler that deletes an entry from the index following a key
+ * deletion */
 int deleteHandler(RedisModuleCtx *ctx, RedisIndex *idx,
                   RedisModuleString *hkey) {
   SIId id = (char *)RedisModule_StringPtrLen(hkey, NULL);
