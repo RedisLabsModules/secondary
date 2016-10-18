@@ -15,7 +15,7 @@ void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
   RedisModuleCtx *ctx = RedisModule_GetContextFromIO(io);
 
   for (size_t i = 0; i < idx->spec.numProps; i++) {
-    RM_LOG_NOTICE(ctx, "saving prop '%s'' type %d flags %x\n",
+    RM_LOG_NOTICE(ctx, "saving prop '%s type %d flags %x\n",
                   idx->spec.properties[i].name, idx->spec.properties[i].type,
                   idx->spec.properties[i].flags);
 
@@ -231,9 +231,9 @@ int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
   spec->flags =
       0 | (unique ? SI_INDEX_UNIQUE : 0) | (named ? SI_INDEX_NAMED : 0);
   printf("flags: %x\n", spec->flags);
-  spec->numProps = named ? (argc - (schemaPos + 1)) / 2 : argc - schemaPos + 1;
+  spec->numProps =
+      named ? (argc - (schemaPos + 1)) / 2 : argc - (schemaPos + 1);
   spec->properties = calloc(spec->numProps, sizeof(SIIndexProperty));
-
   int p = 0, i = schemaPos + 1;
   while (p < spec->numProps) {
     size_t len;

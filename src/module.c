@@ -16,6 +16,7 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   SISpec spec;
   SIIndexKind kind;
   if (SI_ParseSpec(ctx, argv, argc, &spec, &kind) == REDISMODULE_ERR) {
+    
     return RedisModule_ReplyWithError(ctx, "Invalid schema");
   }
 

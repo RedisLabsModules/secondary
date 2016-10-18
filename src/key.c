@@ -49,7 +49,7 @@ SIMultiKey *SI_NewMultiKey(SIValue *vals, u_int8_t numvals) {
     if (vals[i].type != T_STRING) {
       k->keys[i] = vals[i];
     } else {
-      k->keys[i].stringval = SIString_Copy(vals[i].stringval);
+            k->keys[i].stringval = SIString_Copy(vals[i].stringval);
       k->keys[i].type = T_STRING;
     }
   }

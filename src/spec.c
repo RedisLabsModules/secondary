@@ -1,5 +1,7 @@
 #include "spec.h"
 #include <stdio.h>
+#include "rmutil/alloc.h"
+
 SISpec SI_NewSpec(int numProps, u_int32_t flags) {
   return (SISpec){.properties = calloc(numProps, sizeof(SIIndexProperty)),
                   .numProps = numProps,
