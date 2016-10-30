@@ -30,8 +30,8 @@ int si_cmp_string(void *p1, void *p2, void *ctx) {
 
   // compare the longest length possible, which is the shortest length of the
   // two strings
-  int cmp = strncmp(v1->stringval.str, v2->stringval.str,
-                    MIN(v2->stringval.len, v1->stringval.len));
+  int cmp = strncasecmp(v1->stringval.str, v2->stringval.str,
+                        MIN(v2->stringval.len, v1->stringval.len));
 
   // if the strings are equal at the common length but are not of the same
   // length, the longer string wins
@@ -49,7 +49,7 @@ SIMultiKey *SI_NewMultiKey(SIValue *vals, u_int8_t numvals) {
     if (vals[i].type != T_STRING) {
       k->keys[i] = vals[i];
     } else {
-            k->keys[i].stringval = SIString_Copy(vals[i].stringval);
+      k->keys[i].stringval = SIString_Copy(vals[i].stringval);
       k->keys[i].type = T_STRING;
     }
   }
