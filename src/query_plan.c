@@ -190,11 +190,10 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
     SIQueryNode_Print(q->root, 0);
     cleanQueryNode(&q->root);
     pln->filterTree = q->root;
-    // printf("Filter tree:\n");
-    // SIQueryNode_Print(q->root, 0);
   }
 
-  pln->ranges = (siPlanRange **)scanKeys->data;
+  // copy the ranges from the vector
+  pln->ranges = scanKeys;
   pln->numRanges = Vector_Size(scanKeys);
 
   for (int i = 0; i < q->numPredicates; i++) {
@@ -203,19 +202,25 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
     }
   }
 
-  printf("Extracted scan keys:\n");
-  for (int i = 0; i < pln->numRanges; i++) {
-    SIMultiKey_Print(pln->ranges[i]->min);
-    printf(" ... ");
-    SIMultiKey_Print(pln->ranges[i]->max);
-    printf("\n");
-  }
   return pln;
 }
 
 void SIQueryPlan_Free(SIQueryPlan *plan) {
   if (plan->ranges) {
-    Vector_Free((Vector *)(plan->ranges));
+    siPlanRange *rng = NULL;
+    for (int i = 0; i < plan->numRanges; i++) {
+      Vector_Get(plan->ranges, i, &rng);
+      if (rng->min && rng->min != rng->max) {
+        free(rng->min);
+      }
+      if (rng->max) {
+        free(rng->max);
+      }
+      free(rng);
+      rng = NULL;
+    }
+
+    Vector_Free(plan->ranges);
   }
 
   free(plan);

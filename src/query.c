@@ -57,6 +57,30 @@ SIQueryNode *SIQuery_SetRoot(SIQuery *q, SIQueryNode *n) {
   return n;
 }
 
+void __freePredicate(SIPredicate *p) {
+  switch (p->t) {
+    case PRED_EQ:
+      SIValue_Free(&p->eq.v);
+      break;
+    case PRED_IN:
+      for (int i = 0; i < p->in.numvals; i++) {
+        SIValue_Free(&p->in.vals[i]);
+      }
+      free(p->in.vals);
+      break;
+    case PRED_RNG:
+      SIValue_Free(&p->rng.min);
+      SIValue_Free(&p->rng.max);
+      break;
+    case PRED_NE:
+      SIValue_Free(&p->ne.v);
+      break;
+    case PRED_ISNULL:
+    default:
+      break;
+  }
+}
+
 void SIQueryNode_Free(SIQueryNode *n) {
   if (!n) return;
 
@@ -66,9 +90,10 @@ void SIQueryNode_Free(SIQueryNode *n) {
       SIQueryNode_Free(n->op.right);
       break;
     case QN_PRED:
+      __freePredicate(&n->pred);
+      break;
     case QN_PASSTHRU:
     default:
-      // TODO: see about freeing predicate values
       break;
   }
   free(n);

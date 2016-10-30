@@ -3,6 +3,7 @@
 #include "key.h"
 #include "query.h"
 #include "index.h"
+#include "rmutil/vector.h"
 
 typedef struct {
   SIMultiKey *min;
@@ -24,8 +25,7 @@ typedef struct {
 * iteration of the ranges
 */
 typedef struct {
-
-  siPlanRange **ranges;
+  Vector *ranges;
   int numRanges;
 
   SIQueryNode *filterTree;

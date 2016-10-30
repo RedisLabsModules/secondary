@@ -21,6 +21,7 @@ typedef struct {
   int error;
   void *ctx;
   SIId (*Next)(void *ctx);
+  void (*Release)(void *vtx);
 } SICursor;
 
 void SICursor_Free(SICursor *c);

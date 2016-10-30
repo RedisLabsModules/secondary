@@ -66,6 +66,7 @@ SIQueryNode *traverseNode(SIQuery *q, ParseNode *n, SISpec *spec) {
     } else {
       ret->pred.propId = n->pn.prop.id - 1;
     }
+
     q->numPredicates++;
     return ret;
   }

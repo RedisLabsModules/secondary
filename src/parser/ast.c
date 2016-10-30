@@ -5,6 +5,10 @@ void ParseNode_Free(ParseNode *pn) {
   if (!pn) return;
   switch (pn->t) {
     case N_PRED:
+      // if the predicate has a property name - free it
+      if (pn->pn.prop.name != NULL) {
+        free(pn->pn.prop.name);
+      }
       // TODO: free the value
       break;
     case N_COND:

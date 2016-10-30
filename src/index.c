@@ -191,9 +191,13 @@ typedef struct {
 } ciScanCtx;
 
 siPlanRange *scanCtx_CurrentRange(ciScanCtx *c) {
-  return c->currentScanRange < c->plan->numRanges
-             ? c->plan->ranges[c->currentScanRange]
-             : NULL;
+  if (c->currentScanRange < c->plan->numRanges) {
+    siPlanRange *ret;
+    if (Vector_Get(c->plan->ranges, c->currentScanRange, &ret)) {
+      return ret;
+    }
+  }
+  return NULL;
 }
 
 /* Eval a predicate query node against a given key. Returns 1 if the key
@@ -307,6 +311,12 @@ SIId scan_next(void *ctx) {
   return NULL;
 }
 
+void ciScanCtx_free(void *ctx) {
+  ciScanCtx *sctx = ctx;
+  SIQueryPlan_Free(sctx->plan);
+  free(sctx);
+}
+
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
   compoundIndex *idx = ctx;
   SICursor *c = SI_NewCursor(NULL);
@@ -330,6 +340,7 @@ SICursor *compoundIndex_Find(void *ctx, SIQuery *q) {
   }
   c->ctx = sctx;
   c->Next = scan_next;
+  c->Release = ciScanCtx_free;
   return c;
 
 error:

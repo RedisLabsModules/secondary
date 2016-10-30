@@ -16,7 +16,6 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   SISpec spec;
   SIIndexKind kind;
   if (SI_ParseSpec(ctx, argv, argc, &spec, &kind) == REDISMODULE_ERR) {
-    
     return RedisModule_ReplyWithError(ctx, "Invalid schema");
   }
 
@@ -305,55 +304,6 @@ cleanup:
   return REDISMODULE_OK;
 }
 
-// LEFTPAD string len [char]
-int LeftPadCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-  if (argc < 3 || argc > 4) return RedisModule_WrongArity(ctx);
-
-  RedisModule_AutoMemory(ctx);
-
-  long long padding = 0;
-  if (RedisModule_StringToLongLong(argv[2], &padding) != REDISMODULE_OK) {
-    RedisModule_ReplyWithError(ctx, "Invalid padding length");
-    return REDISMODULE_ERR;
-  }
-
-  char padByte = ' ';
-  if (argc == 4) {
-    const char *padString = RedisModule_StringPtrLen(argv[3], NULL);
-
-    if (strlen(padString) != 1) {
-      RedisModule_ReplyWithError(ctx, "Pad byte must be of len 1");
-    }
-    padByte = padString[0];
-  }
-
-  size_t unpadedLen = 0;
-  const char *unpadded = RedisModule_StringPtrLen(argv[1], &unpadedLen);
-
-  char *nstr = NULL;
-  if (unpadedLen < padding) {
-    int topad = padding - unpadedLen;
-    char *nstr = calloc(padding + 1, 1);
-    char *c = nstr;
-    int i = 0;
-    for (i = 0; i < topad; i++) {
-      *c++ = padByte;
-    }
-    strcpy(c, unpadded);
-    unpadded = nstr;
-    unpadedLen = padding;
-  }
-
-  // RedisModuleString *ret = RedisModule_CreateString(ctx, unpadded,
-  // unpadedLen);
-
-  RedisModule_ReplyWithSimpleString(ctx, unpadded);
-  if (nstr != NULL) {
-    free(nstr);
-  }
-  return REDISMODULE_OK;
-}
-
 int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   // LOGGING_INIT(0xFFFFFFFF);
   if (RedisModule_Init(ctx, "idx", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
@@ -398,9 +348,5 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
-  if (RedisModule_CreateCommand(ctx, "leftpad", LeftPadCommand,
-                                "readonly no-cluster", 1, 1,
-                                1) == REDISMODULE_ERR)
-    return REDISMODULE_ERR;
-  return REDISMODULE_OK;
+    return REDISMODULE_OK;
 }
