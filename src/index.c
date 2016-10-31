@@ -250,7 +250,7 @@ int evalPredicate(SIPredicate *pred, SIMultiKey *mk, SICmpFuncVector *fv) {
  * node is a logical operator, its children are evaluated recursivel */
 int evalKey(SIQueryNode *n, SIMultiKey *mk, SICmpFuncVector *fv) {
   // passthrough nodes always return 1
-  if (n->type == QN_PASSTHRU) {
+  if (n->type & QN_PASSTHRU) {
     return 1;
   }
   // predicate nodes are evaluated one by one

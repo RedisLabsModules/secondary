@@ -2,6 +2,7 @@
 #define __SECONDARY_VALUE_H__
 #include <stdlib.h>
 #include <string.h>
+#include "rmutil/sds.h"
 
 typedef char *SIId;
 
@@ -38,10 +39,12 @@ typedef struct {
 typedef struct {
   char *str;
   size_t len;
+  int *refcount;
 } SIString;
 
 SIString SI_WrapString(const char *s);
 SIString SIString_Copy(SIString s);
+SIString SIString_IncRef(SIString s);
 
 typedef struct {
   union {
@@ -93,6 +96,11 @@ SIValue SI_NegativeInfVal();
 int SIValue_IsInf(SIValue *v);
 int SIValue_IsNegativeInf(SIValue *v);
 
+/* Copy the value, incrementing the refcount if needed */
+SIValue SIValue_Copy(SIValue src);
+
+/* Just increment the refcount of the value if it's a string */
+void SIValue_IncRef(SIValue *v);
 /*
  * Convesion functions used to make sure a comparison value in a query is of
  * the right type

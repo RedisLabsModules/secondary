@@ -26,7 +26,10 @@ SIValue SI_DoubleVal(double d) {
 SIValue SI_TimeVal(time_t t) { return (SIValue){.timeval = t, .type = T_TIME}; }
 
 inline SIString SI_WrapString(const char *s) {
-  return (SIString){(char *)s, strlen(s)};
+  int *rc = malloc(sizeof(int));
+  *rc = 1;
+  printf("wrapping string %s\n", s);
+  return (SIString){(char *)s, strlen(s), rc};
 }
 
 SIValue SI_StringVal(SIString s) {
@@ -44,7 +47,27 @@ SIString SIString_Copy(SIString s) {
   memcpy(b, s.str, s.len);
 
   b[s.len] = 0;
-  return (SIString){.str = b, .len = s.len};
+  int *rc = malloc(sizeof(int));
+  *rc = 1;
+  return (SIString){.str = b, .len = s.len, .refcount = rc};
+}
+
+SIString SIString_IncRef(SIString s) {
+  (*s.refcount)++;
+  return s;
+}
+
+SIValue SIValue_Copy(SIValue src) {
+  if (src.type == T_STRING) {
+    SIString_IncRef(src.stringval);
+  }
+  return src;
+}
+
+void SIValue_IncRef(SIValue *v) {
+  if (v->type == T_STRING) {
+    SIString_IncRef(v->stringval);
+  }
 }
 
 SIValue SI_InfVal() { return (SIValue){.intval = 0, .type = T_INF}; }
@@ -60,11 +83,21 @@ inline int SIValue_IsNullPtr(SIValue *v) {
   return v == NULL || v->type == T_NULL;
 }
 
+void SIString_Free(SIString *s) {
+  --*(s->refcount);
+  // printf("string %p (%s) refcount %d\n", s->str, s->str, *(s->refcount));
+  if (*s->refcount == 0) {
+    free(s->str);
+    free(s->refcount);
+
+    s->str = NULL;
+    s->len = 0;
+    s->refcount = NULL;
+  }
+}
 void SIValue_Free(SIValue *v) {
   if (v->type == T_STRING) {
-    free(v->stringval.str);
-    v->stringval.str = NULL;
-    v->stringval.len = 0;
+    SIString_Free(&v->stringval);
   }
 }
 
@@ -144,11 +177,12 @@ int _parseFloat(SIValue *v, char *str, size_t len) {
 
 int SI_ParseValue(SIValue *v, char *str, size_t len) {
   switch (v->type) {
-    case T_STRING:
-      v->stringval.str = str;
-      v->stringval.len = len;
+    case T_STRING: {
+      SIString s = {.str = str, .len = len};
+      v->stringval = SIString_Copy(s);
 
       break;
+    }
     case T_INT32:
     case T_INT64:
     case T_UINT:
@@ -224,7 +258,12 @@ inline void SIValueVector_Append(SIValueVector *v, SIValue val) {
   v->vals[v->len++] = val;
 }
 
-void SIValueVector_Free(SIValueVector *v) { free(v->vals); }
+void SIValueVector_Free(SIValueVector *v) {
+  for (int i = 0; i < v->len; i++) {
+    SIValue_Free(&v->vals[i]);
+  }
+  free(v->vals);
+}
 
 int SI_LongVal_Cast(SIValue *v, SIType type) {
   if (v->type != T_INT64) return 0;

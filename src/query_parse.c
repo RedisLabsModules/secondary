@@ -5,6 +5,7 @@
 SIQueryNode *toQueryNode(PredicateNode *n) {
   switch (n->op) {
     case EQ:
+
       return SI_PredEquals(n->val);
 
     case GT:
@@ -137,20 +138,25 @@ void qpredicateNode_print(SIPredicate *n, int depth) {
         printf("%s%s", buf, i < n->in.numvals - 1 ? ", " : "");
       }
       printf(")");
+      break;
+    case PRED_ISNULL:
+      printf("$%d IS NULL", n->propId);
+      break;
   }
 }
 
 void SIQueryNode_Print(SIQueryNode *n, int depth) {
   pad(depth);
   printf("(");
-  switch (n->type) {
+  switch (n->type & ~QN_PASSTHRU) {
     case QN_LOGIC:
       logicNode_print(&(n->op), depth + 1);
       break;
     case QN_PRED:
       qpredicateNode_print(&(n->pred), depth + 1);
       break;
-    case QN_PASSTHRU:
+    // case QN_PASSTHRU:
+    default:
       printf("NOOP");
   }
   printf(")\n");

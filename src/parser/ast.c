@@ -9,7 +9,11 @@ void ParseNode_Free(ParseNode *pn) {
       if (pn->pn.prop.name != NULL) {
         free(pn->pn.prop.name);
       }
-      // TODO: free the value
+      if (pn->pn.op == IN) {
+        SIValueVector_Free(&pn->pn.lst);
+      } else {
+        SIValue_Free(&pn->pn.val);
+      }
       break;
     case N_COND:
       ParseNode_Free(pn->cn.left);

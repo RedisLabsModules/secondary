@@ -23,10 +23,10 @@ typedef enum {
 typedef enum { OP_AND, OP_OR } SILogicOperator;
 
 typedef enum {
-  QN_LOGIC,
-  QN_PRED,
+  QN_LOGIC = 0x1,
+  QN_PRED = 0x2,
   // a passthrough node means we should consider it as always being true
-  QN_PASSTHRU,
+  QN_PASSTHRU = 0x4,
 } SIQueryNodeType;
 
 struct queryNode;
@@ -93,7 +93,10 @@ SIQueryNode *SI_PredIsNull();
 SIQueryNode *SI_PredEquals(SIValue v);
 SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
                             int maxExclusive);
+
 SIQueryNode *SI_PredIn(SIValueVector v);
+
+/** An abstract query object, not dependant of syntax */
 typedef struct {
   SIQueryNode *root;
   size_t numPredicates;
@@ -103,6 +106,9 @@ typedef struct {
 
   // TODO - ordering and other options
 } SIQuery;
+
+/* internal - free the values of a predicate node */
+void __freePredicate(SIPredicate *p);
 
 SIQuery SI_NewQuery();
 

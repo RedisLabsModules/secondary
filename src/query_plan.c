@@ -6,16 +6,15 @@
 /* Get the most relevant predicate for the current leftmost property id. Returns
  * NULL if no such predicate exists */
 SIPredicate *getPredicate(SIQueryNode *node, int propId) {
-  if (!node || node->type == QN_PASSTHRU) {
+  if (!node || node->type & QN_PASSTHRU) {
     return NULL;
   }
   switch (node->type) {
     case QN_PRED:
       // turn the node to a passthough node so it won't be included in the
-      // filter
-      // tree
+      // filter tree
       if (node->pred.propId == propId) {
-        node->type = QN_PASSTHRU;
+        node->type |= QN_PASSTHRU;
         return &node->pred;
       }
       break;
@@ -112,8 +111,8 @@ void buildKey(siPlanRangeKey **keys, size_t *keyNums, size_t *stack,
   rng->max = malloc(sizeof(SIMultiKey) + numKeys * sizeof(SIValue));
   rng->max->size = numKeys;
   for (int i = 0; i < numKeys; i++) {
-    rng->min->keys[i] = *keys[i][stack[i]].min;
-    rng->max->keys[i] = *keys[i][stack[i]].max;
+    rng->min->keys[i] = SIValue_Copy(*keys[i][stack[i]].min);
+    rng->max->keys[i] = SIValue_Copy(*keys[i][stack[i]].max);
     rng->minExclusive = keys[i][stack[i]].minExclusive;
     rng->maxExclusive = keys[i][stack[i]].maxExclusive;
   }
@@ -130,13 +129,13 @@ void cleanQueryNode(SIQueryNode **pn) {
     case QN_LOGIC:
       cleanQueryNode(&n->op.left);
       cleanQueryNode(&n->op.right);
-      if (n->op.left->type == QN_PASSTHRU && n->op.right->type == QN_PASSTHRU) {
-        n->type = QN_PASSTHRU;
-      } else if (n->op.left->type == QN_PASSTHRU) {
+      if (n->op.left->type & QN_PASSTHRU && n->op.right->type & QN_PASSTHRU) {
+        n->type |= QN_PASSTHRU;
+      } else if (n->op.left->type & QN_PASSTHRU) {
         *pn = n->op.right;
         n->op.right = NULL;
         SIQueryNode_Free(n);
-      } else if (n->op.right->type == QN_PASSTHRU) {
+      } else if (n->op.right->type & QN_PASSTHRU) {
         *pn = n->op.left;
         n->op.left = NULL;
         SIQueryNode_Free(n);
@@ -184,7 +183,7 @@ SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
   buildKey(keys, keyNums, stack, propId, 0, scanKeys);
 
   SIQueryPlan *pln = malloc(sizeof(SIQueryPlan));
-  if (q->root->type == QN_PASSTHRU) {
+  if (q->root->type & QN_PASSTHRU) {
     pln->filterTree = NULL;
   } else {
     SIQueryNode_Print(q->root, 0);
@@ -210,11 +209,11 @@ void SIQueryPlan_Free(SIQueryPlan *plan) {
     siPlanRange *rng = NULL;
     for (int i = 0; i < plan->numRanges; i++) {
       Vector_Get(plan->ranges, i, &rng);
-      if (rng->min && rng->min != rng->max) {
-        free(rng->min);
+      if (rng->min) {
+        SIMultiKey_Free(rng->min);
       }
       if (rng->max) {
-        free(rng->max);
+        SIMultiKey_Free(rng->max);
       }
       free(rng);
       rng = NULL;

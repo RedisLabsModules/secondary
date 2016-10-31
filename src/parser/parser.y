@@ -70,7 +70,7 @@ cond(A) ::= prop(B) op(C) value(D). {
 
 /* special case to make sure LIKE does not occur with non-strings */
 cond(A) ::= prop(B) LIKE STRING(C). { 
-    A = NewPredicateNode(B, LIKE, SI_StringValC(C.strval));
+    A = NewPredicateNode(B, LIKE, SI_StringValC(strdup(C.strval)));
 }
 
 /* special case to make sure LIKE does not occur with non-strings */

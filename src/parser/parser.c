@@ -848,7 +848,7 @@ static void yy_reduce(
       case 8: /* cond ::= prop LIKE STRING */
 #line 72 "parser.y"
 { 
-    yygotominor.yy8 = NewPredicateNode(yymsp[-2].minor.yy44, LIKE, SI_StringValC(yymsp[0].minor.yy0.strval));
+    yygotominor.yy8 = NewPredicateNode(yymsp[-2].minor.yy44, LIKE, SI_StringValC(strdup(yymsp[0].minor.yy0.strval)));
 }
 #line 854 "parser.c"
         break;

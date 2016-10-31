@@ -8,7 +8,7 @@ SIQueryNode *__newQueryNode(SIQueryNodeType t) {
 }
 SIQueryNode *SI_PredEquals(SIValue v) {
   SIQueryNode *ret = __newQueryNode(QN_PRED);
-  ret->pred = (SIPredicate){.eq = (SIEquals){v}, .t = PRED_EQ};
+  ret->pred = (SIPredicate){.eq = (SIEquals){SIValue_Copy(v)}, .t = PRED_EQ};
   return ret;
 }
 
@@ -16,8 +16,8 @@ SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
                             int maxExclusive) {
   SIQueryNode *ret = __newQueryNode(QN_PRED);
 
-  ret->pred = (SIPredicate){.rng = (SIRange){.min = min,
-                                             .max = max,
+  ret->pred = (SIPredicate){.rng = (SIRange){.min = SIValue_Copy(min),
+                                             .max = SIValue_Copy(max),
                                              .minExclusive = minExclusive,
                                              .maxExclusive = maxExclusive},
                             .t = PRED_RNG};
@@ -26,8 +26,15 @@ SIQueryNode *SI_PredBetween(SIValue min, SIValue max, int minExclusive,
 
 SIQueryNode *SI_PredIn(SIValueVector v) {
   SIQueryNode *ret = __newQueryNode(QN_PRED);
-  ret->pred = (SIPredicate){.in = (SIIn){.vals = v.vals, .numvals = v.len},
-                            .t = PRED_IN};
+
+  // copy the value vector and increment the refcount of each object
+  SIValue *vec = calloc(sizeof(SIValue), v.len);
+  memcpy(vec, v.vals, sizeof(SIValue) * v.len);
+  for (int i = 0; i < v.len; i++) {
+    SIValue_IncRef(&vec[i]);
+  }
+  ret->pred =
+      (SIPredicate){.in = (SIIn){.vals = vec, .numvals = v.len}, .t = PRED_IN};
   return ret;
 }
 
@@ -84,7 +91,7 @@ void __freePredicate(SIPredicate *p) {
 void SIQueryNode_Free(SIQueryNode *n) {
   if (!n) return;
 
-  switch (n->type) {
+  switch (n->type & ~QN_PASSTHRU) {
     case QN_LOGIC:
       SIQueryNode_Free(n->op.left);
       SIQueryNode_Free(n->op.right);
