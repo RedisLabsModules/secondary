@@ -27,7 +27,7 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
   }
 
-  RedisIndex *idx = NewRedisIndex(0, 0, spec);
+  RedisIndex *idx = NewRedisIndex(kind, 0, spec);
   RedisModule_ModuleTypeSetValue(key, IndexType, idx);
 
   return RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -348,5 +348,5 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
-    return REDISMODULE_OK;
+  return REDISMODULE_OK;
 }

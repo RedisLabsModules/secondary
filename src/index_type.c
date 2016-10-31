@@ -126,9 +126,11 @@ typedef struct {
   RedisModuleIO *w;
   RedisIndex *idx;
   int num;
+  RedisModuleString *indexKey;
+
 } __redisIndexVisitorCtx;
 
-void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
+void __redisIndex_BgsaveVisitor(SIId id, void *key, void *ctx) {
   __redisIndexVisitorCtx *vx = ctx;
   SIMultiKey *mk = key;
   RedisModule_SaveStringBuffer(vx->w, id, strlen(id));
@@ -138,6 +140,7 @@ void __redisIndex_Visitor(SIId id, void *key, void *ctx) {
     vx->num++;
   }
 }
+
 void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
   size_t len = idx->idx.Len(idx->idx.ctx);
   RedisModuleCtx *ctx = RedisModule_GetContextFromIO(w);
@@ -146,9 +149,9 @@ void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
   // save the number of elements in the indes
   RedisModule_SaveUnsigned(w, (u_int64_t)len);
 
-  __redisIndexVisitorCtx vx = {w, idx, 0};
+  __redisIndexVisitorCtx vx = {w, idx, 0, NULL};
 
-  idx->idx.Traverse(idx->idx.ctx, __redisIndex_Visitor, &vx);
+  idx->idx.Traverse(idx->idx.ctx, __redisIndex_BgsaveVisitor, &vx);
   printf("saved %d elemets\n", vx.num);
 }
 
@@ -310,6 +313,32 @@ void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
   Vector_Push(v, RedisModule_CreateString(ctx, str, strlen(str)))
 ;
 
+RedisModuleString *siValueToRMString(RedisModuleCtx *ctx, SIValue v) {
+  if (v.type == T_STRING) {
+    return RedisModule_CreateString(ctx, v.stringval.str, v.stringval.len);
+  }
+  static char buf[128];
+  SIValue_ToString(v, buf, 128);
+  return RedisModule_CreateString(ctx, buf, strlen(buf));
+}
+
+void __redisIndex_AofVisitor(SIId id, void *key, void *ctx) {
+  __redisIndexVisitorCtx *vx = ctx;
+  SIMultiKey *mk = key;
+
+  Vector *args = NewVector(RedisModuleString *, vx->idx->spec.numProps + 1);
+  RedisModuleCtx *rctx = RedisModule_GetContextFromIO(vx->w);
+  Vector_Push(args, RedisModule_CreateString(rctx, id, strlen(id)));
+
+  for (int i = 0; i < vx->idx->spec.numProps; i++) {
+    Vector_Push(args, siValueToRMString(rctx, mk->keys[i]));
+  }
+
+  RedisModule_EmitAOF(vx->w, "IDX.INSERT", "sv", vx->indexKey,
+                      (RedisModuleString *)args->data, Vector_Size(args));
+  Vector_Free(args);
+}
+
 void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
                            void *value) {
   RedisIndex *idx = value;
@@ -323,6 +352,7 @@ void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
     __vpushStr(args, ctx, "HASH");
   }
 
+  __vpushStr(args, ctx, "SCHEMA");
   for (int i = 0; i < idx->spec.numProps; i++) {
     if (idx->spec.flags & SI_INDEX_NAMED) {
       __vpushStr(args, ctx, idx->spec.properties[i].name);
@@ -334,6 +364,10 @@ void RedisIndex_AofRewrite(RedisModuleIO *aof, RedisModuleString *key,
                       (RedisModuleString *)args->data, Vector_Size(args));
 
   Vector_Free(args);
+
+  __redisIndexVisitorCtx vx = {.w = aof, .idx = idx, .num = 0, .indexKey = key};
+
+  idx->idx.Traverse(idx->idx.ctx, __redisIndex_AofVisitor, &vx);
 }
 
 void RedisIndex_Digest(RedisModuleDigest *digest, void *value) {}
