@@ -30,6 +30,14 @@ typedef enum {
   // T_MAP
 } SIType;
 
+/* Mapping of type names to their enumerations */
+static const char *types[] = {"STRING", "INT32",  "INT64", "UINT", "BOOL",
+                              "FLOAT",  "DOUBLE", "TIME",  NULL};
+static SIType typeEnums[] = {
+    T_STRING, T_INT32,  T_INT64, T_UINT, T_BOOL,
+    T_FLOAT,  T_DOUBLE, T_TIME,  T_NULL,
+};
+
 typedef struct {
   float lat;
   float lon;

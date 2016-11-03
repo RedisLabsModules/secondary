@@ -9,6 +9,7 @@
 
 RedisModuleType *IndexType;
 
+/* Serialize the index spec into an rdb/replication buffer */
 void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
   RedisModule_SaveUnsigned(io, (u_int64_t)idx->spec.flags);
   RedisModule_SaveUnsigned(io, (u_int64_t)idx->spec.numProps);
@@ -29,6 +30,7 @@ void __redisIndex_SaveSpec(RedisIndex *idx, RedisModuleIO *io) {
   }
 }
 
+/* Load the index spec from an rdb/replication buffer */
 void __redisIndex_LoadSpec(RedisIndex *idx, RedisModuleIO *io) {
   idx->spec.flags = RedisModule_LoadUnsigned(io);
   idx->spec.numProps = RedisModule_LoadUnsigned(io);
@@ -39,15 +41,16 @@ void __redisIndex_LoadSpec(RedisIndex *idx, RedisModuleIO *io) {
       size_t slen;
       char *s = idx->spec.properties[i].name =
           RedisModule_LoadStringBuffer(io, &slen);
-      printf("got property: %s\n", s);
     }
     idx->spec.properties[i].type = RedisModule_LoadSigned(io);
     idx->spec.properties[i].flags = RedisModule_LoadSigned(io);
-    printf("loaded prop type %d flags %x\n", idx->spec.properties[i].type,
-           idx->spec.properties[i].flags);
+    // printf("loaded prop type %d flags %x\n", idx->spec.properties[i].type,
+    //        idx->spec.properties[i].flags);
   }
 }
 
+/* Read a single SIValue from a redis io buffer. Returns NULL value if the value
+ * type is unknown */
 SIValue __readValue(RedisModuleIO *rdb) {
   SIValue v;
   v.type = RedisModule_LoadUnsigned(rdb);
@@ -86,6 +89,7 @@ SIValue __readValue(RedisModuleIO *rdb) {
   return v;
 }
 
+/* Write a single SIValue's data into an rdb/replication buffer */
 void __writeValue(void *v, SIType t, RedisModuleIO *rdb) {
   RedisModule_SaveUnsigned(rdb, t);
   switch (t) {
@@ -122,6 +126,8 @@ void __writeValue(void *v, SIType t, RedisModuleIO *rdb) {
   }
 }
 
+/* The context for visitor callback functions traversing an index for
+ * persistence */
 typedef struct {
   RedisModuleIO *w;
   RedisIndex *idx;
@@ -130,7 +136,8 @@ typedef struct {
 
 } __redisIndexVisitorCtx;
 
-void __redisIndex_BgsaveVisitor(SIId id, void *key, void *ctx) {
+/* a visitor callback for saving an index's records to RDB */
+void __redisIndex_RdbVisitor(SIId id, void *key, void *ctx) {
   __redisIndexVisitorCtx *vx = ctx;
   SIMultiKey *mk = key;
   RedisModule_SaveStringBuffer(vx->w, id, strlen(id));
@@ -141,6 +148,7 @@ void __redisIndex_BgsaveVisitor(SIId id, void *key, void *ctx) {
   }
 }
 
+/* Serialize an index's records into an rdb buffer */
 void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
   size_t len = idx->idx.Len(idx->idx.ctx);
   RedisModuleCtx *ctx = RedisModule_GetContextFromIO(w);
@@ -151,10 +159,11 @@ void __redisIndex_SaveIndex(RedisIndex *idx, RedisModuleIO *w) {
 
   __redisIndexVisitorCtx vx = {w, idx, 0, NULL};
 
-  idx->idx.Traverse(idx->idx.ctx, __redisIndex_BgsaveVisitor, &vx);
+  idx->idx.Traverse(idx->idx.ctx, __redisIndex_RdbVisitor, &vx);
   printf("saved %d elemets\n", vx.num);
 }
 
+/* Load all the index's data from an rdb buffer */
 int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
   // 1. create an index
   // TODO: Check idx kind for multiple kind support
@@ -190,15 +199,9 @@ int __redisIndex_LoadIndex(RedisIndex *idx, RedisModuleIO *rdb) {
   return REDISMODULE_OK;
 }
 
-static const char *types[] = {"STRING", "INT32",  "INT64", "UINT", "BOOL",
-                              "FLOAT",  "DOUBLE", "TIME",  NULL};
-static SIType typeEnums[] = {
-    T_STRING, T_INT32,  T_INT64, T_UINT, T_BOOL,
-    T_FLOAT,  T_DOUBLE, T_TIME,  T_NULL,
-};
-
-/* IDX.CREATE {name} [TYPE [HASH|STRING]] [UNIQUE] SCHEMA [{t1} ...
- * ]|[{p1} {t1} ...] */
+/* IDX.CREATE {name} [TYPE [HASH|STRING]] [UNIQUE] SCHEMA [{t}... ]|[{p1} {t1}]
+  Create an index according to its spec string
+*/
 int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                  SISpec *spec, SIIndexKind *kind) {
   // the index kind
@@ -221,7 +224,7 @@ int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
 
   int schemaPos =
       RMUtil_ArgExists("SCHEMA", argv, argc, unique ? unique + 1 : 2);
-  if (!schemaPos) {
+  if (!schemaPos || schemaPos >= argc - 1) {
     RedisModule_Log(ctx, "warning", "No schema found");
     return REDISMODULE_ERR;
   }
@@ -269,6 +272,7 @@ int SI_ParseSpec(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
   return REDISMODULE_OK;
 }
 
+/* Create a new redis index object with the given kind, flags and spec */
 void *NewRedisIndex(SIIndexKind kind, u_int32_t flags, SISpec spec) {
   RedisIndex *idx = malloc(sizeof(RedisIndex));
   idx->kind = kind;
@@ -279,6 +283,7 @@ void *NewRedisIndex(SIIndexKind kind, u_int32_t flags, SISpec spec) {
   return idx;
 }
 
+/* Load the index's spec and data from rdb */
 void *RedisIndex_RdbLoad(RedisModuleIO *rdb, int encver) {
   if (encver != 0) {
     return NULL;
@@ -297,6 +302,7 @@ void *RedisIndex_RdbLoad(RedisModuleIO *rdb, int encver) {
   return idx;
 }
 
+/* Save the index's spec and data to rdb */
 void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
   RedisIndex *idx = value;
   RedisModule_SaveUnsigned(rdb, idx->kind);
@@ -313,6 +319,7 @@ void RedisIndex_RdbSave(RedisModuleIO *rdb, void *value) {
   Vector_Push(v, RedisModule_CreateString(ctx, str, strlen(str)))
 ;
 
+/* Convert the value of an SIValue to a redis module string */
 RedisModuleString *siValueToRMString(RedisModuleCtx *ctx, SIValue v) {
   if (v.type == T_STRING) {
     return RedisModule_CreateString(ctx, v.stringval.str, v.stringval.len);
@@ -322,6 +329,7 @@ RedisModuleString *siValueToRMString(RedisModuleCtx *ctx, SIValue v) {
   return RedisModule_CreateString(ctx, buf, strlen(buf));
 }
 
+/* Visitor callback for AOF rewriting */
 void __redisIndex_AofVisitor(SIId id, void *key, void *ctx) {
   __redisIndexVisitorCtx *vx = ctx;
   SIMultiKey *mk = key;
