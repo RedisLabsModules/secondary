@@ -176,7 +176,7 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
     SIId id;
     int i = 0;
-    while (NULL != (id = c->Next(c->ctx))) {
+    while (NULL != (id = c->Next(c->ctx, NULL))) {
       i++;
       RedisModule_ReplyWithStringBuffer(ctx, id, strlen(id));
     }

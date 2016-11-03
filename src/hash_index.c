@@ -41,7 +41,7 @@ int HashIndex_ExecuteReadCommand(RedisModuleCtx *ctx, RedisIndex *idx,
   RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
   int num = 0;
   SIId id;
-  while (NULL != (id = c->Next(c->ctx))) {
+  while (NULL != (id = c->Next(c->ctx, NULL))) {
     RedisModule_ReplyWithSimpleString(ctx, id);
 
     RedisModule_ReplyWithCallReply(
@@ -95,7 +95,7 @@ static const commandDesc supportedHashWriteCommands[] = {
 
 SIId queryIdSource(void *ctx) {
   SICursor *c = ctx;
-  return c->Next(c->ctx);
+  return c->Next(c->ctx, NULL);
 }
 
 IdSource HashIndex_GetIdsFromQuery(RedisIndex *idx, SIQuery *q, void **pctx) {

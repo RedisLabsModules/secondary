@@ -8,6 +8,7 @@
 #include "../src/query.h"
 #include "../src/reverse_index.h"
 #include "../src/rmutil/alloc.h"
+#include "../src/aggregate.h"
 
 int cmpstr(void *p1, void *p2, void *ctx) {
   return strcmp((char *)p1, (char *)p2);
@@ -43,7 +44,7 @@ MU_TEST(testIndex) {
   printf("%d\n", c->error);
   if (c->error == SI_CURSOR_OK) {
     SIId id;
-    while (NULL != (id = c->Next(c->ctx))) {
+    while (NULL != (id = c->Next(c->ctx, NULL))) {
       printf("Got id %s\n", id);
     }
   }
@@ -116,7 +117,7 @@ void testQuery(SIIndex idx, SISpec *spec, const char *str,
 
   SIId id;
   int i = 0;
-  while (NULL != (id = c->Next(c->ctx))) {
+  while (NULL != (id = c->Next(c->ctx, NULL))) {
     printf("%s\n", id);
     int ok = 0;
     for (int n = 0; !ok && expectedIds[n] != NULL; n++) {
@@ -228,6 +229,51 @@ MU_TEST(testNull) {
   testQuery(idx, &spec, str, (const char *[]){"id4", "id5", NULL});
 }
 
+MU_TEST(testAggregate) {
+  SISpec spec = {
+      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"},
+                                        {.type = T_INT32, .name = "age"}},
+      .numProps = 2,
+      .flags = SI_INDEX_NAMED};
+
+  SIIndex idx = SI_NewCompoundIndex(spec);
+
+  SIChangeSet cs = SI_NewChangeSet(4);
+  SIChangeSet_AddCahnge(
+      &cs, SI_NewAddChange("id1", 2, SI_StringValC("foo"), SI_IntVal(2)));
+  SIChangeSet_AddCahnge(
+      &cs, SI_NewAddChange("id2", 2, SI_StringValC("bar"), SI_IntVal(4)));
+  SIChangeSet_AddCahnge(
+      &cs, SI_NewAddChange("id3", 2, SI_StringValC("foo"), SI_IntVal(5)));
+  SIChangeSet_AddCahnge(
+      &cs, SI_NewAddChange("id4", 2, SI_StringValC("foxx"), SI_IntVal(10)));
+  // SIChangeSet_AddCahnge(&cs,
+  //                       SI_NewAddChange("id5", 2, SI_NullVal(),
+  //                       SI_IntVal(10)));
+  int rc = idx.Apply(idx.ctx, cs);
+  mu_check(rc == SI_INDEX_OK);
+
+  SIQuery q = SI_NewQuery();
+  char *parseError = NULL;
+  char *str = "name >= ''";
+  mu_assert(SI_ParseQuery(&q, str, strlen(str), &spec, &parseError),
+            parseError);
+
+  mu_check(parseError == NULL);
+  SICursor *c = idx.Find(idx.ctx, &q);
+  mu_check(c->error == SI_CURSOR_OK);
+
+  SISequence s1 = SI_PropertyGetter(c, 1);
+  SISequence avg = SI_AverageAggregator(&s1);
+
+  SIItem it;
+  rc = avg.Next(avg.ctx, &it);
+  mu_check(rc == SI_SEQ_OK);
+  mu_check(it.t == SI_ValItem);
+  mu_check(it.v.type == T_DOUBLE);
+  printf("%f\n", it.v.doubleval);
+}
+
 ///////////////////////////////////
 
 MU_TEST_SUITE(test_index) {
@@ -238,11 +284,11 @@ MU_TEST_SUITE(test_index) {
 
 int main(int argc, char **argv) {
   RMUTil_InitAlloc();
-  MU_RUN_TEST(testIndex);
-  MU_RUN_TEST(testReverseIndex);
-  MU_RUN_TEST(testUniqueIndex);
-  MU_RUN_TEST(testNull);
-
+  // MU_RUN_TEST(testIndex);
+  // MU_RUN_TEST(testReverseIndex);
+  // MU_RUN_TEST(testUniqueIndex);
+  // MU_RUN_TEST(testNull);
+  MU_RUN_TEST(testAggregate);
   MU_REPORT();
   return minunit_status;
 }

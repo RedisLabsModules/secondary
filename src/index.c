@@ -270,7 +270,7 @@ int evalKey(SIQueryNode *n, SIMultiKey *mk, SICmpFuncVector *fv) {
   return leftEval && evalKey(n->op.right, mk, fv);
 }
 
-SIId scan_next(void *ctx) {
+SIId scan_next(void *ctx, void **key) {
   ciScanCtx *sc = ctx;
   skiplistNode *n;
   SIId ret = NULL;
@@ -292,6 +292,12 @@ SIId scan_next(void *ctx) {
       // eval was successful
       void *nextval = skiplistIterator_Next(&sc->it);
       if (ok) {
+        // optionally set the value of key fetching pointer to the current
+        // internal key
+        if (key != NULL) {
+          *key = mk;
+        }
+
         return nextval;
       }
       // otherwise we just continue to the next node
@@ -307,6 +313,9 @@ SIId scan_next(void *ctx) {
                                     cr->minExclusive, cr->maxExclusive);
     }
   }
+
+  // set the key value to NULL by default
+  if (key != NULL) *key = NULL;
 
   return NULL;
 }

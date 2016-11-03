@@ -340,6 +340,34 @@ int SI_DoubleVal_Cast(SIValue *v, SIType type) {
   return 1;
 }
 
+int SIValue_ToDouble(SIValue *v, double *d) {
+  switch (v->type) {
+    case T_DOUBLE:
+      *d = v->doubleval;
+      return 1;
+    case T_INT64:  // do nothing!
+      *d = (double)v->longval;
+      return 1;
+    case T_INT32:
+      *d = (double)v->intval;
+      return 1;
+    case T_UINT:
+      *d = (double)v->uintval;
+      return 1;
+    case T_FLOAT:
+      *d = (double)v->floatval;
+      return 1;
+
+    case T_TIME:
+      *d = (double)v->timeval;
+      return 1;
+
+    default:
+      // cannot convert!
+      return 0;
+  }
+}
+
 int SI_StringVal_Cast(SIValue *v, SIType type) {
   if (v->type != T_STRING) return 0;
 

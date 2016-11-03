@@ -22,6 +22,7 @@ set(_secondary_files
             ../src/rmutil/vector.c
             ../src/rmutil/alloc.c
             ../src/skiplist/skiplist.c
+            ../src/aggregate.c
             )
 
 

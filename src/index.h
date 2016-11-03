@@ -20,8 +20,13 @@ typedef struct {
   size_t total;
   int error;
   void *ctx;
-  SIId (*Next)(void *ctx);
-  void (*Release)(void *vtx);
+  /* Next is a function that iterates the cursor to the next valid value. If key
+   * is not NULL, we set the pointer's value to the index's internal key */
+  SIId (*Next)(void *ctx, void **key);
+
+  /* Release is a callback that releases any memory and resources allocated for
+   * the cursor */
+  void (*Release)(void *ctx);
 } SICursor;
 
 void SICursor_Free(SICursor *c);

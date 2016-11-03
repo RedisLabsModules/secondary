@@ -54,7 +54,7 @@ SIString SI_WrapString(const char *s);
 SIString SIString_Copy(SIString s);
 SIString SIString_IncRef(SIString s);
 
-typedef struct {
+typedef struct sivalue {
   union {
     int32_t intval;
     int64_t longval;
@@ -124,5 +124,7 @@ int SI_StringVal_Cast(SIValue *v, SIType type);
 int SI_ParseValue(SIValue *v, char *str, size_t len);
 
 void SIValue_ToString(SIValue v, char *buf, size_t len);
+
+int SIValue_ToDouble(SIValue *v, double *d);
 
 #endif
