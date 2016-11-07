@@ -44,8 +44,16 @@ int HashIndex_ExecuteReadCommand(RedisModuleCtx *ctx, RedisIndex *idx,
   while (NULL != (id = c->Next(c->ctx, NULL))) {
     RedisModule_ReplyWithSimpleString(ctx, id);
 
-    RedisModule_ReplyWithCallReply(
-        ctx, __callParametricCommand(ctx, id, argv, argc));
+    RedisModuleCallReply *r = __callParametricCommand(ctx, id, argv, argc);
+    if (r) {
+      RedisModule_ReplyWithCallReply(ctx, r);
+    } else {
+      // null reply means redis cannot even try to execute the command
+      RedisModule_ReplyWithError(
+          ctx, "Could not call command: command non "
+               "existing, wrong arity or wrong format specifier");
+    }
+
     num += 2;
   }
 
@@ -100,7 +108,8 @@ SIId queryIdSource(void *ctx) {
 
 IdSource HashIndex_GetIdsFromQuery(RedisIndex *idx, SIQuery *q, void **pctx) {
   *pctx = NULL;
-  if (!q) return NULL;
+  if (!q)
+    return NULL;
 
   SICursor *c = idx->idx.Find(idx->idx.ctx, q);
   if (c->error != QE_OK) {
@@ -125,7 +134,7 @@ IdSource HashIndex_GetIdsForCommand(RedisModuleString **argv, int argc,
       staticIdSourceCtx *ctx = malloc(sizeof(staticIdSourceCtx));
       ctx->keys = &argv[1];
       ctx->offset = 0;
-      ctx->keystep = 1;  // TODO: we might need to support more complex keysteps
+      ctx->keystep = 1; // TODO: we might need to support more complex keysteps
 
       // for variadic commands, we assume the rest of the argv is just keys
       //
@@ -190,7 +199,8 @@ int reindexHashHandler(RedisModuleCtx *ctx, RedisIndex *idx,
   return REDISMODULE_OK;
 
 error:
-  if (k) RedisModule_CloseKey(k);
+  if (k)
+    RedisModule_CloseKey(k);
 
   SIValueVector_Free(&ch.v);
   SIChangeSet_Free(&cs);

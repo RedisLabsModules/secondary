@@ -127,4 +127,13 @@ void SIValue_ToString(SIValue v, char *buf, size_t len);
 
 int SIValue_ToDouble(SIValue *v, double *d);
 
+typedef struct {
+  size_t len;
+  SIValue *vals;
+} SITuple;
+
+SITuple SI_NewTuple(size_t len);
+void SITuple_Free(SITuple *tup);
+int SITuple_Set(SITuple *tup, size_t offset, SIValue v);
+
 #endif

@@ -75,7 +75,7 @@ MU_TEST(testReverseIndex) {
   SIValueVector_Append(&v, SI_IntVal(1337));
 
   SIMultiKey *k = SI_NewMultiKey(v.vals, v.len);
-  SIId id = "id1", id2 = "id1";  // not a mistake!
+  SIId id = "id1", id2 = "id1"; // not a mistake!
   int rc = SIReverseIndex_Insert(idx, id, k);
   mu_check(rc == 1);
 
@@ -131,10 +131,10 @@ void testQuery(SIIndex idx, SISpec *spec, const char *str,
 }
 
 MU_TEST(testUniqueIndex) {
-  SISpec spec = {
-      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"}},
-      .numProps = 1,
-      .flags = SI_INDEX_NAMED | SI_INDEX_UNIQUE};
+  SISpec spec = {.properties =
+                     (SIIndexProperty[]){{.type = T_STRING, .name = "name"}},
+                 .numProps = 1,
+                 .flags = SI_INDEX_NAMED | SI_INDEX_UNIQUE};
 
   SIIndex idx = SI_NewCompoundIndex(spec);
 
@@ -150,11 +150,11 @@ MU_TEST(testUniqueIndex) {
 }
 
 MU_TEST(testIndexingQuerying) {
-  SISpec spec = {
-      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"},
-                                        {.type = T_INT32, .name = "age"}},
-      .numProps = 2,
-      .flags = SI_INDEX_NAMED};
+  SISpec spec = {.properties =
+                     (SIIndexProperty[]){{.type = T_STRING, .name = "name"},
+                                         {.type = T_INT32, .name = "age"}},
+                 .numProps = 2,
+                 .flags = SI_INDEX_NAMED};
 
   SIIndex idx = SI_NewCompoundIndex(spec);
 
@@ -204,10 +204,10 @@ MU_TEST(testIndexingQuerying) {
 }
 
 MU_TEST(testNull) {
-  SISpec spec = {
-      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"}},
-      .numProps = 1,
-      .flags = SI_INDEX_NAMED};
+  SISpec spec = {.properties =
+                     (SIIndexProperty[]){{.type = T_STRING, .name = "name"}},
+                 .numProps = 1,
+                 .flags = SI_INDEX_NAMED};
 
   SIIndex idx = SI_NewCompoundIndex(spec);
 
@@ -230,11 +230,11 @@ MU_TEST(testNull) {
 }
 
 MU_TEST(testAggregate) {
-  SISpec spec = {
-      .properties = (SIIndexProperty[]){{.type = T_STRING, .name = "name"},
-                                        {.type = T_INT32, .name = "age"}},
-      .numProps = 2,
-      .flags = SI_INDEX_NAMED};
+  SISpec spec = {.properties =
+                     (SIIndexProperty[]){{.type = T_STRING, .name = "name"},
+                                         {.type = T_INT32, .name = "age"}},
+                 .numProps = 2,
+                 .flags = SI_INDEX_NAMED};
 
   SIIndex idx = SI_NewCompoundIndex(spec);
 
@@ -263,15 +263,20 @@ MU_TEST(testAggregate) {
   SICursor *c = idx.Find(idx.ctx, &q);
   mu_check(c->error == SI_CURSOR_OK);
 
-  SISequence s1 = SI_PropertyGetter(c, 1);
-  SISequence avg = SI_AverageAggregator(&s1);
+  SIAggregator p = SI_PropertyGetter(c, 1);
+  SIAggregator sum = SI_SumAggregator(&p);
+  SIAggregator avg = SI_AverageAggregator(&sum);
 
-  SIItem it;
+  SITuple it = SI_NewTuple(1);
   rc = avg.Next(avg.ctx, &it);
   mu_check(rc == SI_SEQ_OK);
-  mu_check(it.t == SI_ValItem);
-  mu_check(it.v.type == T_DOUBLE);
-  printf("%f\n", it.v.doubleval);
+
+  mu_check(it.vals[0].type == T_DOUBLE);
+  mu_check(it.vals[0].doubleval == 21);
+  printf("%f\n", it.vals[0].doubleval);
+  sum.Free(sum.ctx);
+  avg.Free(avg.ctx);
+  SITuple_Free(&it);
 }
 
 ///////////////////////////////////

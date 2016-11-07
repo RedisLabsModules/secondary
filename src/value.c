@@ -118,20 +118,20 @@ int _parseInt(SIValue *v, char *str, size_t len) {
   }
 
   switch (v->type) {
-    case T_INT32:
-      v->intval = val;
-      break;
-    case T_INT64:
-      v->longval = val;
-      break;
-    case T_UINT:
-      v->uintval = (u_int64_t)val;
-      break;
-    case T_TIME:
-      v->timeval = (time_t)val;
-      break;
-    default:
-      return 0;
+  case T_INT32:
+    v->intval = val;
+    break;
+  case T_INT64:
+    v->longval = val;
+    break;
+  case T_UINT:
+    v->uintval = (u_int64_t)val;
+    break;
+  case T_TIME:
+    v->timeval = (time_t)val;
+    break;
+  default:
+    return 0;
   }
   return 1;
 }
@@ -161,15 +161,15 @@ int _parseFloat(SIValue *v, char *str, size_t len) {
   }
 
   switch (v->type) {
-    case T_FLOAT:
-      v->floatval = (float)val;
-      break;
-    case T_DOUBLE:
-      v->doubleval = val;
-      break;
-    default:
-      return 0;
-      break;
+  case T_FLOAT:
+    v->floatval = (float)val;
+    break;
+  case T_DOUBLE:
+    v->doubleval = val;
+    break;
+  default:
+    return 0;
+    break;
   }
 
   return 1;
@@ -177,28 +177,28 @@ int _parseFloat(SIValue *v, char *str, size_t len) {
 
 int SI_ParseValue(SIValue *v, char *str, size_t len) {
   switch (v->type) {
-    case T_STRING: {
-      SIString s = {.str = str, .len = len};
-      v->stringval = SIString_Copy(s);
+  case T_STRING: {
+    SIString s = {.str = str, .len = len};
+    v->stringval = SIString_Copy(s);
 
-      break;
-    }
-    case T_INT32:
-    case T_INT64:
-    case T_UINT:
-    case T_TIME:
-      return _parseInt(v, str, len);
+    break;
+  }
+  case T_INT32:
+  case T_INT64:
+  case T_UINT:
+  case T_TIME:
+    return _parseInt(v, str, len);
 
-    case T_BOOL:
-      return _parseBool(v, str, len);
+  case T_BOOL:
+    return _parseBool(v, str, len);
 
-    case T_FLOAT:
-    case T_DOUBLE:
-      return _parseFloat(v, str, len);
+  case T_FLOAT:
+  case T_DOUBLE:
+    return _parseFloat(v, str, len);
 
-    case T_NULL:
-    default:
-      return 0;
+  case T_NULL:
+  default:
+    return 0;
   }
 
   return 1;
@@ -206,40 +206,40 @@ int SI_ParseValue(SIValue *v, char *str, size_t len) {
 
 void SIValue_ToString(SIValue v, char *buf, size_t len) {
   switch (v.type) {
-    case T_STRING:
-      snprintf(buf, len, "\"%.*s\"", (int)v.stringval.len, v.stringval.str);
-      break;
-    case T_INT32:
-      snprintf(buf, len, "%d", v.intval);
-      break;
-    case T_INT64:
-      snprintf(buf, len, "%ld", v.longval);
-      break;
-    case T_UINT:
-      snprintf(buf, len, "%zd", v.uintval);
-      break;
-    case T_TIME:
-      snprintf(buf, len, "%ld", v.timeval);
-      break;
-    case T_BOOL:
-      snprintf(buf, len, "%s", v.boolval ? "true" : "false");
-      break;
+  case T_STRING:
+    snprintf(buf, len, "\"%.*s\"", (int)v.stringval.len, v.stringval.str);
+    break;
+  case T_INT32:
+    snprintf(buf, len, "%d", v.intval);
+    break;
+  case T_INT64:
+    snprintf(buf, len, "%ld", v.longval);
+    break;
+  case T_UINT:
+    snprintf(buf, len, "%zd", v.uintval);
+    break;
+  case T_TIME:
+    snprintf(buf, len, "%ld", v.timeval);
+    break;
+  case T_BOOL:
+    snprintf(buf, len, "%s", v.boolval ? "true" : "false");
+    break;
 
-    case T_FLOAT:
-      snprintf(buf, len, "%f", v.floatval);
-      break;
-    case T_DOUBLE:
-      snprintf(buf, len, "%f", v.doubleval);
-      break;
-    case T_INF:
-      snprintf(buf, len, "+inf");
-      break;
-    case T_NEGINF:
-      snprintf(buf, len, "-inf");
-      break;
-    case T_NULL:
-    default:
-      snprintf(buf, len, "NULL");
+  case T_FLOAT:
+    snprintf(buf, len, "%f", v.floatval);
+    break;
+  case T_DOUBLE:
+    snprintf(buf, len, "%f", v.doubleval);
+    break;
+  case T_INF:
+    snprintf(buf, len, "+inf");
+    break;
+  case T_NEGINF:
+    snprintf(buf, len, "-inf");
+    break;
+  case T_NULL:
+  default:
+    snprintf(buf, len, "NULL");
   }
 }
 
@@ -266,75 +266,77 @@ void SIValueVector_Free(SIValueVector *v) {
 }
 
 int SI_LongVal_Cast(SIValue *v, SIType type) {
-  if (v->type != T_INT64) return 0;
+  if (v->type != T_INT64)
+    return 0;
 
   switch (type) {
-    case T_INT64:  // do nothing!
-      return 1;
-    case T_INT32:
-      v->intval = (int32_t)v->longval;
-      break;
-    case T_BOOL:
-      v->boolval = v->longval ? 1 : 0;
-      break;
-    case T_UINT:
-      v->uintval = (u_int64_t)v->longval;
-      break;
-    case T_FLOAT:
-      v->floatval = (float)v->longval;
-      break;
-    case T_DOUBLE:
-      v->doubleval = (double)v->longval;
-      break;
-    case T_STRING: {
-      char *buf = malloc(21);
-      snprintf(buf, 21, "%ld", v->longval);
-      v->stringval = SI_StringValC(buf).stringval;
-      break;
-    }
-    case T_TIME:
-      v->timeval = (time_t)v->longval;
-      break;
-    default:
-      // cannot convert!
-      return 0;
+  case T_INT64: // do nothing!
+    return 1;
+  case T_INT32:
+    v->intval = (int32_t)v->longval;
+    break;
+  case T_BOOL:
+    v->boolval = v->longval ? 1 : 0;
+    break;
+  case T_UINT:
+    v->uintval = (u_int64_t)v->longval;
+    break;
+  case T_FLOAT:
+    v->floatval = (float)v->longval;
+    break;
+  case T_DOUBLE:
+    v->doubleval = (double)v->longval;
+    break;
+  case T_STRING: {
+    char *buf = malloc(21);
+    snprintf(buf, 21, "%ld", v->longval);
+    v->stringval = SI_StringValC(buf).stringval;
+    break;
+  }
+  case T_TIME:
+    v->timeval = (time_t)v->longval;
+    break;
+  default:
+    // cannot convert!
+    return 0;
   }
   v->type = type;
   return 1;
 }
 int SI_DoubleVal_Cast(SIValue *v, SIType type) {
-  if (v->type != T_DOUBLE) return 0;
+  if (v->type != T_DOUBLE)
+    return 0;
 
   switch (type) {
-    case T_DOUBLE:
-      return 1;
-    case T_INT64:  // do nothing!
-      v->longval = (int64_t)v->doubleval;
-      break;
-    case T_INT32:
-      v->intval = (int32_t)v->doubleval;
-      break;
-    case T_BOOL:
-      v->boolval = v->doubleval != 0 ? 1 : 0;
-      break;
-    case T_UINT:
-      v->uintval = (u_int64_t)v->doubleval;
-      break;
-    case T_FLOAT:
-      v->floatval = (float)v->doubleval;
-      break;
-    case T_STRING: {
-      char *buf = malloc(256);
-      snprintf(buf, 256, "%.17f", v->doubleval);
-      v->stringval = SI_StringValC(buf).stringval;
-      break;
-    }
-    case T_TIME:
-      v->timeval = (time_t)v->doubleval;
-      break;
-    default:
-      // cannot convert!
-      return 0;
+  case T_DOUBLE:
+    return 1;
+  case T_INT64: // do nothing!
+    v->longval = (int64_t)v->doubleval;
+    break;
+  case T_INT32:
+    v->intval = (int32_t)v->doubleval;
+    break;
+  case T_BOOL:
+    v->boolval = v->doubleval != 0 ? 1 : 0;
+    break;
+  case T_UINT:
+    v->uintval = (u_int64_t)v->doubleval;
+    break;
+  case T_FLOAT:
+    v->floatval = (float)v->doubleval;
+    break;
+  case T_STRING: {
+    char *buf = malloc(256);
+    snprintf(buf, 256, "%.17f", v->doubleval);
+    v->stringval = SI_StringValC(buf).stringval;
+    break;
+  }
+  case T_TIME:
+    v->timeval = (time_t)v->doubleval;
+    break;
+  default:
+    // cannot convert!
+    return 0;
   }
   v->type = type;
   return 1;
@@ -342,48 +344,62 @@ int SI_DoubleVal_Cast(SIValue *v, SIType type) {
 
 int SIValue_ToDouble(SIValue *v, double *d) {
   switch (v->type) {
-    case T_DOUBLE:
-      *d = v->doubleval;
-      return 1;
-    case T_INT64:  // do nothing!
-      *d = (double)v->longval;
-      return 1;
-    case T_INT32:
-      *d = (double)v->intval;
-      return 1;
-    case T_UINT:
-      *d = (double)v->uintval;
-      return 1;
-    case T_FLOAT:
-      *d = (double)v->floatval;
-      return 1;
+  case T_DOUBLE:
+    *d = v->doubleval;
+    return 1;
+  case T_INT64: // do nothing!
+    *d = (double)v->longval;
+    return 1;
+  case T_INT32:
+    *d = (double)v->intval;
+    return 1;
+  case T_UINT:
+    *d = (double)v->uintval;
+    return 1;
+  case T_FLOAT:
+    *d = (double)v->floatval;
+    return 1;
 
-    case T_TIME:
-      *d = (double)v->timeval;
-      return 1;
+  case T_TIME:
+    *d = (double)v->timeval;
+    return 1;
 
-    default:
-      // cannot convert!
-      return 0;
+  default:
+    // cannot convert!
+    return 0;
   }
 }
 
 int SI_StringVal_Cast(SIValue *v, SIType type) {
-  if (v->type != T_STRING) return 0;
+  if (v->type != T_STRING)
+    return 0;
 
   switch (type) {
-    case T_STRING:
+  case T_STRING:
+    return 1;
+  // by default we just use the parsing function
+  default: {
+    SIValue tmp;
+    tmp.type = type;
+    if (SI_ParseValue(&tmp, v->stringval.str, v->stringval.len)) {
+      *v = tmp;
       return 1;
-    // by default we just use the parsing function
-    default: {
-      SIValue tmp;
-      tmp.type = type;
-      if (SI_ParseValue(&tmp, v->stringval.str, v->stringval.len)) {
-        *v = tmp;
-        return 1;
-      }
     }
+  }
   }
 
   return 0;
+}
+
+SITuple SI_NewTuple(size_t len) {
+  return (SITuple){.vals = calloc(len, sizeof(SIValue)), .len = len};
+}
+void SITuple_Free(SITuple *tup) { free(tup->vals); }
+
+int SITuple_Set(SITuple *tup, size_t offset, SIValue v) {
+  if (offset >= tup->len) {
+    return 0;
+  }
+  tup->vals[offset] = v;
+  return 1;
 }
