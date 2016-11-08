@@ -1,14 +1,146 @@
 #define __AGGREGATE_C__
+#include "agg_ctx.h"
 #include "aggregate.h"
+#include "../index.h"
+#include "../key.h"
+#include <stdio.h>
 
-struct AggCtx {
-  void *fctx;
-  AggError *err;
-  SITuple result;
-};
-typedef struct AggCtx AggCtx;
-
-void foo() {
-  AggCtx x;
-  Agg_SetResult(&x, SI_NullVal());
+int __agg_mapper_next(AggPipelineNode *ctx) {
+  int rc = ctx->in->Next(ctx->in);
+  if (rc != AGG_OK) {
+    return rc;
+  }
+  SITuple *intup = &ctx->in->ctx->result;
+  while (AGG_SKIP == (rc = ctx->ctx->Step(ctx->ctx, intup->vals, intup->len))) {
+    // do nothing if the step returned SKIP
+  }
+  return rc;
 }
+
+AggPipelineNode Agg_Map(AggPipelineNode *in, void *ctx, StepFunc f,
+                        int resultSize) {
+
+  AggCtx *ac = malloc(sizeof(AggCtx));
+  ac->state = AGG_STATE_INIT;
+  ac->err = NULL;
+  ac->fctx = ctx;
+  ac->result = SI_NewTuple(resultSize);
+  ac->Step = f;
+  ac->Finalize = NULL;
+  return (AggPipelineNode){.ctx = ac, .Next = __agg_mapper_next, .in = in};
+}
+
+int __agg_reducer_next(AggPipelineNode *n) {
+
+  int rc = AGG_OK;
+
+  printf("ctx state: %d\n", n->ctx->state);
+  // if the aggregation context is in its initial state
+  // we need to iterate the input source
+  if (n->ctx->state == AGG_STATE_INIT) {
+    do {
+      rc = n->in->Next(n->in);
+      printf("rc next: %d\n", rc);
+
+      if (rc != AGG_OK) {
+        break;
+      }
+      SITuple *intup = &n->in->ctx->result;
+      rc = n->ctx->Step(n->ctx, intup->vals, intup->len);
+      printf("rc step: %d\n", rc);
+    } while (rc == AGG_OK);
+
+    n->ctx->state = AGG_STATE_DONE;
+
+    if (rc == AGG_ERR) {
+      n->ctx->state = AGG_STATE_ERR;
+      return rc;
+    }
+    // call the finalizer func
+    if (AGG_OK != (rc = n->ctx->Finalize(n->ctx))) {
+      printf("rc finalize: %d\n", rc);
+
+      n->ctx->state = AGG_STATE_ERR;
+      return rc;
+    }
+  }
+  if (Agg_State(n->ctx) == AGG_STATE_EOF) {
+    printf("reducer at EOF");
+    return AGG_EOF;
+  }
+
+  return n->ctx->ReduceNext(n->ctx);
+}
+
+AggPipelineNode Agg_Reduce(AggPipelineNode *in, void *ctx, StepFunc f,
+                           ReduceFunc finalize, ReduceFunc reduce,
+                           int resultSize) {
+  AggCtx *ac = Agg_NewCtx(ctx, resultSize);
+  ac->Step = f;
+  ac->Finalize = finalize;
+  ac->ReduceNext = reduce;
+  return (AggPipelineNode){.ctx = ac, .Next = __agg_reducer_next, .in = in};
+}
+
+/* A sequence pseudo aggregator that fetches the values of a property */
+typedef struct {
+  SICursor *c;
+  int propId;
+} __si_propGetCtx;
+
+/* Next implementation on a the property getter, just yields the next value from
+ * the cursor */
+int __agg_propget_next(AggPipelineNode *n) {
+  __si_propGetCtx *pgc = Agg_FuncCtx(n->ctx);
+  SICursor *c = pgc->c;
+
+  void *pk = NULL;
+  SIId id = c->Next(c->ctx, &pk);
+  printf("pg get: %s\n", id);
+  if (!id || !pk) {
+    return AGG_EOF;
+  }
+
+  SIMultiKey_Print((SIMultiKey *)pk);
+  Agg_SetResult(n->ctx, ((SIMultiKey *)pk)->keys[pgc->propId]);
+  return AGG_OK;
+}
+
+AggCtx *Agg_NewCtx(void *fctx, int resultSize) {
+  AggCtx *ac = malloc(sizeof(AggCtx));
+  ac->state = AGG_STATE_INIT;
+  ac->err = NULL;
+  ac->fctx = fctx;
+  ac->result = SI_NewTuple(resultSize);
+  ac->Step = NULL;
+  ac->Finalize = NULL;
+  ac->ReduceNext = NULL;
+  return ac;
+}
+
+AggPipelineNode Agg_PropertyGetter(SICursor *c, int propId) {
+  __si_propGetCtx *pgc = malloc(sizeof(__si_propGetCtx));
+  pgc->c = c;
+  pgc->propId = propId;
+
+  AggCtx *ac = Agg_NewCtx(pgc, 1);
+
+  return (AggPipelineNode){.ctx = ac, .Next = __agg_propget_next, .in = NULL};
+}
+
+inline void Agg_SetResult(struct AggCtx *ctx, SIValue v) {
+  ctx->result.vals[0] = v;
+}
+
+// void Agg_SetResultTuple(struct AggCtx *, int num, ...);
+inline void Agg_SetError(AggCtx *ctx, AggError *err) { ctx->err = err; }
+
+inline void Agg_SetState(AggCtx *ctx, int state) { ctx->state = state; }
+
+inline int Agg_State(AggCtx *ctx) { return ctx->state; }
+
+inline void *Agg_FuncCtx(AggCtx *ctx) { return ctx->fctx; }
+
+inline void Agg_EOF(AggCtx *ctx) { ctx->state = AGG_STATE_EOF; }
+
+inline void Agg_Result(AggCtx *ctx, SITuple **tup) { *tup = &ctx->result; }

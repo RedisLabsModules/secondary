@@ -8,7 +8,8 @@
 #include "../src/query.h"
 #include "../src/reverse_index.h"
 #include "../src/rmutil/alloc.h"
-#include "../src/aggregate.h"
+#include "../src/aggregate/aggregate.h"
+#include "../src/aggregate/functions.h"
 
 int cmpstr(void *p1, void *p2, void *ctx) {
   return strcmp((char *)p1, (char *)p2);
@@ -263,20 +264,14 @@ MU_TEST(testAggregate) {
   SICursor *c = idx.Find(idx.ctx, &q);
   mu_check(c->error == SI_CURSOR_OK);
 
-  SIAggregator p = SI_PropertyGetter(c, 1);
-  SIAggregator sum = SI_SumAggregator(&p);
-  SIAggregator avg = SI_AverageAggregator(&sum);
+  AggPipelineNode pg = Agg_PropertyGetter(c, 1);
+  AggPipelineNode sum = Agg_AverageFunc(&pg);
 
-  SITuple it = SI_NewTuple(1);
-  rc = avg.Next(avg.ctx, &it);
-  mu_check(rc == SI_SEQ_OK);
-
-  mu_check(it.vals[0].type == T_DOUBLE);
-  mu_check(it.vals[0].doubleval == 21);
-  printf("%f\n", it.vals[0].doubleval);
-  sum.Free(sum.ctx);
-  avg.Free(avg.ctx);
-  SITuple_Free(&it);
+  SITuple *tup;
+  rc = sum.Next(&sum);
+  mu_check(rc == AGG_OK);
+  Agg_Result(sum.ctx, &tup);
+  mu_assert_double_eq(tup->vals[0].doubleval, 21);
 }
 
 ///////////////////////////////////
