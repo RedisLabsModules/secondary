@@ -37,7 +37,7 @@ typedef struct {
     ParseNode *root;
     int ok;
     char *errorMsg;
-}parseCtx;
+} parseCtx;
 
 
 void yyerror(char *s);

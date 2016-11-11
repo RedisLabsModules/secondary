@@ -6,6 +6,7 @@
 #include <assert.h>
 #include "token.h"
 #include "parser.h"
+#include "../rmutil/vector.h"
 #include "../value.h"
 
 typedef enum {
@@ -19,23 +20,27 @@ struct parseNode;
 typedef struct {
   char *name;
   int id;
-} property;
+} IdentifierNode;
 
-// typedef struct conditionNode {
-//   struct parseNode *left;
-//   struct parseNode *right;
-//   int op;
-// } ConditionNode;
+typedef struct { SIValue v; } LiteralNode;
 
-// typedef struct parseNode {
-//   union {
-//     PredicateNode pn;
-//     ConditionNode cn;
-//   };
-//   ParseNodeType t;
-// } ParseNode;
+typedef struct {
+  char *name;
+  Vector *args;
+} FuncNode;
 
-// void ParseNode_Free(ParseNode *pn);
+typedef struct parseNode {
+  union {
+    IdentifierNode ident;
+    FuncNode fn;
+    LiteralNode ln;
+  };
+  ParseNodeType t;
+} ParseNode;
+
+void ParseNode_Free(ParseNode *pn);
+ParseNode *NewFuncNode(char *name);
+ParseNode *NewLiteralNode(SIValue v);
 // ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right);
 // ParseNode *NewPredicateNode(property p, int op, SIValue v);
 // ParseNode *NewInPredicateNode(property p, int op, SIValueVector v);

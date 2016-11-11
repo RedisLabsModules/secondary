@@ -265,7 +265,7 @@ MU_TEST(testAggregate) {
   mu_check(c->error == SI_CURSOR_OK);
 
   AggPipelineNode pg = Agg_PropertyGetter(c, 1);
-  AggPipelineNode sum = Agg_AverageFunc(&pg);
+  AggPipelineNode sum = Agg_SumFunc(&pg);
 
   SITuple *tup;
   rc = sum.Next(&sum);
