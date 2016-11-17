@@ -32,7 +32,7 @@ typedef struct {
 void SICursor_Free(SICursor *c);
 SICursor *SI_NewCursor(void *ctx);
 
-typedef void (*IndexVisitor)(SIId id, void *key, void *ctx);
+typedef void (*SIIndexVisitor)(SIId id, void *key, void *ctx);
 
 typedef struct {
   void *ctx;
@@ -46,4 +46,4 @@ typedef struct {
 
 SIIndex SI_NewCompoundIndex(SISpec spec);
 
-#endif  // !__SECONDARY_H__
+#endif // !__SECONDARY_H__

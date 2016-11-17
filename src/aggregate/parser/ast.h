@@ -5,14 +5,14 @@
 #include <stdio.h>
 #include <assert.h>
 #include "token.h"
-#include "parser.h"
-#include "../rmutil/vector.h"
-#include "../value.h"
+#include "aggregation.h"
+#include "../../rmutil/vector.h"
+#include "../../value.h"
 
 typedef enum {
   N_FUNC,
-  N_PROP,
-  N_ARGLIST,
+  N_LITERAL,
+  N_IDENT,
 } ParseNodeType;
 
 struct parseNode;
@@ -33,14 +33,15 @@ typedef struct parseNode {
   union {
     IdentifierNode ident;
     FuncNode fn;
-    LiteralNode ln;
+    LiteralNode lit;
   };
   ParseNodeType t;
 } ParseNode;
 
 void ParseNode_Free(ParseNode *pn);
-ParseNode *NewFuncNode(char *name);
+ParseNode *NewFuncNode(char *name, Vector *v);
 ParseNode *NewLiteralNode(SIValue v);
+ParseNode *NewIdentifierNode(char *name, int id);
 // ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right);
 // ParseNode *NewPredicateNode(property p, int op, SIValue v);
 // ParseNode *NewInPredicateNode(property p, int op, SIValueVector v);

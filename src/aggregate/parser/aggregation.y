@@ -26,9 +26,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "token.h"
-#include "parser.h"
+#include "aggregation.h"
 #include "ast.h"
-#include "../rmutil/alloc.h"
+#include "../../rmutil/alloc.h"
 
 extern int yylineno;
 extern char *yytext;
@@ -50,59 +50,57 @@ void yyerror(char *s);
 query ::= func(A). { ctx->root = A; }
 
 %type func {ParseNode*}
-%destructor cond { FuncNode_Free($$); }
+%destructor func { ParseNode_Free($$); }
 
-func(A) ::= ident(B) LP ident(C) RP. { 
+func(A) ::= ident(B) LP vallist(C) RP. { 
     /* Terminal condition of a single predicate */
     A = NewFuncNode(B, C);
 }
 
-func(A) ::= ident(B) LP arglist(C) RP. { 
-    /* Terminal condition of a single predicate */
-    A = NewFuncNode(B, C);
-}
-
-%type value {SIValue}
+%type value {ParseNode *}
 
 // raw value tokens - int / string / float
-value(A) ::= INTEGER(B). {  A = SI_LongVal(B.intval); }
-value(A) ::= STRING(B). {  A = SI_StringValC(strdup(B.strval)); }
-value(A) ::= FLOAT(B). {  A = SI_DoubleVal(B.dval); }
-value(A) ::= TRUE. { A = SI_BoolVal(1); }
-value(A) ::= FALSE. { A = SI_BoolVal(0); }
+value(A) ::= INTEGER(B). {  A = NewLiteralNode(SI_LongVal(B.intval)); }
+value(A) ::= STRING(B). {  A = NewLiteralNode(SI_StringValC(strdup(B.strval))); }
+value(A) ::= FLOAT(B). {  A = NewLiteralNode(SI_DoubleVal(B.dval)); }
+value(A) ::= TRUE. { A = NewLiteralNode(SI_BoolVal(1)); }
+value(A) ::= FALSE. { A = NewLiteralNode(SI_BoolVal(0)); }
 
-%type vallist {SIValueVector}
-%type multivals {SIValueVector}
-%destructor vallist {SIValueVector_Free(&$$);}
-%destructor multivals {SIValueVector_Free(&$$);}
+%type vallist {Vector *}
+%type multivals {Vector *}
+%destructor vallist {Vector_Free($$);}
+%destructor multivals {Vector_Free($$);}
 
 vallist(A) ::= LP multivals(B) RP. {
     A = B;
-    
 }
+
+vallist(A) ::= LP value(B) RP. {
+    A = NewVector(ParseNode *, 1);
+    Vector_Push(A, B);
+}
+
 multivals(A) ::= value(B) COMMA value(C). {
-      A = SI_NewValueVector(2);
-      SIValueVector_Append(&A, B);
-      SIValueVector_Append(&A, C);
+      A = NewVector(ParseNode *, 2);
+      Vector_Push(A, B);
+      Vector_Push(A, C);
 }
 
 multivals(A) ::= multivals(B) COMMA value(C). {
-    SIValueVector_Append(&B, C);
+    Vector_Push(B, C);
     A = B;
 }
 
 
-%type prop {property}
-%destructor prop {
-     
-    if ($$.name != NULL) { 
-        free($$.name); 
-        $$.name = NULL;
-    } 
+%type ident {ParseNode *}
+%destructor ident {
+   ParseNode_Free($$);
 }
 // property enumerator
-prop(A) ::= ENUMERATOR(B). { A.id = B.intval; A.name = NULL;  }
-prop(A) ::= IDENT(B). { A.name = B.strval; A.id = 0;  }
+ident(A) ::= ENUMERATOR(B). { A = NewIdentifierNode(NULL, B.intval);  }
+ident(A) ::= IDENT(B). { A = NewIdentifierNode(B.strval, 0);  }
+value(A) ::= ident(B). { A = B; } 
+
 
 %code {
 

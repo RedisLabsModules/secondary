@@ -1,9 +1,9 @@
 %{
 
 #include "token.h"
-#include "parser.h"
+#include "aggregation.h"
 #include <string.h>
-#include "../rmutil/alloc.h"
+#include "../../rmutil/alloc.h"
 
 Token tok;
 

@@ -1,0 +1,10 @@
+#define LP                               1
+#define RP                               2
+#define COMMA                            3
+#define INTEGER                          4
+#define STRING                           5
+#define FLOAT                            6
+#define TRUE                             7
+#define FALSE                            8
+#define ENUMERATOR                       9
+#define IDENT                           10
