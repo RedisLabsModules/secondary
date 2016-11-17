@@ -824,21 +824,22 @@ YY_RULE_SETUP
 #line 43 "aggregation.l"
 {	
   	tok.strval = strdup(yytext);
-  	return IDENT;
+    printf("IDENT:%s\n", tok.strval);
+  	return IDENTT;
 }
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 48 "aggregation.l"
+#line 49 "aggregation.l"
 /* ignore whitespace */
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 49 "aggregation.l"
+#line 50 "aggregation.l"
 ECHO;
 	YY_BREAK
-#line 842 "lex.yy.c"
+#line 843 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1833,7 +1834,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 48 "aggregation.l"
+#line 49 "aggregation.l"
 
 
 

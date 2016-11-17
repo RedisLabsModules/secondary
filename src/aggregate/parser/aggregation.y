@@ -52,10 +52,11 @@ query ::= func(A). { ctx->root = A; }
 %type func {ParseNode*}
 %destructor func { ParseNode_Free($$); }
 
-func(A) ::= ident(B) LP vallist(C) RP. { 
+func(A) ::= ident(B) vallist(C). { 
     /* Terminal condition of a single predicate */
-    A = NewFuncNode(B, C);
+    A = NewFuncNode(B->ident.name, C);
 }
+
 
 %type value {ParseNode *}
 
@@ -72,10 +73,18 @@ value(A) ::= FALSE. { A = NewLiteralNode(SI_BoolVal(0)); }
 %destructor multivals {Vector_Free($$);}
 
 vallist(A) ::= LP multivals(B) RP. {
+    printf("VALLIST!\n");
     A = B;
 }
 
 vallist(A) ::= LP value(B) RP. {
+    printf("Got single value!\n");
+    A = NewVector(ParseNode *, 1);
+    Vector_Push(A, B);
+}
+
+vallist(A) ::= LP ident(B) RP. {
+    printf("Got single ident!\n");
     A = NewVector(ParseNode *, 1);
     Vector_Push(A, B);
 }
@@ -86,6 +95,12 @@ multivals(A) ::= value(B) COMMA value(C). {
       Vector_Push(A, C);
 }
 
+
+multivals(A) ::= ident(B) COMMA ident(C). {
+      A = NewVector(ParseNode *, 2);
+      Vector_Push(A, B);
+      Vector_Push(A, C);
+}
 multivals(A) ::= multivals(B) COMMA value(C). {
     Vector_Push(B, C);
     A = B;
@@ -96,10 +111,12 @@ multivals(A) ::= multivals(B) COMMA value(C). {
 %destructor ident {
    ParseNode_Free($$);
 }
+
+//value(A) ::= ident(B). { printf("IDENT NODE!\n"); A = B; } 
 // property enumerator
 ident(A) ::= ENUMERATOR(B). { A = NewIdentifierNode(NULL, B.intval);  }
-ident(A) ::= IDENT(B). { A = NewIdentifierNode(B.strval, 0);  }
-value(A) ::= ident(B). { A = B; } 
+ident(A) ::= IDENTT(B). { A = NewIdentifierNode(B.strval, 0);  }
+
 
 
 %code {
@@ -115,10 +132,14 @@ value(A) ::= ident(B). { A = B; }
   
 
 
-ParseNode *ParseQuery(const char *c, size_t len, char **err)  {
+int main(int argc, char **argv) {
+
+    const char *c = argc > 1 ? argv[1] :  "avg(1)";
+    char *e = NULL;
+    char **err = &e;
 
     //printf("Parsing query %s\n", c);
-    yy_scan_bytes(c, len);
+    yy_scan_bytes(c, strlen(c));
     void* pParser = ParseAlloc (malloc);        
     int t = 0;
 
@@ -130,12 +151,16 @@ ParseNode *ParseQuery(const char *c, size_t len, char **err)  {
     }
     if (ctx.ok) {
         Parse (pParser, 0, tok, &ctx);
+
+        ParseNode_print(ctx.root, 0);
     }
+            
+
     ParseFree(pParser, free);
     if (err) {
         *err = ctx.errorMsg;
     }
-    return ctx.root;
+    printf("Err: %s\n", *err);
   }
    
 

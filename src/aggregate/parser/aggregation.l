@@ -42,7 +42,8 @@ Token tok;
 
 [A-Za-z_][A-Za-z0-9_]* {	
   	tok.strval = strdup(yytext);
-  	return IDENT;
+    printf("IDENT:%s\n", tok.strval);
+  	return IDENTT;
 }
  
 [ \t\n]+ /* ignore whitespace */

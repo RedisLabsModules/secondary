@@ -7,4 +7,4 @@
 #define TRUE                             7
 #define FALSE                            8
 #define ENUMERATOR                       9
-#define IDENT                           10
+#define IDENTT                          10
