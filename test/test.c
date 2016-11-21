@@ -9,7 +9,9 @@
 #include "../src/reverse_index.h"
 #include "../src/rmutil/alloc.h"
 #include "../src/aggregate/aggregate.h"
+#include "../src/aggregate/pipeline.h"
 #include "../src/aggregate/functions.h"
+#include "../src/aggregate/parser/ast.h"
 
 int cmpstr(void *p1, void *p2, void *ctx) {
   return strcmp((char *)p1, (char *)p2);
@@ -264,13 +266,23 @@ MU_TEST(testAggregate) {
   SICursor *c = idx.Find(idx.ctx, &q);
   mu_check(c->error == SI_CURSOR_OK);
 
-  AggPipelineNode pg = Agg_PropertyGetter(c, 1);
-  AggPipelineNode sum = Agg_SumFunc(&pg);
+  Agg_RegisterFuncs();
+  Agg_RegisterPropertyGetter(Agg_BuildPropertyGetter);
+
+  str = "avgv(sum($1))";
+
+  AggParseNode *aggASTRoot = Agg_ParseQuery(str, strlen(str), &parseError);
+  mu_check(aggASTRoot != NULL);
+  mu_assert(parseError == NULL, parseError);
+
+  AggPipelineNode *aggPipeline = Agg_BuildPipeline(aggASTRoot, c);
+  mu_check(aggPipeline != NULL);
 
   SITuple *tup;
-  rc = sum.Next(&sum);
+  rc = aggPipeline->Next(aggPipeline);
   mu_check(rc == AGG_OK);
-  Agg_Result(sum.ctx, &tup);
+  Agg_Result(aggPipeline->ctx, &tup);
+  printf("%f\n", tup->vals[0].doubleval);
   mu_assert_double_eq(tup->vals[0].doubleval, 21);
 }
 

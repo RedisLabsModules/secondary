@@ -74,7 +74,8 @@ void AggParseNode_print(AggParseNode *n, int depth) {
     break;
 
   case AGG_N_IDENT:
-    printf("IDENT{%s}", n->ident.name);
+    printf(n->ident.name ? "IDENT{%s}" : "IDENT{$%d}",
+           n->ident.name ? n->ident.name : n->ident.id);
     break;
   case AGG_N_LITERAL: {
     static char buf[1024];

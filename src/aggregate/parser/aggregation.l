@@ -56,12 +56,12 @@ Token tok;
  *
  *
  */
-void yyerror(char *s)
+void yyaggerror(char *s)
 {
   printf("error: '%s' at line: %d\n",s,yylineno);
 }
 
-int yywrap(void)
+int yyaggwrap(void)
 {
   return 1;
 }

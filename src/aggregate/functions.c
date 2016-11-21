@@ -1,4 +1,6 @@
 #include "functions.h"
+#include "parser/ast.h"
+#include "pipeline.h"
 
 typedef struct {
   size_t num;
@@ -11,6 +13,8 @@ int __agg_sumStep(AggCtx *ctx, SIValue *argv, int argc) {
   double n;
   if (!SIValue_ToDouble(&argv[0], &n)) {
     if (!SIValue_IsNullPtr(&argv[0])) {
+      printf("value not convertible to double\n");
+
       // not convertible to double!
       return AGG_ERR;
     }
@@ -49,7 +53,10 @@ int __agg_sumReduceNext(AggCtx *ctx) {
   return AGG_OK;
 }
 
-AggPipelineNode Agg_SumFunc(AggPipelineNode *in) {
+AggPipelineNode *Agg_SumFunc(AggPipelineNode *in) {
+
+  if (in == NULL)
+    return NULL;
 
   __agg_sumCtx *ac = malloc(sizeof(__agg_sumCtx));
   ac->num = 0;
@@ -59,11 +66,51 @@ AggPipelineNode Agg_SumFunc(AggPipelineNode *in) {
                     __agg_sumReduceNext, 1);
 }
 
-AggPipelineNode Agg_AverageFunc(AggPipelineNode *in) {
+AggParseNode *__getArg(AggParseNode *n, int offset) {
+  AggParseNode *ret = NULL;
+
+  if (n->t == AGG_N_FUNC)
+    Vector_Get(n->fn.args, offset, &ret);
+  return ret;
+}
+
+#define __AGG_VERIFY_ARGS(fn, len)                                             \
+  if (Vector_Size(fn.args) != 1) {                                             \
+    return NULL;                                                               \
+  }
+
+AggPipelineNode *__buildSumFunc(AggParseNode *n, void *ctx) {
+
+  __AGG_VERIFY_ARGS(n->fn, 1);
+
+  AggPipelineNode *in = Agg_BuildPipeline(__getArg(n, 0), ctx);
+
+  return Agg_SumFunc(in);
+}
+
+AggPipelineNode *Agg_AverageFunc(AggPipelineNode *in) {
+
   __agg_sumCtx *ac = malloc(sizeof(__agg_sumCtx));
   ac->num = 0;
   ac->total = 0;
 
   return Agg_Reduce(in, ac, __agg_sumStep, __ag_avgFinalize,
                     __agg_sumReduceNext, 1);
+}
+
+AggPipelineNode *__buildAvgFunc(AggParseNode *n, void *ctx) {
+
+  __AGG_VERIFY_ARGS(n->fn, 1);
+
+  AggPipelineNode *in = Agg_BuildPipeline(__getArg(n, 0), ctx);
+
+  return Agg_AverageFunc(in);
+}
+
+void Agg_RegisterFuncs() {
+  Agg_RegisterFunc("avg", __buildAvgFunc);
+  Agg_RegisterFunc("sum", __buildSumFunc);
+
+  // IDX.AGGREGATE COUNT_DISTINCT(JOIN_PRIMARY(browsers, name, browserId)) FROM
+  // users WHERE "name='foo'"
 }

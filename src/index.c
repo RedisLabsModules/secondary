@@ -116,7 +116,7 @@ size_t compoundIndex_Len(void *ctx) {
 
 SICursor *compoundIndex_Find(void *ctx, SIQuery *q);
 void compoundIndex_Free(void *ctx);
-void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx);
+void compoundIndex_Traverse(void *ctx, SIIndexVisitor cb, void *visitCtx);
 
 int _cmpIds(void *p1, void *p2) {
   SIId id1 = p1, id2 = p2;
@@ -133,35 +133,35 @@ SIIndex SI_NewCompoundIndex(SISpec spec) {
 
   for (u_int8_t i = 0; i < spec.numProps; i++) {
     switch (spec.properties[i].type) {
-      case T_STRING:
-        idx->cmpFuncs[i] = si_cmp_string;
-        break;
-      case T_INT32:
-        idx->cmpFuncs[i] = si_cmp_int;
-        break;
-      case T_INT64:
-        idx->cmpFuncs[i] = si_cmp_long;
-        break;
-      case T_FLOAT:
-        idx->cmpFuncs[i] = si_cmp_float;
-        break;
-      case T_DOUBLE:
-        idx->cmpFuncs[i] = si_cmp_double;
-        break;
-      case T_BOOL:
-        idx->cmpFuncs[i] = si_cmp_int;
-        break;
-      case T_TIME:
-        idx->cmpFuncs[i] = si_cmp_time;
-        break;
-      case T_UINT:
-        idx->cmpFuncs[i] = si_cmp_uint;
-        break;
+    case T_STRING:
+      idx->cmpFuncs[i] = si_cmp_string;
+      break;
+    case T_INT32:
+      idx->cmpFuncs[i] = si_cmp_int;
+      break;
+    case T_INT64:
+      idx->cmpFuncs[i] = si_cmp_long;
+      break;
+    case T_FLOAT:
+      idx->cmpFuncs[i] = si_cmp_float;
+      break;
+    case T_DOUBLE:
+      idx->cmpFuncs[i] = si_cmp_double;
+      break;
+    case T_BOOL:
+      idx->cmpFuncs[i] = si_cmp_int;
+      break;
+    case T_TIME:
+      idx->cmpFuncs[i] = si_cmp_time;
+      break;
+    case T_UINT:
+      idx->cmpFuncs[i] = si_cmp_uint;
+      break;
 
-      default:  // TODO - implement all other types here
+    default: // TODO - implement all other types here
 
-        printf("unimplemented type %d! PANIC!\n", spec.properties[i].type);
-        exit(-1);
+      printf("unimplemented type %d! PANIC!\n", spec.properties[i].type);
+      exit(-1);
     }
   }
 
@@ -209,39 +209,39 @@ int evalPredicate(SIPredicate *pred, SIMultiKey *mk, SICmpFuncVector *fv) {
   SIKeyCmpFunc cmp = fv->cmpFuncs[pred->propId];
 
   switch (pred->t) {
-    // compare equals
-    case PRED_EQ:
-      return 0 == cmp(&mk->keys[pred->propId], &pred->eq.v, NULL);
+  // compare equals
+  case PRED_EQ:
+    return 0 == cmp(&mk->keys[pred->propId], &pred->eq.v, NULL);
 
-    // compare IN
-    case PRED_IN:
-      for (int i = 0; i < pred->in.numvals; i++) {
-        if (cmp(&mk->keys[pred->propId], &pred->in.vals[i], NULL) != 0) {
-          return 0;
-        }
-      }
-      // we only return true if the IN actually had values in it
-      return pred->in.numvals > 0;
-      break;
-
-    // compare !=
-    case PRED_NE:
-      return cmp(&mk->keys[pred->propId], &pred->eq.v, NULL) != 0;
-
-    // compare range
-    case PRED_RNG: {
-      int minc = cmp(&mk->keys[pred->propId], &pred->rng.min, NULL);
-      if (minc < 0 || (minc == 0 && pred->rng.minExclusive)) {
+  // compare IN
+  case PRED_IN:
+    for (int i = 0; i < pred->in.numvals; i++) {
+      if (cmp(&mk->keys[pred->propId], &pred->in.vals[i], NULL) != 0) {
         return 0;
       }
-      int maxc = cmp(&mk->keys[pred->propId], &pred->rng.max, NULL);
-      if (maxc > 0 || (maxc == 0 && pred->rng.maxExclusive)) {
-        return 0;
-      }
-      return 1;
     }
-    default:
-      printf("Unssupported filter predicate %d\n", pred->t);
+    // we only return true if the IN actually had values in it
+    return pred->in.numvals > 0;
+    break;
+
+  // compare !=
+  case PRED_NE:
+    return cmp(&mk->keys[pred->propId], &pred->eq.v, NULL) != 0;
+
+  // compare range
+  case PRED_RNG: {
+    int minc = cmp(&mk->keys[pred->propId], &pred->rng.min, NULL);
+    if (minc < 0 || (minc == 0 && pred->rng.minExclusive)) {
+      return 0;
+    }
+    int maxc = cmp(&mk->keys[pred->propId], &pred->rng.max, NULL);
+    if (maxc > 0 || (maxc == 0 && pred->rng.maxExclusive)) {
+      return 0;
+    }
+    return 1;
+  }
+  default:
+    printf("Unssupported filter predicate %d\n", pred->t);
   }
   return 0;
 }
@@ -315,7 +315,8 @@ SIId scan_next(void *ctx, void **key) {
   }
 
   // set the key value to NULL by default
-  if (key != NULL) *key = NULL;
+  if (key != NULL)
+    *key = NULL;
 
   return NULL;
 }
@@ -357,7 +358,7 @@ error:
   return c;
 }
 
-void compoundIndex_Traverse(void *ctx, IndexVisitor cb, void *visitCtx) {
+void compoundIndex_Traverse(void *ctx, SIIndexVisitor cb, void *visitCtx) {
   compoundIndex *idx = ctx;
 
   skiplistIterator it = skiplistIterateAll(idx->sl);
@@ -385,7 +386,8 @@ void compoundIndex_Free(void *ctx) {
     for (u_int i = 0; i < n->numVals; i++) {
       free(n->vals[i]);
     }
-    if (n->obj) SIMultiKey_Free(n->obj);
+    if (n->obj)
+      SIMultiKey_Free(n->obj);
 
     skiplistIterator_Next(&it);
   }

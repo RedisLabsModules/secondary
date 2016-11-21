@@ -43,6 +43,9 @@ AggParseNode *NewAggFuncNode(char *name, Vector *v);
 AggParseNode *NewAggLiteralNode(SIValue v);
 AggParseNode *NewAggIdentifierNode(char *name, int id);
 void AggParseNode_print(AggParseNode *n, int depth);
+
+AggParseNode *Agg_ParseQuery(const char *c, size_t len, char **msg);
+
 // ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right);
 // ParseNode *NewPredicateNode(property p, int op, SIValue v);
 // ParseNode *NewInPredicateNode(property p, int op, SIValueVector v);

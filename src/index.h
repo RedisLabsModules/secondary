@@ -20,9 +20,10 @@ typedef struct {
   size_t total;
   int error;
   void *ctx;
-  /* Next is a function that iterates the cursor to the next valid value. If key
-   * is not NULL, we set the pointer's value to the index's internal key */
-  SIId (*Next)(void *ctx, void **key);
+  /* Next is a function that iterates the cursor to the next valid value. If
+   * entry is not NULL, we set the pointer's value to the index's internal key
+   */
+  SIId (*Next)(void *ctx, void **entry);
 
   /* Release is a callback that releases any memory and resources allocated for
    * the cursor */
@@ -39,7 +40,7 @@ typedef struct {
 
   int (*Apply)(void *ctx, SIChangeSet cs);
   SICursor *(*Find)(void *ctx, SIQuery *q);
-  void (*Traverse)(void *ctx, IndexVisitor cb, void *visitCtx);
+  void (*Traverse)(void *ctx, SIIndexVisitor cb, void *visitCtx);
   size_t (*Len)(void *ctx);
   void (*Free)(void *ctx);
 } SIIndex;

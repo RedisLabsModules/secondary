@@ -41,11 +41,10 @@ typedef struct pipelineNode {
   struct pipelineNode *in;
 } AggPipelineNode;
 
-AggPipelineNode Agg_Map(AggPipelineNode *in, void *ctx, StepFunc f,
-                        int resultSize);
-AggPipelineNode Agg_Reduce(AggPipelineNode *in, void *ctx, StepFunc f,
-                           ReduceFunc finalize, ReduceFunc reduce,
-                           int resultSize);
+AggPipelineNode *Agg_Map(AggPipelineNode *in, void *ctx, StepFunc f,
+                         int resultSize);
+AggPipelineNode *Agg_Reduce(AggPipelineNode *in, void *ctx, StepFunc f,
+                            ReduceFunc finalize, ReduceFunc reduce,
+                            int resultSize);
 
-AggPipelineNode Agg_PropertyGetter(SICursor *c, int propId);
 #endif // !__SI_AGREGATE_H__

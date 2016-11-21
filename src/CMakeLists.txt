@@ -22,8 +22,17 @@ set(_secondary_files
             ../src/rmutil/vector.c
             ../src/rmutil/alloc.c
             ../src/skiplist/skiplist.c
+
             ../src/aggregate/aggregate.c
             ../src/aggregate/functions.c
+            ../src/aggregate/pipeline.c
+            ../src/aggregate/property_getter.c
+            ../src/aggregate/parser/aggregation.c
+            ../src/aggregate/parser/lex.yyagg.c
+            ../src/aggregate/parser/ast.c
+
+
+            
             )
 
 

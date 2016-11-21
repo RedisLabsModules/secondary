@@ -1,8 +1,6 @@
 #define __AGGREGATE_C__
 #include "agg_ctx.h"
 #include "aggregate.h"
-#include "../index.h"
-#include "../key.h"
 #include <stdio.h>
 
 int __agg_mapper_next(AggPipelineNode *ctx) {
@@ -17,8 +15,8 @@ int __agg_mapper_next(AggPipelineNode *ctx) {
   return rc;
 }
 
-AggPipelineNode Agg_Map(AggPipelineNode *in, void *ctx, StepFunc f,
-                        int resultSize) {
+AggPipelineNode *Agg_Map(AggPipelineNode *in, void *ctx, StepFunc f,
+                         int resultSize) {
 
   AggCtx *ac = malloc(sizeof(AggCtx));
   ac->state = AGG_STATE_INIT;
@@ -27,7 +25,9 @@ AggPipelineNode Agg_Map(AggPipelineNode *in, void *ctx, StepFunc f,
   ac->result = SI_NewTuple(resultSize);
   ac->Step = f;
   ac->Finalize = NULL;
-  return (AggPipelineNode){.ctx = ac, .Next = __agg_mapper_next, .in = in};
+  AggPipelineNode *ret = malloc(sizeof(AggPipelineNode));
+  *ret = (AggPipelineNode){.ctx = ac, .Next = __agg_mapper_next, .in = in};
+  return ret;
 }
 
 int __agg_reducer_next(AggPipelineNode *n) {
@@ -72,38 +72,16 @@ int __agg_reducer_next(AggPipelineNode *n) {
   return n->ctx->ReduceNext(n->ctx);
 }
 
-AggPipelineNode Agg_Reduce(AggPipelineNode *in, void *ctx, StepFunc f,
-                           ReduceFunc finalize, ReduceFunc reduce,
-                           int resultSize) {
+AggPipelineNode *Agg_Reduce(AggPipelineNode *in, void *ctx, StepFunc f,
+                            ReduceFunc finalize, ReduceFunc reduce,
+                            int resultSize) {
   AggCtx *ac = Agg_NewCtx(ctx, resultSize);
   ac->Step = f;
   ac->Finalize = finalize;
   ac->ReduceNext = reduce;
-  return (AggPipelineNode){.ctx = ac, .Next = __agg_reducer_next, .in = in};
-}
-
-/* A sequence pseudo aggregator that fetches the values of a property */
-typedef struct {
-  SICursor *c;
-  int propId;
-} __si_propGetCtx;
-
-/* Next implementation on a the property getter, just yields the next value from
- * the cursor */
-int __agg_propget_next(AggPipelineNode *n) {
-  __si_propGetCtx *pgc = Agg_FuncCtx(n->ctx);
-  SICursor *c = pgc->c;
-
-  void *pk = NULL;
-  SIId id = c->Next(c->ctx, &pk);
-  printf("pg get: %s\n", id);
-  if (!id || !pk) {
-    return AGG_EOF;
-  }
-
-  SIMultiKey_Print((SIMultiKey *)pk);
-  Agg_SetResult(n->ctx, ((SIMultiKey *)pk)->keys[pgc->propId]);
-  return AGG_OK;
+  AggPipelineNode *ret = malloc(sizeof(AggPipelineNode));
+  *ret = (AggPipelineNode){.ctx = ac, .Next = __agg_reducer_next, .in = in};
+  return ret;
 }
 
 AggCtx *Agg_NewCtx(void *fctx, int resultSize) {
@@ -116,16 +94,6 @@ AggCtx *Agg_NewCtx(void *fctx, int resultSize) {
   ac->Finalize = NULL;
   ac->ReduceNext = NULL;
   return ac;
-}
-
-AggPipelineNode Agg_PropertyGetter(SICursor *c, int propId) {
-  __si_propGetCtx *pgc = malloc(sizeof(__si_propGetCtx));
-  pgc->c = c;
-  pgc->propId = propId;
-
-  AggCtx *ac = Agg_NewCtx(pgc, 1);
-
-  return (AggPipelineNode){.ctx = ac, .Next = __agg_propget_next, .in = NULL};
 }
 
 inline void Agg_SetResult(struct AggCtx *ctx, SIValue v) {

@@ -12,10 +12,10 @@
 
     //yyerror(yytext);
 
-    int len =strlen(yytext)+100; 
+    int len =strlen(yyaggtext)+100; 
     char msg[len];
 
-    snprintf(msg, len, "Syntax error in AGGREGATE line %d near '%s'", yylineno, yytext);
+    snprintf(msg, len, "Syntax error in AGGREGATE line %d near '%s'", yyagglineno, yyaggtext);
 
     ctx->ok = 0;
     ctx->errorMsg = strdup(msg);
@@ -31,8 +31,8 @@
 #include "ast.h"
 #include "../../rmutil/alloc.h"
 
-extern int yylineno;
-extern char *yytext;
+extern int yyagglineno;
+extern char *yyaggtext;
 
 typedef struct {
     AggParseNode *root;
@@ -59,6 +59,7 @@ func(A) ::= ident(B) arglist(C). {
 }
 
 // property enumerator
+// TODO: separate ident and enum
 ident(A) ::= ENUMERATOR(B). { A = NewAggIdentifierNode(NULL, B.intval);  }
 // string identifier
 ident(A) ::= IDENTT(B). { A = NewAggIdentifierNode(B.strval, 0);  }
@@ -107,44 +108,40 @@ multivals(A) ::= multivals(B) COMMA arg(C). {
 
   /* Definitions of flex stuff */
  // extern FILE *yyin;
-  typedef struct yy_buffer_state *YY_BUFFER_STATE;
-  int             yylex( void );
-  YY_BUFFER_STATE yy_scan_string( const char * );
-  YY_BUFFER_STATE yy_scan_bytes( const char *, size_t );
-  void            yy_delete_buffer( YY_BUFFER_STATE );
+  typedef struct yyagg_buffer_state *YY_BUFFER_STATE;
+  int             yyagglex( void );
+  YY_BUFFER_STATE yyagg_scan_string( const char * );
+  YY_BUFFER_STATE yyagg_scan_bytes( const char *, size_t );
+  void            yyagg_delete_buffer( YY_BUFFER_STATE );
   
   
 
-
-int main(int argc, char **argv) {
-
-    const char *c = argc > 1 ? argv[1] :  "avg(1)";
-    char *e = NULL;
-    char **err = &e;
+AggParseNode *Agg_ParseQuery(const char *c, size_t len, char **err)  {
 
     //printf("Parsing query %s\n", c);
-    yy_scan_bytes(c, strlen(c));
-    void* pParser = ParseAlloc (malloc);        
+    yyagg_scan_bytes(c, strlen(c));
+    void* pParser = agg_ParseAlloc (malloc);        
     int t = 0;
 
     parseCtx ctx = {.root = NULL, .ok = 1, .errorMsg = NULL };
     //AggParseNode *ret = NULL;
     //ParserFree(pParser);
-    while (ctx.ok && 0 != (t = yylex())) {
-        Parse(pParser, t, tok, &ctx);                
+    while (ctx.ok && 0 != (t = yyagglex())) {
+        agg_Parse(pParser, t, tok, &ctx);                
     }
     if (ctx.ok) {
-        Parse (pParser, 0, tok, &ctx);
+        agg_Parse (pParser, 0, tok, &ctx);
         if (ctx.root)
             AggParseNode_print(ctx.root, 0);
     }
             
 
-    ParseFree(pParser, free);
+    agg_ParseFree(pParser, free);
     if (err) {
         *err = ctx.errorMsg;
     }
     printf("Err: %s\n", *err);
+    return ctx.root;
   }
    
 
