@@ -10,39 +10,39 @@
 #include "../../value.h"
 
 typedef enum {
-  N_FUNC,
-  N_LITERAL,
-  N_IDENT,
-} ParseNodeType;
+  AGG_N_FUNC,
+  AGG_N_LITERAL,
+  AGG_N_IDENT,
+} AggParseNodeType;
 
 struct parseNode;
 
 typedef struct {
   char *name;
   int id;
-} IdentifierNode;
+} AggIdentifierNode;
 
-typedef struct { SIValue v; } LiteralNode;
+typedef struct { SIValue v; } AggLiteralNode;
 
 typedef struct {
   char *name;
   Vector *args;
-} FuncNode;
+} AggFuncNode;
 
 typedef struct parseNode {
   union {
-    IdentifierNode ident;
-    FuncNode fn;
-    LiteralNode lit;
+    AggIdentifierNode ident;
+    AggFuncNode fn;
+    AggLiteralNode lit;
   };
-  ParseNodeType t;
-} ParseNode;
+  AggParseNodeType t;
+} AggParseNode;
 
-void ParseNode_Free(ParseNode *pn);
-ParseNode *NewFuncNode(char *name, Vector *v);
-ParseNode *NewLiteralNode(SIValue v);
-ParseNode *NewIdentifierNode(char *name, int id);
-void ParseNode_print(ParseNode *n, int depth);
+void AggParseNode_Free(AggParseNode *pn);
+AggParseNode *NewAggFuncNode(char *name, Vector *v);
+AggParseNode *NewAggLiteralNode(SIValue v);
+AggParseNode *NewAggIdentifierNode(char *name, int id);
+void AggParseNode_print(AggParseNode *n, int depth);
 // ParseNode *NewConditionNode(ParseNode *left, int op, ParseNode *right);
 // ParseNode *NewPredicateNode(property p, int op, SIValue v);
 // ParseNode *NewInPredicateNode(property p, int op, SIValueVector v);

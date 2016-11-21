@@ -4,7 +4,7 @@
 /* First off, code is included that follows the "include" declaration
 ** in the input grammar file. */
 #include <stdio.h>
-#line 23 "aggregation.y"
+#line 24 "aggregation.y"
    
 
 #include <stdlib.h>
@@ -19,7 +19,7 @@ extern int yylineno;
 extern char *yytext;
 
 typedef struct {
-    ParseNode *root;
+    AggParseNode *root;
     int ok;
     char *errorMsg;
 } parseCtx;
@@ -27,7 +27,8 @@ typedef struct {
 
 void yyerror(char *s);
     
-#line 31 "aggregation.c"
+
+#line 32 "aggregation.c"
 /* Next is all token values, in a form suitable for use by makeheaders.
 ** This section will be null unless lemon is run with the -m switch.
 */
@@ -78,15 +79,14 @@ void yyerror(char *s);
 **                       defined, then do no error processing.
 */
 #define YYCODETYPE unsigned char
-#define YYNOCODE 19
+#define YYNOCODE 21
 #define YYACTIONTYPE unsigned char
 #define ParseTOKENTYPE Token
 typedef union {
   int yyinit;
   ParseTOKENTYPE yy0;
-  ParseNode* yy4;
-  Vector * yy10;
-  ParseNode * yy36;
+  Vector * yy6;
+  AggParseNode* yy11;
 } YYMINORTYPE;
 #ifndef YYSTACKDEPTH
 #define YYSTACKDEPTH 100
@@ -95,8 +95,8 @@ typedef union {
 #define ParseARG_PDECL , parseCtx *ctx 
 #define ParseARG_FETCH  parseCtx *ctx  = yypParser->ctx 
 #define ParseARG_STORE yypParser->ctx  = ctx 
-#define YYNSTATE 24
-#define YYNRULE 15
+#define YYNSTATE 23
+#define YYNRULE 16
 #define YY_NO_ACTION      (YYNSTATE+YYNRULE+2)
 #define YY_ACCEPT_ACTION  (YYNSTATE+YYNRULE+1)
 #define YY_ERROR_ACTION   (YYNSTATE+YYNRULE)
@@ -165,37 +165,37 @@ static const YYMINORTYPE yyzerominor = { 0 };
 **                     shifting non-terminals after a reduce.
 **  yy_default[]       Default action for each state.
 */
-#define YY_ACTTAB_COUNT (35)
+#define YY_ACTTAB_COUNT (33)
 static const YYACTIONTYPE yy_action[] = {
- /*     0 */    22,   21,   20,   19,   18,   11,   10,   22,   21,   20,
- /*    10 */    19,   18,    6,   24,    7,    8,   40,    9,    5,   17,
- /*    20 */     3,   15,    2,   13,    4,   11,   10,   23,    1,   12,
- /*    30 */    16,   41,   41,   41,   14,
+ /*     0 */    21,   20,   17,   16,   15,   14,   13,   18,    4,   23,
+ /*    10 */     6,   19,    7,   18,    4,    1,   11,   19,   18,    4,
+ /*    20 */    41,    9,   19,   22,   40,    8,    5,   12,    3,   10,
+ /*    30 */     2,   21,   20,
 };
 static const YYCODETYPE yy_lookahead[] = {
- /*     0 */     4,    5,    6,    7,    8,    9,   10,    4,    5,    6,
- /*    10 */     7,    8,   14,    0,   16,   17,   12,   13,   14,    2,
- /*    20 */     3,    2,    3,    2,    3,    9,   10,   15,    1,   14,
- /*    30 */    16,   18,   18,   18,   16,
+ /*     0 */     5,    6,    7,    8,    9,   10,   11,   14,   15,    0,
+ /*    10 */    17,   18,   19,   14,   15,    1,   17,   18,   14,   15,
+ /*    20 */    20,   17,   18,   16,   13,   14,   15,    2,    3,    2,
+ /*    30 */     3,    5,    6,
 };
-#define YY_SHIFT_USE_DFLT (-5)
-#define YY_SHIFT_COUNT (9)
-#define YY_SHIFT_MIN   (-4)
+#define YY_SHIFT_USE_DFLT (-6)
+#define YY_SHIFT_COUNT (8)
+#define YY_SHIFT_MIN   (-5)
 #define YY_SHIFT_MAX   (27)
 static const signed char yy_shift_ofst[] = {
- /*     0 */    16,   -4,    3,    3,   16,   27,   21,   19,   17,   13,
+ /*     0 */    26,   -5,   -5,   -5,   14,   14,   27,   25,    9,
 };
-#define YY_REDUCE_USE_DFLT (-3)
+#define YY_REDUCE_USE_DFLT (-8)
 #define YY_REDUCE_COUNT (5)
-#define YY_REDUCE_MIN   (-2)
-#define YY_REDUCE_MAX   (18)
+#define YY_REDUCE_MIN   (-7)
+#define YY_REDUCE_MAX   (11)
 static const signed char yy_reduce_ofst[] = {
- /*     0 */     4,   -2,   18,   14,   15,   12,
+ /*     0 */    11,   -7,    4,   -1,    7,    7,
 };
 static const YYACTIONTYPE yy_default[] = {
- /*     0 */    39,   39,   39,   39,   39,   39,   39,   39,   39,   39,
- /*    10 */    38,   37,   35,   33,   34,   32,   36,   31,   30,   29,
- /*    20 */    28,   27,   26,   25,
+ /*     0 */    39,   39,   39,   39,   29,   39,   39,   39,   39,   37,
+ /*    10 */    36,   38,   35,   34,   33,   32,   31,   30,   28,   27,
+ /*    20 */    26,   25,   24,
 };
 
 /* The next table maps tokens into fallback tokens.  If a construct
@@ -289,10 +289,10 @@ void ParseTrace(FILE *TraceFILE, char *zTracePrompt){
 ** are required.  The following table supplies these names */
 static const char *const yyTokenName[] = { 
   "$",             "LP",            "RP",            "COMMA",       
-  "INTEGER",       "STRING",        "FLOAT",         "TRUE",        
-  "FALSE",         "ENUMERATOR",    "IDENTT",        "error",       
-  "query",         "func",          "ident",         "vallist",     
-  "value",         "multivals",   
+  "IDENT",         "ENUMERATOR",    "IDENTT",        "INTEGER",     
+  "STRING",        "FLOAT",         "TRUE",          "FALSE",       
+  "error",         "query",         "func",          "ident",       
+  "arglist",       "arg",           "value",         "multivals",   
 };
 #endif /* NDEBUG */
 
@@ -301,20 +301,21 @@ static const char *const yyTokenName[] = {
 */
 static const char *const yyRuleName[] = {
  /*   0 */ "query ::= func",
- /*   1 */ "func ::= ident vallist",
- /*   2 */ "value ::= INTEGER",
- /*   3 */ "value ::= STRING",
- /*   4 */ "value ::= FLOAT",
- /*   5 */ "value ::= TRUE",
- /*   6 */ "value ::= FALSE",
- /*   7 */ "vallist ::= LP multivals RP",
- /*   8 */ "vallist ::= LP value RP",
- /*   9 */ "vallist ::= LP ident RP",
- /*  10 */ "multivals ::= value COMMA value",
- /*  11 */ "multivals ::= ident COMMA ident",
- /*  12 */ "multivals ::= multivals COMMA value",
- /*  13 */ "ident ::= ENUMERATOR",
- /*  14 */ "ident ::= IDENTT",
+ /*   1 */ "func ::= ident arglist",
+ /*   2 */ "ident ::= ENUMERATOR",
+ /*   3 */ "ident ::= IDENTT",
+ /*   4 */ "arg ::= value",
+ /*   5 */ "arg ::= func",
+ /*   6 */ "arg ::= ident",
+ /*   7 */ "value ::= INTEGER",
+ /*   8 */ "value ::= STRING",
+ /*   9 */ "value ::= FLOAT",
+ /*  10 */ "value ::= TRUE",
+ /*  11 */ "value ::= FALSE",
+ /*  12 */ "arglist ::= LP multivals RP",
+ /*  13 */ "arglist ::= LP arg RP",
+ /*  14 */ "multivals ::= arg COMMA arg",
+ /*  15 */ "multivals ::= multivals COMMA arg",
 };
 #endif /* NDEBUG */
 
@@ -393,28 +394,25 @@ static void yy_destructor(
     ** which appear on the RHS of the rule, but which are not used
     ** inside the C code.
     */
-    case 13: /* func */
+      /* Default NON-TERMINAL Destructor */
+    case 12: /* error */
+    case 13: /* query */
+    case 14: /* func */
+    case 15: /* ident */
+    case 17: /* arg */
+    case 18: /* value */
 {
-#line 53 "aggregation.y"
- ParseNode_Free((yypminor->yy4)); 
-#line 401 "aggregation.c"
+#line 52 "aggregation.y"
+ AggParseNode_Free((yypminor->yy11)); 
+#line 408 "aggregation.c"
 }
       break;
-    case 14: /* ident */
+    case 16: /* arglist */
+    case 19: /* multivals */
 {
-#line 111 "aggregation.y"
-
-   ParseNode_Free((yypminor->yy36));
-
-#line 410 "aggregation.c"
-}
-      break;
-    case 15: /* vallist */
-    case 17: /* multivals */
-{
-#line 72 "aggregation.y"
-Vector_Free((yypminor->yy10));
-#line 418 "aggregation.c"
+#line 82 "aggregation.y"
+Vector_Free((yypminor->yy6));
+#line 416 "aggregation.c"
 }
       break;
     default:  break;   /* If no destructor action specified: do nothing */
@@ -652,21 +650,22 @@ static const struct {
   YYCODETYPE lhs;         /* Symbol on the left-hand side of the rule */
   unsigned char nrhs;     /* Number of right-hand side symbols in the rule */
 } yyRuleInfo[] = {
-  { 12, 1 },
-  { 13, 2 },
-  { 16, 1 },
-  { 16, 1 },
-  { 16, 1 },
-  { 16, 1 },
-  { 16, 1 },
-  { 15, 3 },
-  { 15, 3 },
-  { 15, 3 },
-  { 17, 3 },
-  { 17, 3 },
-  { 17, 3 },
-  { 14, 1 },
-  { 14, 1 },
+  { 13, 1 },
+  { 14, 2 },
+  { 15, 1 },
+  { 15, 1 },
+  { 17, 1 },
+  { 17, 1 },
+  { 17, 1 },
+  { 18, 1 },
+  { 18, 1 },
+  { 18, 1 },
+  { 18, 1 },
+  { 18, 1 },
+  { 16, 3 },
+  { 16, 3 },
+  { 19, 3 },
+  { 19, 3 },
 };
 
 static void yy_accept(yyParser*);  /* Forward Declaration */
@@ -722,96 +721,91 @@ static void yy_reduce(
   **     break;
   */
       case 0: /* query ::= func */
-#line 50 "aggregation.y"
-{ ctx->root = yymsp[0].minor.yy4; }
-#line 728 "aggregation.c"
+#line 54 "aggregation.y"
+{ ctx->root = yymsp[0].minor.yy11; }
+#line 727 "aggregation.c"
         break;
-      case 1: /* func ::= ident vallist */
-#line 55 "aggregation.y"
+      case 1: /* func ::= ident arglist */
+#line 56 "aggregation.y"
 { 
     /* Terminal condition of a single predicate */
-    yygotominor.yy4 = NewFuncNode(yymsp[-1].minor.yy36->ident.name, yymsp[0].minor.yy10);
+    yygotominor.yy11 = NewAggFuncNode(yymsp[-1].minor.yy11->ident.name, yymsp[0].minor.yy6);
 }
-#line 736 "aggregation.c"
+#line 735 "aggregation.c"
         break;
-      case 2: /* value ::= INTEGER */
+      case 2: /* ident ::= ENUMERATOR */
+#line 62 "aggregation.y"
+{ yygotominor.yy11 = NewAggIdentifierNode(NULL, yymsp[0].minor.yy0.intval);  }
+#line 740 "aggregation.c"
+        break;
+      case 3: /* ident ::= IDENTT */
 #line 64 "aggregation.y"
-{  yygotominor.yy36 = NewLiteralNode(SI_LongVal(yymsp[0].minor.yy0.intval)); }
-#line 741 "aggregation.c"
+{ yygotominor.yy11 = NewAggIdentifierNode(yymsp[0].minor.yy0.strval, 0);  }
+#line 745 "aggregation.c"
         break;
-      case 3: /* value ::= STRING */
-#line 65 "aggregation.y"
-{  yygotominor.yy36 = NewLiteralNode(SI_StringValC(strdup(yymsp[0].minor.yy0.strval))); }
-#line 746 "aggregation.c"
-        break;
-      case 4: /* value ::= FLOAT */
-#line 66 "aggregation.y"
-{  yygotominor.yy36 = NewLiteralNode(SI_DoubleVal(yymsp[0].minor.yy0.dval)); }
-#line 751 "aggregation.c"
-        break;
-      case 5: /* value ::= TRUE */
-#line 67 "aggregation.y"
-{ yygotominor.yy36 = NewLiteralNode(SI_BoolVal(1)); }
-#line 756 "aggregation.c"
-        break;
-      case 6: /* value ::= FALSE */
+      case 4: /* arg ::= value */
+      case 5: /* arg ::= func */ yytestcase(yyruleno==5);
+      case 6: /* arg ::= ident */ yytestcase(yyruleno==6);
 #line 68 "aggregation.y"
-{ yygotominor.yy36 = NewLiteralNode(SI_BoolVal(0)); }
-#line 761 "aggregation.c"
+{ yygotominor.yy11 = yymsp[0].minor.yy11; }
+#line 752 "aggregation.c"
         break;
-      case 7: /* vallist ::= LP multivals RP */
+      case 7: /* value ::= INTEGER */
+#line 74 "aggregation.y"
+{  yygotominor.yy11 = NewAggLiteralNode(SI_LongVal(yymsp[0].minor.yy0.intval)); }
+#line 757 "aggregation.c"
+        break;
+      case 8: /* value ::= STRING */
 #line 75 "aggregation.y"
+{  yygotominor.yy11 = NewAggLiteralNode(SI_StringValC(strdup(yymsp[0].minor.yy0.strval))); }
+#line 762 "aggregation.c"
+        break;
+      case 9: /* value ::= FLOAT */
+#line 76 "aggregation.y"
+{  yygotominor.yy11 = NewAggLiteralNode(SI_DoubleVal(yymsp[0].minor.yy0.dval)); }
+#line 767 "aggregation.c"
+        break;
+      case 10: /* value ::= TRUE */
+#line 77 "aggregation.y"
+{ yygotominor.yy11 = NewAggLiteralNode(SI_BoolVal(1)); }
+#line 772 "aggregation.c"
+        break;
+      case 11: /* value ::= FALSE */
+#line 78 "aggregation.y"
+{ yygotominor.yy11 = NewAggLiteralNode(SI_BoolVal(0)); }
+#line 777 "aggregation.c"
+        break;
+      case 12: /* arglist ::= LP multivals RP */
+#line 85 "aggregation.y"
 {
-    printf("VALLIST!\n");
-    yygotominor.yy10 = yymsp[-1].minor.yy10;
+    yygotominor.yy6 = yymsp[-1].minor.yy6;
 }
-#line 769 "aggregation.c"
+#line 784 "aggregation.c"
         break;
-      case 8: /* vallist ::= LP value RP */
-#line 80 "aggregation.y"
+      case 13: /* arglist ::= LP arg RP */
+#line 89 "aggregation.y"
 {
-    printf("Got single value!\n");
-    yygotominor.yy10 = NewVector(ParseNode *, 1);
-    Vector_Push(yygotominor.yy10, yymsp[-1].minor.yy36);
+    yygotominor.yy6 = NewVector(AggParseNode *, 1);
+    Vector_Push(yygotominor.yy6, yymsp[-1].minor.yy11);
 }
-#line 778 "aggregation.c"
+#line 792 "aggregation.c"
         break;
-      case 9: /* vallist ::= LP ident RP */
-#line 86 "aggregation.y"
+      case 14: /* multivals ::= arg COMMA arg */
+#line 94 "aggregation.y"
 {
-    printf("Got single ident!\n");
-    yygotominor.yy10 = NewVector(ParseNode *, 1);
-    Vector_Push(yygotominor.yy10, yymsp[-1].minor.yy36);
+      yygotominor.yy6 = NewVector(AggParseNode *, 2);
+      Vector_Push(yygotominor.yy6, yymsp[-2].minor.yy11);
+      Vector_Push(yygotominor.yy6, yymsp[0].minor.yy11);
 }
-#line 787 "aggregation.c"
+#line 801 "aggregation.c"
         break;
-      case 10: /* multivals ::= value COMMA value */
-      case 11: /* multivals ::= ident COMMA ident */ yytestcase(yyruleno==11);
-#line 92 "aggregation.y"
+      case 15: /* multivals ::= multivals COMMA arg */
+#line 100 "aggregation.y"
 {
-      yygotominor.yy10 = NewVector(ParseNode *, 2);
-      Vector_Push(yygotominor.yy10, yymsp[-2].minor.yy36);
-      Vector_Push(yygotominor.yy10, yymsp[0].minor.yy36);
+      Vector_Push(yymsp[-2].minor.yy6, yymsp[0].minor.yy11);
+      yygotominor.yy6 = yymsp[-2].minor.yy6;
 }
-#line 797 "aggregation.c"
-        break;
-      case 12: /* multivals ::= multivals COMMA value */
-#line 104 "aggregation.y"
-{
-    Vector_Push(yymsp[-2].minor.yy10, yymsp[0].minor.yy36);
-    yygotominor.yy10 = yymsp[-2].minor.yy10;
-}
-#line 805 "aggregation.c"
-        break;
-      case 13: /* ident ::= ENUMERATOR */
-#line 117 "aggregation.y"
-{ yygotominor.yy36 = NewIdentifierNode(NULL, yymsp[0].minor.yy0.intval);  }
-#line 810 "aggregation.c"
-        break;
-      case 14: /* ident ::= IDENTT */
-#line 118 "aggregation.y"
-{ yygotominor.yy36 = NewIdentifierNode(yymsp[0].minor.yy0.strval, 0);  }
-#line 815 "aggregation.c"
+#line 809 "aggregation.c"
         break;
       default:
         break;
@@ -873,7 +867,7 @@ static void yy_syntax_error(
 ){
   ParseARG_FETCH;
 #define TOKEN (yyminor.yy0)
-#line 10 "aggregation.y"
+#line 11 "aggregation.y"
   
 
     //yyerror(yytext);
@@ -885,7 +879,7 @@ static void yy_syntax_error(
 
     ctx->ok = 0;
     ctx->errorMsg = strdup(msg);
-#line 889 "aggregation.c"
+#line 883 "aggregation.c"
   ParseARG_STORE; /* Suppress warning about unused %extra_argument variable */
 }
 
@@ -1076,7 +1070,7 @@ void Parse(
   }while( yymajor!=YYNOCODE && yypParser->yyidx>=0 );
   return;
 }
-#line 122 "aggregation.y"
+#line 106 "aggregation.y"
 
 
   /* Definitions of flex stuff */
@@ -1102,15 +1096,15 @@ int main(int argc, char **argv) {
     int t = 0;
 
     parseCtx ctx = {.root = NULL, .ok = 1, .errorMsg = NULL };
-    //ParseNode *ret = NULL;
+    //AggParseNode *ret = NULL;
     //ParserFree(pParser);
     while (ctx.ok && 0 != (t = yylex())) {
         Parse(pParser, t, tok, &ctx);                
     }
     if (ctx.ok) {
         Parse (pParser, 0, tok, &ctx);
-
-        ParseNode_print(ctx.root, 0);
+        if (ctx.root)
+            AggParseNode_print(ctx.root, 0);
     }
             
 
@@ -1123,4 +1117,4 @@ int main(int argc, char **argv) {
    
 
 
-#line 1127 "aggregation.c"
+#line 1121 "aggregation.c"

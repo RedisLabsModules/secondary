@@ -1,6 +1,7 @@
-
-%left LP RP.
+%nonassoc LP RP.
 %nonassoc COMMA.
+%left IDENT.
+
 //%left PLUS MINUS.
 //%right EXP NOT.
 
@@ -34,7 +35,7 @@ extern int yylineno;
 extern char *yytext;
 
 typedef struct {
-    ParseNode *root;
+    AggParseNode *root;
     int ok;
     char *errorMsg;
 } parseCtx;
@@ -42,81 +43,64 @@ typedef struct {
 
 void yyerror(char *s);
     
+
 } // END %include  
 
 %extra_argument { parseCtx *ctx }
 
+%default_type {AggParseNode*}
+%default_destructor { AggParseNode_Free($$); }
 
 query ::= func(A). { ctx->root = A; }
 
-%type func {ParseNode*}
-%destructor func { ParseNode_Free($$); }
-
-func(A) ::= ident(B) vallist(C). { 
+func(A) ::= ident(B) arglist(C). { 
     /* Terminal condition of a single predicate */
-    A = NewFuncNode(B->ident.name, C);
+    A = NewAggFuncNode(B->ident.name, C);
 }
 
+// property enumerator
+ident(A) ::= ENUMERATOR(B). { A = NewAggIdentifierNode(NULL, B.intval);  }
+// string identifier
+ident(A) ::= IDENTT(B). { A = NewAggIdentifierNode(B.strval, 0);  }
 
-%type value {ParseNode *}
+
+// function argument can be anything
+arg(A) ::= value(B). { A = B; }
+arg(A) ::= func(B). { A = B; }
+arg(A) ::= ident(B). { A = B; }
+
 
 // raw value tokens - int / string / float
-value(A) ::= INTEGER(B). {  A = NewLiteralNode(SI_LongVal(B.intval)); }
-value(A) ::= STRING(B). {  A = NewLiteralNode(SI_StringValC(strdup(B.strval))); }
-value(A) ::= FLOAT(B). {  A = NewLiteralNode(SI_DoubleVal(B.dval)); }
-value(A) ::= TRUE. { A = NewLiteralNode(SI_BoolVal(1)); }
-value(A) ::= FALSE. { A = NewLiteralNode(SI_BoolVal(0)); }
+value(A) ::= INTEGER(B). {  A = NewAggLiteralNode(SI_LongVal(B.intval)); }
+value(A) ::= STRING(B). {  A = NewAggLiteralNode(SI_StringValC(strdup(B.strval))); }
+value(A) ::= FLOAT(B). {  A = NewAggLiteralNode(SI_DoubleVal(B.dval)); }
+value(A) ::= TRUE. { A = NewAggLiteralNode(SI_BoolVal(1)); }
+value(A) ::= FALSE. { A = NewAggLiteralNode(SI_BoolVal(0)); }
 
-%type vallist {Vector *}
+%type arglist {Vector *}
 %type multivals {Vector *}
-%destructor vallist {Vector_Free($$);}
+%destructor arglist {Vector_Free($$);}
 %destructor multivals {Vector_Free($$);}
 
-vallist(A) ::= LP multivals(B) RP. {
-    printf("VALLIST!\n");
+arglist(A) ::= LP multivals(B) RP. {
     A = B;
 }
 
-vallist(A) ::= LP value(B) RP. {
-    printf("Got single value!\n");
-    A = NewVector(ParseNode *, 1);
+arglist(A) ::= LP arg(B) RP. {
+    A = NewVector(AggParseNode *, 1);
     Vector_Push(A, B);
 }
 
-vallist(A) ::= LP ident(B) RP. {
-    printf("Got single ident!\n");
-    A = NewVector(ParseNode *, 1);
-    Vector_Push(A, B);
-}
-
-multivals(A) ::= value(B) COMMA value(C). {
-      A = NewVector(ParseNode *, 2);
+multivals(A) ::= arg(B) COMMA arg(C). {
+      A = NewVector(AggParseNode *, 2);
       Vector_Push(A, B);
       Vector_Push(A, C);
 }
 
-
-multivals(A) ::= ident(B) COMMA ident(C). {
-      A = NewVector(ParseNode *, 2);
-      Vector_Push(A, B);
-      Vector_Push(A, C);
+multivals(A) ::= multivals(B) COMMA arg(C). {
+      Vector_Push(B, C);
+      A = B;
 }
-multivals(A) ::= multivals(B) COMMA value(C). {
-    Vector_Push(B, C);
-    A = B;
-}
-
-
-%type ident {ParseNode *}
-%destructor ident {
-   ParseNode_Free($$);
-}
-
-//value(A) ::= ident(B). { printf("IDENT NODE!\n"); A = B; } 
-// property enumerator
-ident(A) ::= ENUMERATOR(B). { A = NewIdentifierNode(NULL, B.intval);  }
-ident(A) ::= IDENTT(B). { A = NewIdentifierNode(B.strval, 0);  }
-
 
 
 %code {
@@ -144,15 +128,15 @@ int main(int argc, char **argv) {
     int t = 0;
 
     parseCtx ctx = {.root = NULL, .ok = 1, .errorMsg = NULL };
-    //ParseNode *ret = NULL;
+    //AggParseNode *ret = NULL;
     //ParserFree(pParser);
     while (ctx.ok && 0 != (t = yylex())) {
         Parse(pParser, t, tok, &ctx);                
     }
     if (ctx.ok) {
         Parse (pParser, 0, tok, &ctx);
-
-        ParseNode_print(ctx.root, 0);
+        if (ctx.root)
+            AggParseNode_print(ctx.root, 0);
     }
             
 

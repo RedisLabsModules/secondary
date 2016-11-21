@@ -1,42 +1,56 @@
 #include "ast.h"
 
-void ParseNode_Free(ParseNode *pn) {
+void AggParseNode_Free(AggParseNode *pn) {
   if (!pn)
     return;
   switch (pn->t) {
-  case N_FUNC:
+  case AGG_N_FUNC:
+
+    free(pn->fn.name);
+    for (int i = 0; i < Vector_Size(pn->fn.args); i++) {
+      AggParseNode *n = NULL;
+      Vector_Get(pn->fn.args, i, &n);
+      if (n)
+        AggParseNode_Free(n);
+    }
+    Vector_Free(pn->fn.args);
 
     break;
-  case N_LITERAL:
+
+  case AGG_N_LITERAL:
+    SIValue_Free(&pn->lit.v);
     break;
-  case N_IDENT:
+
+  case AGG_N_IDENT:
+    if (pn->ident.name)
+      free(pn->ident.name);
     break;
   }
 
   free(pn);
 }
 
-ParseNode *__newParseNode(ParseNodeType t) {
-  ParseNode *ret = malloc(sizeof(ParseNode));
+AggParseNode *__newAggParseNode(AggParseNodeType t) {
+  AggParseNode *ret = malloc(sizeof(AggParseNode));
   ret->t = t;
   return ret;
 }
 
-ParseNode *NewFuncNode(char *name, Vector *v) {
-  ParseNode *pn = __newParseNode(N_FUNC);
+AggParseNode *NewAggFuncNode(char *name, Vector *v) {
+  AggParseNode *pn = __newAggParseNode(AGG_N_FUNC);
   pn->fn.name = name;
   pn->fn.args = v;
   return pn;
 }
 
-ParseNode *NewLiteralNode(SIValue v) {
-  ParseNode *pn = __newParseNode(N_LITERAL);
+AggParseNode *NewAggLiteralNode(SIValue v) {
+  AggParseNode *pn = __newAggParseNode(AGG_N_LITERAL);
   pn->lit.v = v;
   return pn;
 }
 
-ParseNode *NewIdentifierNode(char *name, int id) {
-  ParseNode *pn = __newParseNode(N_IDENT);
+AggParseNode *NewAggIdentifierNode(char *name, int id) {
+  AggParseNode *pn = __newAggParseNode(AGG_N_IDENT);
   pn->ident.name = name;
   pn->ident.id = id;
   return pn;
@@ -48,19 +62,21 @@ ParseNode *NewIdentifierNode(char *name, int id) {
       printf("  ");                                                            \
   }
 
-void funcNode_print(FuncNode *fn, int depth);
+void funcNode_print(AggFuncNode *fn, int depth);
 
-void ParseNode_print(ParseNode *n, int depth) {
+void AggParseNode_print(AggParseNode *n, int depth) {
   pad(depth);
+
   // printf("(");
   switch (n->t) {
-  case N_FUNC:
+  case AGG_N_FUNC:
     funcNode_print(&n->fn, depth + 1);
     break;
-  case N_IDENT:
-    printf("%s", n->ident.name);
+
+  case AGG_N_IDENT:
+    printf("IDENT{%s}", n->ident.name);
     break;
-  case N_LITERAL: {
+  case AGG_N_LITERAL: {
     static char buf[1024];
     SIValue_ToString(n->lit.v, buf, 1024);
     printf("LITERAL{%s}", buf);
@@ -71,13 +87,13 @@ void ParseNode_print(ParseNode *n, int depth) {
   // printf(")\n");
 }
 
-void funcNode_print(FuncNode *fn, int depth) {
-  pad(depth);
+void funcNode_print(AggFuncNode *fn, int depth) {
+  // pad(depth);
   printf("%s(\n", fn->name);
   for (int i = 0; i < fn->args->top; i++) {
-    ParseNode *pn;
+    AggParseNode *pn;
     Vector_Get(fn->args, i, &pn);
-    ParseNode_print(pn, depth + 1);
+    AggParseNode_print(pn, depth + 1);
   }
   pad(depth);
   printf(")\n");
