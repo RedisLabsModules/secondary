@@ -240,16 +240,19 @@ MU_TEST(testAggregate) {
                  .flags = SI_INDEX_NAMED};
 
   SIIndex idx = SI_NewCompoundIndex(spec);
+  int N = 100;
+  SIChangeSet cs = SI_NewChangeSet(N);
+  char idbf[24], namebuf[24];
+  srand(time(NULL));
+  for (int i = 0; i < N; i++) {
+    sprintf(idbf, "id%d", i);
+    sprintf(namebuf, "user%d", i);
 
-  SIChangeSet cs = SI_NewChangeSet(4);
-  SIChangeSet_AddCahnge(
-      &cs, SI_NewAddChange("id1", 2, SI_StringValC("foo"), SI_IntVal(2)));
-  SIChangeSet_AddCahnge(
-      &cs, SI_NewAddChange("id2", 2, SI_StringValC("bar"), SI_IntVal(4)));
-  SIChangeSet_AddCahnge(
-      &cs, SI_NewAddChange("id3", 2, SI_StringValC("foo"), SI_IntVal(5)));
-  SIChangeSet_AddCahnge(
-      &cs, SI_NewAddChange("id4", 2, SI_StringValC("foxx"), SI_IntVal(10)));
+    SIChangeSet_AddCahnge(&cs, SI_NewAddChange(strdup(idbf), 2,
+                                               SI_StringValC(strdup(namebuf)),
+                                               SI_IntVal(rand() % 20)));
+  }
+
   // SIChangeSet_AddCahnge(&cs,
   //                       SI_NewAddChange("id5", 2, SI_NullVal(),
   //                       SI_IntVal(10)));
@@ -269,7 +272,7 @@ MU_TEST(testAggregate) {
   Agg_RegisterFuncs();
   Agg_RegisterPropertyGetter(Agg_BuildPropertyGetter);
 
-  str = "avg(sum($1))";
+  str = "count_distinct($1)";
 
   AggParseNode *aggASTRoot = Agg_ParseQuery(str, strlen(str), &parseError);
   mu_check(aggASTRoot != NULL);
@@ -278,15 +281,25 @@ MU_TEST(testAggregate) {
   AggPipelineNode *aggPipeline = Agg_BuildPipeline(aggASTRoot, c);
   mu_check(aggPipeline != NULL);
 
+  char buf[1024];
   SITuple *tup;
-  rc = aggPipeline->Next(aggPipeline);
-  if (rc != AGG_OK) {
+  while (AGG_OK == (rc = aggPipeline->Next(aggPipeline))) {
+    Agg_Result(aggPipeline->ctx, &tup);
+    printf("Got result: ");
+    for (int i = 0; i < tup->len; i++) {
+      SIValue_ToString(tup->vals[i], buf, 1024);
+      printf("%s, ", buf);
+    }
+    printf("\n");
+  }
+
+  if (rc != AGG_EOF) {
     printf("Got error: %s\n", AggCtx_Error(aggPipeline->ctx));
   }
-  mu_check(rc == AGG_OK);
-  Agg_Result(aggPipeline->ctx, &tup);
-  printf("%f\n", tup->vals[0].doubleval);
-  mu_assert_double_eq(tup->vals[0].doubleval, 21);
+  mu_check(rc == AGG_EOF);
+  // Agg_Result(aggPipeline->ctx, &tup);
+  // printf("%f\n", tup->vals[0].doubleval);
+  // mu_assert_double_eq(tup->vals[0].doubleval, 21);
 }
 
 ///////////////////////////////////

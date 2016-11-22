@@ -2,6 +2,7 @@
 #include "agg_ctx.h"
 #include "aggregate.h"
 #include <stdio.h>
+#include <stdarg.h>
 
 int __agg_mapper_next(AggPipelineNode *ctx) {
   int rc = ctx->in->Next(ctx->in);
@@ -38,13 +39,13 @@ int __agg_reducer_next(AggPipelineNode *n) {
 
   int rc = AGG_OK;
 
-  printf("ctx state: %d\n", n->ctx->state);
+  // printf("ctx state: %d\n", n->ctx->state);
   // if the aggregation context is in its initial state
   // we need to iterate the input source
   if (n->ctx->state == AGG_STATE_INIT) {
     do {
       rc = n->in->Next(n->in);
-      printf("rc next: %d\n", rc);
+      // printf("rc next: %d\n", rc);
 
       if (rc != AGG_OK) {
         if (rc == AGG_ERR) {
@@ -54,7 +55,7 @@ int __agg_reducer_next(AggPipelineNode *n) {
       }
       SITuple *intup = &n->in->ctx->result;
       rc = n->ctx->Step(n->ctx, intup->vals, intup->len);
-      printf("rc step: %d\n", rc);
+      // printf("rc step: %d\n", rc);
     } while (rc == AGG_OK);
 
     n->ctx->state = AGG_STATE_DONE;
@@ -65,14 +66,13 @@ int __agg_reducer_next(AggPipelineNode *n) {
     }
     // call the finalizer func
     if (AGG_OK != (rc = n->ctx->Finalize(n->ctx))) {
-      printf("rc finalize: %d\n", rc);
+      //      printf("rc finalize: %d\n", rc);
 
       n->ctx->state = AGG_STATE_ERR;
       return rc;
     }
   }
   if (Agg_State(n->ctx) == AGG_STATE_EOF) {
-    printf("reducer at EOF");
     return AGG_EOF;
   }
 
@@ -117,7 +117,16 @@ inline void Agg_SetResult(struct AggCtx *ctx, SIValue v) {
   ctx->result.vals[0] = v;
 }
 
-// void Agg_SetResultTuple(struct AggCtx *, int num, ...);
+void Agg_SetResultTuple(struct AggCtx *ctx, int num, ...) {
+
+  va_list ap;
+  va_start(ap, num);
+  for (int i = 0; i < num; i++) {
+    ctx->result.vals[i] = va_arg(ap, SIValue);
+  }
+  va_end(ap);
+}
+
 int Agg_SetError(AggCtx *ctx, AggError *err) {
   ctx->err = err;
   return AGG_ERR;

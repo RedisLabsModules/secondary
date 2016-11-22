@@ -3,6 +3,11 @@
 #include "rmutil/util.h"
 #include "rmutil/alloc.h"
 #include "hash_index.h"
+#include "aggregate/aggregate.h"
+#include "aggregate/pipeline.h"
+#include "aggregate/functions.h"
+#include "aggregate/parser/ast.h"
+
 /*
 * IDX.CREATE <index_name> {options} SCHEMA
 * [[STRING|INT32|INT64|UINT|BOOL|FLOAT|DOUBLE|TIME] ...]
@@ -11,7 +16,8 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                        int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 4) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   SISpec spec;
   SIIndexKind kind;
@@ -37,7 +43,8 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 4) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key =
       RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -90,7 +97,8 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 int IndexDelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 3) return RedisModule_WrongArity(ctx);
+  if (argc < 3)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key =
       RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -123,7 +131,8 @@ int IndexCardinalityCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                             int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc != 2) return RedisModule_WrongArity(ctx);
+  if (argc != 2)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
@@ -147,7 +156,8 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                        int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 5) return RedisModule_WrongArity(ctx);
+  if (argc < 5)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[2], REDISMODULE_READ);
 
@@ -163,8 +173,8 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   char *parseError = NULL;
   SIQuery q = SI_NewQuery();
   if (!SI_ParseQuery(&q, qstr, len, &idx->spec, &parseError)) {
-    RedisModule_ReplyWithError(
-        ctx, parseError ? parseError : "Error parsing query string");
+    RedisModule_ReplyWithError(ctx, parseError ? parseError
+                                               : "Error parsing query string");
     if (parseError) {
       free(parseError);
     }
@@ -195,7 +205,8 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 6) return RedisModule_WrongArity(ctx);
+  if (argc < 6)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
@@ -231,11 +242,134 @@ int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   return rc;
 }
 
+int __replyWithSIValue(RedisModuleCtx *ctx, SIValue *v) {
+  switch (v->type) {
+  case T_STRING:
+    return RedisModule_ReplyWithSimpleString(ctx, v->stringval.str);
+
+  case T_INT32:
+    return RedisModule_ReplyWithLongLong(ctx, v->intval);
+
+  case T_INT64:
+    return RedisModule_ReplyWithLongLong(ctx, v->longval);
+
+  case T_UINT:
+    return RedisModule_ReplyWithLongLong(ctx, v->uintval);
+
+  case T_TIME:
+    return RedisModule_ReplyWithLongLong(ctx, v->timeval);
+
+  case T_BOOL:
+    RedisModule_ReplyWithSimpleString(ctx, v->boolval ? "true" : "false");
+
+  case T_FLOAT:
+    return RedisModule_ReplyWithDouble(ctx, v->floatval);
+
+  case T_DOUBLE:
+    return RedisModule_ReplyWithDouble(ctx, v->doubleval);
+  case T_INF:
+
+    return RedisModule_ReplyWithSimpleString(ctx, "+inf");
+
+  case T_NEGINF:
+    return RedisModule_ReplyWithSimpleString(ctx, "-inf");
+  case T_NULL:
+  default:
+    return RedisModule_ReplyWithNull(ctx);
+  }
+}
+/* IDX.AGGREGATE {index_name} {aggregation_pipeline} WHERE {predicates} */
+int IndexAggregateCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
+                          int argc) {
+  RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+
+  if (argc < 5)
+    return RedisModule_WrongArity(ctx);
+
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+
+  // make sure it's an index key
+  if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY ||
+      RedisModule_ModuleTypeGetType(key) != IndexType) {
+    return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+  }
+
+  RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
+
+  int wherePos = RMUtil_ArgExists("WHERE", argv, argc, 3);
+  if (!wherePos || wherePos >= argc - 1) {
+    RedisModule_ReplyWithError(ctx, "No Where clause given");
+  }
+
+  size_t len;
+  char *qstr = (char *)RedisModule_StringPtrLen(argv[wherePos + 1], &len);
+  char *parseError = NULL;
+
+  SIQuery q = SI_NewQuery();
+  if (!SI_ParseQuery(&q, qstr, len, &idx->spec, &parseError)) {
+    RedisModule_ReplyWithError(
+        ctx, parseError ? parseError : "Error parsing WHERE query string");
+    if (parseError) {
+      free(parseError);
+    }
+    return REDISMODULE_OK;
+  }
+
+  size_t qlen;
+  const char *aggQuery = RedisModule_StringPtrLen(argv[2], &qlen);
+  AggParseNode *aggASTRoot = Agg_ParseQuery(aggQuery, qlen, &parseError);
+
+  if (aggASTRoot == NULL || parseError != NULL) {
+    RedisModule_ReplyWithError(
+        ctx, parseError ? parseError : "Error parsing aggregation function");
+    if (parseError) {
+      free(parseError);
+    }
+    return REDISMODULE_OK;
+  }
+
+  SICursor *c = idx->idx.Find(idx->idx.ctx, &q);
+  if (c->error != QE_OK) {
+    // TODO: proper error reporting in cursor
+    return RedisModule_ReplyWithError(ctx, "Error executing query");
+  }
+
+  AggPipelineNode *aggPipeline = Agg_BuildPipeline(aggASTRoot, c);
+  if (aggPipeline == NULL) {
+    return RedisModule_ReplyWithError(ctx,
+                                      "Error building aggregation pipeline");
+  }
+
+  RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+  int rc;
+  SITuple *tup;
+  int n = 0;
+  while (AGG_OK == (rc = aggPipeline->Next(aggPipeline))) {
+    Agg_Result(aggPipeline->ctx, &tup);
+    RedisModule_ReplyWithArray(ctx, tup->len);
+    for (int i = 0; i < tup->len; i++) {
+      __replyWithSIValue(ctx, &tup->vals[i]);
+    }
+    n++;
+  }
+  if (rc == AGG_ERR) {
+    AggError *e = AggCtx_Error(aggPipeline->ctx);
+    RedisModule_ReplyWithError(ctx, e ? e : "Error running aggregation");
+    n++;
+  }
+  RedisModule_ReplySetArrayLength(ctx, n);
+
+  // TODO: free pipeline
+  SIQuery_Free(&q);
+  return REDISMODULE_OK;
+}
+
 /* IDX.INTO {index_name} [WHERE ...] [HMSET|HSET|etc...] */
 int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 4) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
@@ -299,7 +433,8 @@ int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_ReplyWithLongLong(ctx, num);
 
 cleanup:
-  if (tx.ctx) free(tx.ctx);
+  if (tx.ctx)
+    free(tx.ctx);
 
   return REDISMODULE_OK;
 }
@@ -309,8 +444,12 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
   if (RedisModule_Init(ctx, "idx", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;
 
+  Agg_RegisterFuncs();
+  Agg_RegisterPropertyGetter(Agg_BuildPropertyGetter);
+
   // register index type
-  if (RedisIndex_Register(ctx) == REDISMODULE_ERR) return REDISMODULE_ERR;
+  if (RedisIndex_Register(ctx) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
 
   if (RedisModule_CreateCommand(ctx, "idx.create", CreateIndexCommand,
                                 "write deny-oom no-cluster", 1, 1,
@@ -344,6 +483,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     return REDISMODULE_ERR;
 
   if (RedisModule_CreateCommand(ctx, "idx.card", IndexCardinalityCommand,
+                                "readonly no-cluster", 1, 1,
+                                1) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
+
+  if (RedisModule_CreateCommand(ctx, "idx.aggregate", IndexAggregateCommand,
                                 "readonly no-cluster", 1, 1,
                                 1) == REDISMODULE_ERR)
     return REDISMODULE_ERR;

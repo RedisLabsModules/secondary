@@ -17,12 +17,12 @@ int __agg_propget_next(AggPipelineNode *n) {
 
   void *pk = NULL;
   SIId id = c->Next(c->ctx, &pk);
-  printf("pg get: %s\n", id);
+  // printf("pg get: %s\n", id);
   if (!id || !pk) {
     return AGG_EOF;
   }
 
-  SIMultiKey_Print((SIMultiKey *)pk);
+  // SIMultiKey_Print((SIMultiKey *)pk);
   Agg_SetResult(n->ctx, ((SIMultiKey *)pk)->keys[pgc->propId]);
   return AGG_OK;
 }

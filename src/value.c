@@ -28,7 +28,6 @@ SIValue SI_TimeVal(time_t t) { return (SIValue){.timeval = t, .type = T_TIME}; }
 inline SIString SI_WrapString(const char *s) {
   int *rc = malloc(sizeof(int));
   *rc = 1;
-  printf("wrapping string %s\n", s);
   return (SIString){(char *)s, strlen(s), rc};
 }
 
