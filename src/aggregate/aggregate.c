@@ -6,12 +6,16 @@
 int __agg_mapper_next(AggPipelineNode *ctx) {
   int rc = ctx->in->Next(ctx->in);
   if (rc != AGG_OK) {
+    if (rc == AGG_ERR) {
+      Agg_SetError(ctx->ctx, AggCtx_Error(ctx->in->ctx));
+    }
     return rc;
   }
   SITuple *intup = &ctx->in->ctx->result;
   while (AGG_SKIP == (rc = ctx->ctx->Step(ctx->ctx, intup->vals, intup->len))) {
     // do nothing if the step returned SKIP
   }
+
   return rc;
 }
 
@@ -43,6 +47,9 @@ int __agg_reducer_next(AggPipelineNode *n) {
       printf("rc next: %d\n", rc);
 
       if (rc != AGG_OK) {
+        if (rc == AGG_ERR) {
+          Agg_SetError(n->ctx, AggCtx_Error(n->in->ctx));
+        }
         break;
       }
       SITuple *intup = &n->in->ctx->result;
@@ -70,6 +77,8 @@ int __agg_reducer_next(AggPipelineNode *n) {
   }
 
   return n->ctx->ReduceNext(n->ctx);
+
+  return rc;
 }
 
 AggPipelineNode *Agg_Reduce(AggPipelineNode *in, void *ctx, StepFunc f,
@@ -96,12 +105,25 @@ AggCtx *Agg_NewCtx(void *fctx, int resultSize) {
   return ac;
 }
 
+void AggCtx_Free(AggCtx *ctx) {
+  if (ctx->err) {
+    free(ctx->err);
+  }
+  SITuple_Free(&ctx->result);
+  free(ctx);
+}
+
 inline void Agg_SetResult(struct AggCtx *ctx, SIValue v) {
   ctx->result.vals[0] = v;
 }
 
 // void Agg_SetResultTuple(struct AggCtx *, int num, ...);
-inline void Agg_SetError(AggCtx *ctx, AggError *err) { ctx->err = err; }
+int Agg_SetError(AggCtx *ctx, AggError *err) {
+  ctx->err = err;
+  return AGG_ERR;
+}
+
+AggError *AggCtx_Error(AggCtx *ctx) { return ctx->err; }
 
 inline void Agg_SetState(AggCtx *ctx, int state) { ctx->state = state; }
 
@@ -112,3 +134,5 @@ inline void *Agg_FuncCtx(AggCtx *ctx) { return ctx->fctx; }
 inline void Agg_EOF(AggCtx *ctx) { ctx->state = AGG_STATE_EOF; }
 
 inline void Agg_Result(AggCtx *ctx, SITuple **tup) { *tup = &ctx->result; }
+
+AggError *Agg_NewError(const char *err) { return (AggError *)strdup(err); }

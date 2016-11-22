@@ -53,6 +53,12 @@ add_custom_command(
                 COMMAND lemon -s parser.y 
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/parser)
 
+add_custom_command(
+                TARGET libsecondary
+                PRE_BUILD
+                COMMAND lex -i -P yyagg aggregation.l
+                COMMAND lemon -s -Ttemplate.c aggregation.y 
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/aggregate/parser)                
 
 add_library(module MODULE
     index_type.c

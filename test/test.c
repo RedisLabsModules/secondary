@@ -269,7 +269,7 @@ MU_TEST(testAggregate) {
   Agg_RegisterFuncs();
   Agg_RegisterPropertyGetter(Agg_BuildPropertyGetter);
 
-  str = "avgv(sum($1))";
+  str = "avg(sum($1))";
 
   AggParseNode *aggASTRoot = Agg_ParseQuery(str, strlen(str), &parseError);
   mu_check(aggASTRoot != NULL);
@@ -280,6 +280,9 @@ MU_TEST(testAggregate) {
 
   SITuple *tup;
   rc = aggPipeline->Next(aggPipeline);
+  if (rc != AGG_OK) {
+    printf("Got error: %s\n", AggCtx_Error(aggPipeline->ctx));
+  }
   mu_check(rc == AGG_OK);
   Agg_Result(aggPipeline->ctx, &tup);
   printf("%f\n", tup->vals[0].doubleval);

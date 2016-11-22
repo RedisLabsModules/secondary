@@ -13,10 +13,11 @@ int __agg_sumStep(AggCtx *ctx, SIValue *argv, int argc) {
   double n;
   if (!SIValue_ToDouble(&argv[0], &n)) {
     if (!SIValue_IsNullPtr(&argv[0])) {
-      printf("value not convertible to double\n");
-
       // not convertible to double!
-      return AGG_ERR;
+      return Agg_SetError(ctx,
+                          "AVG/SUM Could not convert upstream value to double");
+    } else {
+      return AGG_OK;
     }
   }
 
@@ -110,7 +111,4 @@ AggPipelineNode *__buildAvgFunc(AggParseNode *n, void *ctx) {
 void Agg_RegisterFuncs() {
   Agg_RegisterFunc("avg", __buildAvgFunc);
   Agg_RegisterFunc("sum", __buildSumFunc);
-
-  // IDX.AGGREGATE COUNT_DISTINCT(JOIN_PRIMARY(browsers, name, browserId)) FROM
-  // users WHERE "name='foo'"
 }
