@@ -245,3 +245,104 @@ The idea is to do an indexed scan, and for each matching redis object, feed the 
     > |  WEEKDAY(x) | |
          
   
+
+  userId,timestamp
+
+
+  <agg> ::= <expr> | <func> | <pipeline> 
+  <pipeline> ::= <func> "." <func> | <pipeline> -> <func> // recursive  
+  <func> ::= <ident> "(" <arglist> ")" | <ident> "()"
+  <arglist> ::= <expr> {"," <expr> ... }
+  <expr> ::= <func> | <const> | <ident> | <index> | <predicate> | <property>
+  <predicate> ::= <expr> <operator> <expr> | <func>
+  <operator> ::= "=" | "!=" | ">" | "<" | ">=" | "<=" | "BETWEEN" | "IN" | "LIKE" | "MATCH"
+
+
+
+
+  select(userId,timestamp) // => [(uid,ts), ....]
+        .mapElement(1, quantize(3600)) // => [(uid,hour), ...]
+        .unique(0,1) // => {(uid,hour), ...} 
+        .groupBy(1) // => [(hour, [(uid,hour)])]
+        .mapElement(1, reduce(count())) /// [(hour, count), ...]
+        .orderBy(0)
+
+select(userId,timestamp) 
+        transform(quantize(3600), _1) ->
+
+        unique(format("{}::{}", _0 , _1)) ->
+        reduce(countDistinct, _1) ->
+        orderBy(_0, order:"asc");
+
+clientId, joinDate, month, sum
+
+select(clientId, joinDate, month, amount).
+groupBy(@month).                                                    
+.transform(_1, 
+        transform(_1, timediff('months')).alias( _1, @age).         
+        groupBy(@age).                                              
+        transform(_1, reduce(sum)).  // [(age, total)]
+        orderBy(_0) 
+).orderBy(@month)
+
+
+tranformations:
+  zip(seq, seq, ...) -> seq | return a sequence of tuples where each element is the next element of each of the input sequences
+  chain(seq, seq, ...) -> seq | return a sequence of tuples flattening the sequences into one
+  extract(index, ...) -> seq | return a sequence composed of a subset of the elements of the input sequence
+  flatten() -> seq | return a sequence that flatten input tuples into one iterator
+  map(f, [index]) -> seq | apply a mapper func for each element of the input, or a specific element at index
+  filter(pred) -> seq | apply a filter func for each element of the input
+  reduce(f, [index]) -> seq | apply a func of type (v,ac)->ac on each of seq
+  append(expr) | append a constant or the result of a function to each tuple
+  groupBy(seq, index) -> seq<key, seq>
+  orderBy(seq) -> seq
+
+filters:
+  <, <=, >, >=, ==, !=, IN, NOT IN,
+  matches
+  like
+
+reducers:
+  avg
+  sum
+  min
+  MAX
+  len
+  card
+  movavg
+  med
+  stddev
+
+mappers:
+  
+  quantize(x)
+  round
+  floor
+  ceil
+  sqrt
+  log(n)
+  pow(n)
+  
+  +, -, *, / 
+
+
+  lower
+  upper
+  substr
+  format
+
+  day
+  month
+  year
+  hour
+  dow
+
+  
+
+  
+
+
+  
+
+  
