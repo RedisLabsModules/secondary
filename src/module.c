@@ -11,7 +11,8 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                        int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 4) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   SISpec spec;
   SIIndexKind kind;
@@ -37,7 +38,8 @@ int CreateIndexCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 4) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key =
       RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -90,7 +92,8 @@ int IndexAddCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 int IndexDelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 3) return RedisModule_WrongArity(ctx);
+  if (argc < 3)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key =
       RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -123,7 +126,8 @@ int IndexCardinalityCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                             int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc != 2) return RedisModule_WrongArity(ctx);
+  if (argc != 2)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
@@ -142,12 +146,13 @@ int IndexCardinalityCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   return RedisModule_ReplyWithLongLong(ctx, idx->idx.Len(idx->idx.ctx));
 }
 
-/* IDX.SELECT FROM <index_name> WHERE <predicates> [LIMIT offset num] */
+/* IDX.SELECT <index_name> WHERE <predicates> [LIMIT offset num] */
 int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
                        int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 5) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[2], REDISMODULE_READ);
 
@@ -159,12 +164,12 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   RedisIndex *idx = RedisModule_ModuleTypeGetValue(key);
 
   size_t len;
-  char *qstr = (char *)RedisModule_StringPtrLen(argv[4], &len);
+  char *qstr = (char *)RedisModule_StringPtrLen(argv[3], &len);
   char *parseError = NULL;
   SIQuery q = SI_NewQuery();
   if (!SI_ParseQuery(&q, qstr, len, &idx->spec, &parseError)) {
-    RedisModule_ReplyWithError(
-        ctx, parseError ? parseError : "Error parsing query string");
+    RedisModule_ReplyWithError(ctx, parseError ? parseError
+                                               : "Error parsing query string");
     if (parseError) {
       free(parseError);
     }
@@ -195,7 +200,8 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 6) return RedisModule_WrongArity(ctx);
+  if (argc < 6)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
@@ -235,7 +241,8 @@ int IndexFromCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
 
-  if (argc < 4) return RedisModule_WrongArity(ctx);
+  if (argc < 4)
+    return RedisModule_WrongArity(ctx);
 
   RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
@@ -299,7 +306,8 @@ int IndexIntoCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
   RedisModule_ReplyWithLongLong(ctx, num);
 
 cleanup:
-  if (tx.ctx) free(tx.ctx);
+  if (tx.ctx)
+    free(tx.ctx);
 
   return REDISMODULE_OK;
 }
@@ -310,7 +318,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx) {
     return REDISMODULE_ERR;
 
   // register index type
-  if (RedisIndex_Register(ctx) == REDISMODULE_ERR) return REDISMODULE_ERR;
+  if (RedisIndex_Register(ctx) == REDISMODULE_ERR)
+    return REDISMODULE_ERR;
 
   if (RedisModule_CreateCommand(ctx, "idx.create", CreateIndexCommand,
                                 "write deny-oom no-cluster", 1, 1,
