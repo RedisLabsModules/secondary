@@ -58,7 +58,16 @@ Indexes need to be pre-defined with a schema in order to work, but they do not e
 # Building and setting up
 
 1. Clone/download the module source code.
-2. using cmake, boo
+
+2. using cmake, bootstrap and build the project: 
+
+   `cmake build ./ && make all`
+
+3. run redis (unstable or >4.0) with the module library `src/libmodule.so`:
+
+   `redis-server --loadmodule ./src/libmodule.so`
+
+   ​
 
 ## Using Raw Indexes 
 
@@ -159,7 +168,7 @@ Since the modules API cannot yet track changes to keys automatically, the idea i
   A WHERE clause is not necessary - if you just perform a HMSET for example, the index assumes it just needs to index a specific object and takes its key from the command.
 
 
-## WHERE Claus Syntax
+## WHERE Clause Syntax
 
 The WHERE clause query language is a subset of standard SQL, with the currently supported predicates:	
 
@@ -225,6 +234,9 @@ For time typed index properties, we support a few convenience functions for WHER
    # Bad: produces complex filters:
    WHERE "$1 IN ('foo', 'bar') AND ($2 = 13 OR $3 < 4)"
    ```
+
+
+---
 
 
 
@@ -301,6 +313,10 @@ IDX.INTO users_name_age HMSET user1 name "John Doe" age 42
 
 IDX.INTO users_name_age WHERE "name LIKE 'j%'" DEL $
 ```
+
+
+
+----
 
 
 
