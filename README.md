@@ -1,4 +1,4 @@
-# Redis Secondary Indexes
+# Redis Secondary Index Module
 
 This project is a Redis Module that adds the ability to create and query secondary indexes in Redis. 
 
@@ -54,6 +54,11 @@ by proxying ordinary Redis commands, allowing to index HASH objects automaticall
 Indexes need to be pre-defined with a schema in order to work, but they do not enforce a schema. 
 
 
+
+# Building and setting up
+
+1. Clone/download the module source code.
+2. using cmake, boo
 
 ## Using Raw Indexes 
 
@@ -201,41 +206,101 @@ For time typed index properties, we support a few convenience functions for WHER
 
 *  Inequality operators (`!=`, `NOT NULL`) are not yet supported, but the <, > etc operators work fine.
 
-* The `LIKE ` syntax is not compatible to SQL standards. It only supports full equality, or prefix matching with `%` at the end of the string.
+*  The `LIKE ` syntax is not compatible to SQL standards. It only supports full equality, or prefix matching with `%` at the end of the string.
 
-* You can only query the index for properties indexed in it, we do not support full scans. Also `WHERE TRUE` style scans are not supported. A temporary workaround would be to do `$1 >= ''` for strings.
+*  You can only query the index for properties indexed in it, we do not support full scans. Also `WHERE TRUE` style scans are not supported. A temporary workaround would be to do `$1 >= ''` for strings.
 
-* The order of properties in the index affects the query efficiency. We produce scan ranges on the index from the left field onwards. Once we cannot produce efficient scan keys (for example if you search on the first and third field, we can only scan on the first one), the rest of the predicates are evaluated per scanned key, and **actually reduce performance**. A few examples:
+*  The order of properties in the index affects the query efficiency. We produce scan ranges on the index from the left field onwards. Once we cannot produce efficient scan keys (for example if you search on the first and third field, we can only scan on the first one), the rest of the predicates are evaluated per scanned key, and **actually reduce performance**. A few examples:
 
-  ```sql
-  # Good - produces only a single scan key
-  WHERE "$1 = 'foo' AND $2 = 'bar' "
+   ```sql
+   # Good - produces only a single scan key
+   WHERE "$1 = 'foo' AND $2 = 'bar' "
 
-  # Bad - produces a scan key and a filter:
-  WHERE "$1 = 'foo' AND $3 = 'bar'"
+   # Bad - produces a scan key and a filter:
+   WHERE "$1 = 'foo' AND $3 = 'bar'"
 
-  # Good: Produces a few scan ranges:
-  WHERE "$1 IN ('foo', 'bar') AND $2 > 13"
+   # Good: Produces a few scan ranges:
+   WHERE "$1 IN ('foo', 'bar') AND $2 > 13"
 
-  # Bad: produces complex filters:
-  WHERE "$1 IN ('foo', 'bar') AND ($2 = 13 OR $3 < 4)"
-  ```
+   # Bad: produces complex filters:
+   WHERE "$1 IN ('foo', 'bar') AND ($2 = 13 OR $3 < 4)"
+   ```
 
 
 
 ## Full Commands API
 
-### IDX.CREATE index_name [TYPE HASH]  SCHEMA [ [property] TYPE ...]
+### IDX.CREATE index_name [TYPE HASH] [UNIQUE] SCHEMA [ [property] TYPE ...]
 
-### IDX.ADD index_name id val1 val2 ...
+Create and index key `index_name` with a given schema. If `TYPE HASH` is set, the index will have a named schema and can be used to index Hash keys. 
+
+If `TYPE HASH` is not set, it is considered a raw index that can only be used with property ids (`$1, $2, ...`). More options will be available later.
+
+If UNIQUE is set, the index is considered a unique index, and can only hold one id per value tuple.
+
+Examples:
+
+```sql
+# Named Hash index:
+IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32
+
+# Unnamed raw index
+IDX.CREATE raw_index SCHEMA STRING INT32
+
+# Named unique Hash index:
+IDX.CREATE users_email TYPE HASH UNIQUE SCHEMA email STRING
+```
+
+
+See Supported Types for the list of types in the schema.
+
+### IDX.INSERT index_name id val1 val2 ...
+
+**For raw indexes only** - add a value tuple consistent with the index's schema, and link it to the given id. 
+
+Example:
+
+```sql
+IDX.INSERT raw_index myId "foo" 32
+```
+
+### IDX.SELECT index_name WHERE predicates
+
+**For raw indexes** - Select ids stored  in the index based on the WHERE clauses. Returns a list of ids.
+
+> **Note**: Paging is not yet supported but will be soon.
 
 ### IDX.DEL index_name id id ...
 
+**For raw indexes -** Delete ids from the index.
+
 ###  IDX.CARD index_name
+
+Return the number of keys (ids) stored in the index. Only in a unique index it is guaranteed to be the same number of distinct value tuples in the index.
 
 ### IDX.FROM index_name WHERE predicates {ANY REDIS READ COMMAND}
 
+Proxy a Redis read command to all the keys matching the WHERE clause predicates. In the specified command, the `$` character is substituted by the matching Redis key. An array of the responses of running the command per each matching key is returned (it may include errors).
+
+Example:
+
+```sql
+IDX.FROM users_name_age WHERE "name LIKE 'john%'" HGETALL $
+```
+
 ### IDX.INTO index_name [WHERE  predicates] { HASH WRITE COMMAND } 
+
+**For Hash indexes only:** execute a HASH write command, and update the key to reindex the object. Optionally the command (such as HINCRBY) can be executed on any key matching a WHERE predicate, but this is not needed. Normally you would just update the key as you would ordinarily in Redis, and the index will track the changes automatically. 
+
+The supported commands are: `HINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX` and `DEL`.
+
+Examples:
+
+```sql
+IDX.INTO users_name_age HMSET user1 name "John Doe" age 42
+
+IDX.INTO users_name_age WHERE "name LIKE 'j%'" DEL $
+```
 
 
 
@@ -254,4 +319,3 @@ This is a pre-release of the module, and it is currently in active development. 
 * Allowing multiple indexes to proxy a single command.
 * Distributed mode working across many cluster shards.
 * Automatic repair thread for consistency.
-
