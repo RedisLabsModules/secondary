@@ -192,7 +192,7 @@ For time typed index properties, we support a few convenience functions for WHER
 | TODAY                             | Unix timestamp of today's midnight UTC   |
 | TIME_ADD({timetsamp}, {duration}) | Add a duration (minutes, hours etc) to a stimestamp. i.e. `TIME_ADD(NOW, HOURS(5))` |
 | TIME_SUB({timestamp}, {duration}) | Subtract a duration (minutes, hours etc) from a stimestamp. |
-| TIME({int}), UNIXTIME({int})      | Convert an integer to a Timestamp type.  |
+| UNIX({int})      | Convert an integer to a Timestamp type representing a Unix timestamp.  |
 | HOURS(N)                          | Return the number of seconds in N hours  |
 | DAYS(N)                           | Return the number of seconds in N days   |
 | MINUTES(N)                        | Return the number of seconds in N minutes |

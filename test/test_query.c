@@ -52,15 +52,14 @@ MU_TEST(testQueryParser) {
 }
 
 MU_TEST(testQueryPlan) {
-  SISpec spec = {
-      .properties =
-          (SIIndexProperty[]){
-              {.type = T_INT32, .name = "foo"}, {T_INT32}, {T_INT32}},
-      .numProps = 3};
+  SISpec spec = {.properties =
+                     (SIIndexProperty[]){{.type = T_INT32, .name = "foo"},
+                                         {T_INT32},
+                                         {T_INT32}},
+                 .numProps = 3};
 
-  char *str =
-      "foo = 2 AND $2 IN ('hello', 'world')  AND ($3 IN (1, 3.14, "
-      "'foo', 'bar') OR $4 IS NULL)";
+  char *str = "foo = 2 AND $2 IN ('hello', 'world')  AND ($3 IN (1, 3.14, "
+              "'foo', 'bar') OR $4 IS NULL)";
 
   SIQuery q = SI_NewQuery();
 
@@ -141,12 +140,77 @@ MU_TEST(testQueryNormalize) {
   mu_check(validateQuery("$4 = 'werd'", &spec) == QE_INVALID_VALUE);
 }
 
+SIQueryError parseQueryExt(const char *str, SISpec *spec, SIQuery *q) {
+
+  char *parseError = NULL;
+
+  if (!SI_ParseQuery(q, str, strlen(str), spec, &parseError)) {
+    if (parseError) {
+      printf("parse error: %s\n", parseError);
+      free(parseError);
+    }
+    return QE_PARSE_ERROR;
+  }
+
+  SIQueryError e = SIQuery_Normalize(q, spec);
+  printf("return for %s: %d\n", str, e);
+  return e;
+}
+MU_TEST(testTimeFunctions) {
+  // test valid query
+  SISpec spec = {.properties =
+                     (SIIndexProperty[]){
+                         {T_TIME},
+                     },
+                 .numProps = 1};
+
+  SIQuery q = SI_NewQuery();
+  char *parseError = NULL;
+
+  char *str = "$1 = NOW";
+
+  mu_check(parseQueryExt("$1 = NOW", &spec, &q) == QE_INVALID_VALUE);
+  time_t now = time(NULL);
+  mu_check(now == q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TODAY", &spec, &q) == QE_INVALID_VALUE);
+  mu_assert_int_eq(now - now % 86400, q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TIME_ADD(NOW, SECONDS(100))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(now + 100, q.root->pred.eq.v.timeval);
+  mu_check(parseQueryExt("$1 = TIME_SUB(NOW, SECONDS(100))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(now - 100, q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TIME_ADD(NOW, HOURS(2))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(now + 7200, q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TIME_ADD(NOW, MINUTES(2))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(now + 120, q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TIME_ADD(NOW, DAYS(2))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(now + 86400 * 2, q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TIME_ADD(UNIX(0), DAYS(2))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(86400 * 2, q.root->pred.eq.v.timeval);
+
+  mu_check(parseQueryExt("$1 = TIME_ADD(UNIX(0), DAYS(2))", &spec, &q) ==
+           QE_INVALID_VALUE);
+  mu_assert_int_eq(86400 * 2, q.root->pred.eq.v.timeval);
+}
+
 int main(int argc, char **argv) {
   RMUTil_InitAlloc();
   // return testIndex();
   MU_RUN_TEST(testQueryParser);
   MU_RUN_TEST(testQueryPlan);
   MU_RUN_TEST(testQueryNormalize);
+  MU_RUN_TEST(testTimeFunctions);
   MU_REPORT();
   return minunit_status;
 }
