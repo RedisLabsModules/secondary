@@ -2,37 +2,49 @@
 
 This project is a Redis Module that adds the ability to create and query secondary indexes in Redis. 
 
+> ### This is a preview of the module. 
+>
+> The API is not stable, and it should not yet be used in production. You are, however more than welcome to try it out and report any problems or wishes!
+
+
+
 ## Quick Example:
 
+```sql
+    # Creating an index
+    127.0.0.1:6379> IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32
+    OK
+    
+    # Inserting some indexed Hash keys
+    127.0.0.1:6379> IDX.INTO users_name_age HMSET user1 name "alice" age 30
+    (integer) 1
+    127.0.0.1:6379> IDX.INTO users_name_age HMSET user2 name "bob" age 25
+    (integer) 1
 
-        127.0.0.1:6379> IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32
-        OK
-    
-        127.0.0.1:6379> IDX.INTO users_name_age HMSET user1 name "alice" age 30
-        (integer) 1
-        127.0.0.1:6379> IDX.INTO users_name_age HMSET user2 name "bob" age 25
-        (integer) 1
-    
-        127.0.0.1:6379> IDX.FROM users_name_age WHERE "name LIKE 'b%'" HGET $ name
-        1) user2
-        2) "bob"
-    
-        127.0.0.1:6379> IDX.FROM users_name_age WHERE "name >= 'alice' AND age < 31" HGETALL $
-        1) user1
-        2) 1) "name"
-        2) "alice"
-        3) "age"
-        4) "30"
-        3) user2
-        4) 1) "name"
-        2) "bob"
-        3) "age"
-        4) "25"
+    # Indexed HGET
+    127.0.0.1:6379> IDX.FROM users_name_age WHERE "name LIKE 'b%'" HGET $ name
+    1) user2
+    2) "bob"
+
+    # Indexed HGETALL
+    127.0.0.1:6379> IDX.FROM users_name_age WHERE "name >= 'alice' AND age < 31" HGETALL $
+    1) user1
+    2) 1) "name"
+    2) "alice"
+    3) "age"
+    4) "30"
+    3) user2
+    4) 1) "name"
+    2) "bob"
+    3) "age"
+    4) "25"
+```
 
 
 ## How It Works
 
-This module adds a new data type to Redis: a compound index, internally based on a **SkipList**. 
+This module adds a new data type to Redis: a compound index, internally based on a **SkipList**.
+
 It stores tuples of values mapped to keys in redis, and can be queried using simple WHERE expressions
 in a SQL-like language. 
 
@@ -41,9 +53,11 @@ by proxying ordinary Redis commands, allowing to index HASH objects automaticall
 
 Indexes need to be pre-defined with a schema in order to work, but they do not enforce a schema. 
 
+
+
 ## Using Raw Indexes 
 
-Using a raw index,there is no degree of automation, the index isjust a way to automate storing 
+Using a raw index,there is no degree of automation, the index is just a way to automate storing 
 and querying values that map to ids. These ids do not even need to represent Redis keys - you 
 can use Redis indexes for objects stored in another databases, files, or anything you like. 
 
@@ -55,7 +69,9 @@ can use Redis indexes for objects stored in another databases, files, or anythin
   > IDX.CREATE myindex SCHEMA STRING INT32
   ```
 
-  This means that each id in the index will be indexed by two values, a string and a 32-bit signed integer. The string will be referred to as `$1` in queries, and the integer as `$2`
+  This means that each id in the index will be indexed by two values, a string and a 32-bit signed integer (See *Supported Property Types* below) 
+
+  The string will be referred to as `$1` in queries, and the integer as `$2`
 
 * **Inserting data to the index:**
 
@@ -83,26 +99,159 @@ can use Redis indexes for objects stored in another databases, files, or anythin
 
 
 
+
+## Supported Property Types
+
+Although the module does not enforce any type of schema, the indexes themselves are strictly type. When creating an index, you specify the schema and the types of properties. The supported types are:
+
+| Type       | Length                  | Details                                  |
+| ---------- | ----------------------- | ---------------------------------------- |
+| **STRING** | up to 1024 bytes        | Binary safe string                       |
+| **INT32**  | 32 bit                  | Singed 32 bit integer                    |
+| **INT64**  | 64 bit                  | Singed 64 bit integer                    |
+| **UINT**   | 64 bit                  | unsigned 64 bit integer                  |
+| **BOOL**   | 8 bit (to be optimized) | boolean                                  |
+| **FLOAT**  | 32 bit                  | 32 bit floating point number             |
+| **DOUBLE** | 64 bit                  | 64 bit double                            |
+| **TIME**   | 64 bit                  | 64 bit Unix timestamp (with helper functions) |
+
+
+
+
 ## Automatic HASH object indexing
 
-While raw indexes are flexible and you can use them for whatever you like, automatic HASH indexes offer a nicer, easier way to work with secondary indexes, if you use Redis HASH objects as an object store. 
+While raw indexes are flexible and you can use them for whatever you like, automatic HASH indexes offer a nicer, 
+easier way to work with secondary indexes, if you use Redis HASH objects as an object store. 
 
 Since the modules API cannot yet track changes to keys automatically, the idea is that you proxy your HASH manipulation commands via the indexes.  
 
-* Creating HASH indexes:
+* ### Creating HASH indexes:
 
   ```sql
   > IDX.CREATE users_name TYPE HASH SCHEMA name STRING
   ```
 
-* Proxying write commands
+* ### Proxying write commands
 
-Read commands are proxied with the syntax:
+  Read commands are proxied with the syntax:	
+
+  ```sql
+  IDX.FROM {index} WHERE {WHERE clause} {ANY REDIS COMMAND}
+  ```
+
+  The command is executed per matching id, and the result is chained to the result of the FROM command. 
+
+  > **The matching ids in the commands are represented with a `$` character.** 
+
+  Write commands are proxied with the syntax:
+
+  ```sql
+  IDX.INTO {index} [WHERE {WHERE clause}] {HASH WRITE REDIS COMMAND}
+  ```
+
+  The supported commands for writing are: `HINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX` and `DEL`.
+
+  A WHERE clause is not necessary - if you just perform a HMSET for example, the index assumes it just needs to index a specific object and takes its key from the command.
+
+
+## WHERE Claus Syntax
+
+The WHERE clause query language is a subset of standard SQL, with the currently supported predicates:	
 
 ```sql
-IDX.FROM {index} WHERE {WHERE clause} {ANY REDIS COMMAND}
+<, <=, >, >=, IN, LIKE, IS NULL
 ```
 
-The command is executed per matching id, and the result is chained to the result of the FROM command. **The matching ids in the commands are represented with a `$` character.** 
+Predicates can be combined using `AND` and `OR` operations, grouped by `(` and `)` symbols. For example:
 
-Write comman
+```sql
+(foo = 'bar' AND baz LIKE 'boo%') OR (wat <= 1337 and word IN ('hello', 'world'))
+```
+
+### Time Functions
+
+For time typed index properties, we support a few convenience functions for WHERE expressions (note that they can ONLY be used in WHERE expressions and not passed to the redis commands):
+
+| Function                          | Meaning                                  |
+| --------------------------------- | ---------------------------------------- |
+| NOW                               | The current Unix timestamp               |
+| TODAY                             | Unix timestamp of today's midnight UTC   |
+| TIME_ADD({timetsamp}, {duration}) | Add a duration (minutes, hours etc) to a stimestamp. i.e. `TIME_ADD(NOW, HOURS(5))` |
+| TIME_SUB({timestamp}, {duration}) | Subtract a duration (minutes, hours etc) from a stimestamp. |
+| TIME({int}), UNIXTIME({int})      | Convert an integer to a Timestamp type.  |
+| HOURS(N)                          | Return the number of seconds in N hours  |
+| DAYS(N)                           | Return the number of seconds in N days   |
+| MINUTES(N)                        | Return the number of seconds in N minutes |
+
+​	
+
+> #### Example usage of time functions in WHERE:
+
+> ```sql
+> # Selecting users with join_time in the last 30 days
+> WHERE "join_time >= TIME_SUB(TODAY, DAYS(30))"
+>
+> # Selecting blog posts with pub_time in the past 4 hours
+> WHERE "pub_time >= TIME_SUB(NOW, HOURS(4))"
+> ```
+
+
+
+### Tips and gotchas for  WHERE
+
+*  Inequality operators (`!=`, `NOT NULL`) are not yet supported, but the <, > etc operators work fine.
+
+* The `LIKE ` syntax is not compatible to SQL standards. It only supports full equality, or prefix matching with `%` at the end of the string.
+
+* You can only query the index for properties indexed in it, we do not support full scans. Also `WHERE TRUE` style scans are not supported. A temporary workaround would be to do `$1 >= ''` for strings.
+
+* The order of properties in the index affects the query efficiency. We produce scan ranges on the index from the left field onwards. Once we cannot produce efficient scan keys (for example if you search on the first and third field, we can only scan on the first one), the rest of the predicates are evaluated per scanned key, and **actually reduce performance**. A few examples:
+
+  ```sql
+  # Good - produces only a single scan key
+  WHERE "$1 = 'foo' AND $2 = 'bar' "
+
+  # Bad - produces a scan key and a filter:
+  WHERE "$1 = 'foo' AND $3 = 'bar'"
+
+  # Good: Produces a few scan ranges:
+  WHERE "$1 IN ('foo', 'bar') AND $2 > 13"
+
+  # Bad: produces complex filters:
+  WHERE "$1 IN ('foo', 'bar') AND ($2 = 13 OR $3 < 4)"
+  ```
+
+
+
+## Full Commands API
+
+### IDX.CREATE index_name [TYPE HASH]  SCHEMA [ [property] TYPE ...]
+
+### IDX.ADD index_name id val1 val2 ...
+
+### IDX.DEL index_name id id ...
+
+###  IDX.CARD index_name
+
+### IDX.FROM index_name WHERE predicates {ANY REDIS READ COMMAND}
+
+### IDX.INTO index_name [WHERE  predicates] { HASH WRITE COMMAND } 
+
+
+
+## On The Roadmap:
+
+This is a pre-release of the module, and it is currently in active development. The tasks for the full release include:
+
+* A powerful aggregation engine that can be used for analytics
+* More index types:
+  * Geospatial
+  * FullText (probably with a merge of the RediSearch module)
+  * Generic multi-dimensional indexes
+* Asynchronous cursors that will not block redis on very big records sets.
+* Indexing of sorted sets and string values.
+* Index rebuilding and creation without blocking redis.
+* Allowing multiple indexes to proxy a single command.
+* Distributed mode working across many cluster shards.
+* Automatic repair thread for consistency.
+
