@@ -235,4 +235,17 @@ select(@userId, @timestamp).
     groupBy(@timestamp).                     // -> (timestamp, [(userId,ts), ...])
     reduce($2 -> count).                     // replace element 2 with its count
     orderBy($1)
+
+
+clientId, joinDate, month, sum
+
+select(clientId, joinDate, month, amount).
+groupBy(@month).                                                    
+.transform(_1, 
+                
+        groupBy(@joinDate).                                              
+        transform($1 -> reduce(sum)).  // [(age, total)]
+        orderBy(_0) 
+).orderBy(@month)
+
 ```
