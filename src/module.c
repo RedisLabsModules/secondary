@@ -108,7 +108,7 @@ int IndexDelCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
   SIChangeSet cs = SI_NewChangeSet(argc - 2);
   for (int i = 2; i < argc; i++) {
-    SIId id = (char *)RedisModule_StringPtrLen(argv[2], NULL);
+    SIId id = (char *)RedisModule_StringPtrLen(argv[i], NULL);
     SIChangeSet_AddCahnge(&cs, SI_NewDelChange(id));
   }
 
@@ -154,7 +154,7 @@ int IndexSelectCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
   if (argc < 4)
     return RedisModule_WrongArity(ctx);
 
-  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[2], REDISMODULE_READ);
+  RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
 
   // make sure it's an index key
   if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY ||

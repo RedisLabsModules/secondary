@@ -10,29 +10,29 @@ SIPredicate *getPredicate(SIQueryNode *node, int propId) {
     return NULL;
   }
   switch (node->type) {
-    case QN_PRED:
-      // turn the node to a passthough node so it won't be included in the
-      // filter tree
-      if (node->pred.propId == propId) {
-        node->type |= QN_PASSTHRU;
-        return &node->pred;
-      }
-      break;
-    case QN_LOGIC:
-      // we only use AND nodes in building scan ranges
-      if (node->op.op == OP_AND) {
-        SIPredicate *p = getPredicate(node->op.left, propId);
+  case QN_PRED:
+    // turn the node to a passthough node so it won't be included in the
+    // filter tree
+    if (node->pred.propId == propId) {
+      node->type |= QN_PASSTHRU;
+      return &node->pred;
+    }
+    break;
+  case QN_LOGIC:
+    // we only use AND nodes in building scan ranges
+    if (node->op.op == OP_AND) {
+      SIPredicate *p = getPredicate(node->op.left, propId);
 
-        // no predicate from the left node means it's probably a passthru
-        // so let's try the right now
-        if (!p) {
-          p = getPredicate(node->op.right, propId);
-        }
-        return p;
+      // no predicate from the left node means it's probably a passthru
+      // so let's try the right now
+      if (!p) {
+        p = getPredicate(node->op.right, propId);
       }
-      break;
-    default:
-      break;
+      return p;
+    }
+    break;
+  default:
+    break;
   }
 
   return NULL;
@@ -46,49 +46,49 @@ siPlanRangeKey *predicateToRanges(SIPredicate *pred, size_t *numRanges,
   *numRanges = 0;
   *isLast = 0;
   switch (pred->t) {
-    case PRED_EQ: {
-      ret = malloc(sizeof(siPlanRangeKey));
-      *numRanges = 1;
-      ret->min = ret->max = &(pred->eq.v);
-      ret->minExclusive = 0;
-      ret->maxExclusive = 0;
-      break;
-    }
-    case PRED_RNG: {
-      ret = malloc(sizeof(siPlanRangeKey));
-      *numRanges = 1;
-      ret->min = &(pred->rng.min);
-      ret->max = &(pred->rng.max);
-      ret->minExclusive = pred->rng.minExclusive;
-      ret->maxExclusive = pred->rng.maxExclusive;
-      *isLast = 1;
-      break;
-    }
+  case PRED_EQ: {
+    ret = malloc(sizeof(siPlanRangeKey));
+    *numRanges = 1;
+    ret->min = ret->max = &(pred->eq.v);
+    ret->minExclusive = 0;
+    ret->maxExclusive = 0;
+    break;
+  }
+  case PRED_RNG: {
+    ret = malloc(sizeof(siPlanRangeKey));
+    *numRanges = 1;
+    ret->min = &(pred->rng.min);
+    ret->max = &(pred->rng.max);
+    ret->minExclusive = pred->rng.minExclusive;
+    ret->maxExclusive = pred->rng.maxExclusive;
+    *isLast = 1;
+    break;
+  }
 
-    case PRED_ISNULL: {
-      ret = malloc(sizeof(siPlanRangeKey));
-      *numRanges = 1;
-      ret->min = &(pred->eq.v);
-      ret->max = &(pred->eq.v);
-      ret->minExclusive = 0;
-      ret->maxExclusive = 0;
-      break;
-    }
+  case PRED_ISNULL: {
+    ret = malloc(sizeof(siPlanRangeKey));
+    *numRanges = 1;
+    ret->min = &(pred->eq.v);
+    ret->max = &(pred->eq.v);
+    ret->minExclusive = 0;
+    ret->maxExclusive = 0;
+    break;
+  }
 
-    case PRED_IN: {
-      ret = calloc(pred->in.numvals, sizeof(siPlanRangeKey));
-      *numRanges = pred->in.numvals;
+  case PRED_IN: {
+    ret = calloc(pred->in.numvals, sizeof(siPlanRangeKey));
+    *numRanges = pred->in.numvals;
 
-      for (int i = 0; i < pred->in.numvals; i++) {
-        ret[i].min = &pred->in.vals[i];
-        ret[i].max = &pred->in.vals[i];
-        ret[i].minExclusive = 0;
-        ret[i].maxExclusive = 0;
-      }
-      break;
+    for (int i = 0; i < pred->in.numvals; i++) {
+      ret[i].min = &pred->in.vals[i];
+      ret[i].max = &pred->in.vals[i];
+      ret[i].minExclusive = 0;
+      ret[i].maxExclusive = 0;
     }
-    default:
-      break;
+    break;
+  }
+  default:
+    break;
   }
   return ret;
 }
@@ -121,34 +121,36 @@ void buildKey(siPlanRangeKey **keys, size_t *keyNums, size_t *stack,
 }
 
 void cleanQueryNode(SIQueryNode **pn) {
-  if (!pn || *pn == NULL) return;
+  if (!pn || *pn == NULL)
+    return;
   SIQueryNode *n = *pn;
   switch (n->type) {
-    case QN_PASSTHRU:
-      return;
-    case QN_LOGIC:
-      cleanQueryNode(&n->op.left);
-      cleanQueryNode(&n->op.right);
-      if (n->op.left->type & QN_PASSTHRU && n->op.right->type & QN_PASSTHRU) {
-        n->type |= QN_PASSTHRU;
-      } else if (n->op.left->type & QN_PASSTHRU) {
-        *pn = n->op.right;
-        n->op.right = NULL;
-        SIQueryNode_Free(n);
-      } else if (n->op.right->type & QN_PASSTHRU) {
-        *pn = n->op.left;
-        n->op.left = NULL;
-        SIQueryNode_Free(n);
-      }
-      break;
-    default:
-      break;
+  case QN_PASSTHRU:
+    return;
+  case QN_LOGIC:
+    cleanQueryNode(&n->op.left);
+    cleanQueryNode(&n->op.right);
+    if (n->op.left->type & QN_PASSTHRU && n->op.right->type & QN_PASSTHRU) {
+      n->type |= QN_PASSTHRU;
+    } else if (n->op.left->type & QN_PASSTHRU) {
+      *pn = n->op.right;
+      n->op.right = NULL;
+      SIQueryNode_Free(n);
+    } else if (n->op.right->type & QN_PASSTHRU) {
+      *pn = n->op.left;
+      n->op.left = NULL;
+      SIQueryNode_Free(n);
+    }
+    break;
+  default:
+    break;
   }
 }
 
 SIQueryPlan *SI_BuildQueryPlan(SIQuery *q, SISpec *spec) {
+  printf("spec %p\n", spec);
   siPlanRangeKey *keys[q->numPredicates];
-  memset(keys, 0, q->numPredicates * sizeof(siPlanRangeKey));
+  memset(keys, 0, q->numPredicates * sizeof(siPlanRangeKey *));
   size_t keyNums[q->numPredicates];
 
   // extract an array of all key ranges we need to traverse from this tree

@@ -65,12 +65,12 @@ MU_TEST(testQueryPlan) {
 
   mu_check(SI_ParseQuery(&q, str, strlen(str), &spec, NULL));
 
-  str = "$1 IN ('bob','alice')";
+  str = "$1 < 'foo' AND $2 > 0 AND $1 < 'bar'";
 
   q = SI_NewQuery();
 
   mu_check(SI_ParseQuery(&q, str, strlen(str), &spec, NULL));
-  // SIQueryPlan *qp = SI_BuildQueryPlan(&q, &spec);
+  SIQueryPlan *qp = SI_BuildQueryPlan(&q, &spec);
 }
 
 MU_TEST(testQueryExecution) {
