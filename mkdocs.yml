@@ -1,0 +1,13 @@
+site_name: Redis Secondary Index
+site_url: https://github.com/RedisLabsModules/secondary
+repo_url: https://github.com/RedisLabsModules/secondary
+theme: material
+pages:
+    - 'Home': 'index.md'
+    - 'Commands': 'Commands.md'    
+    - 'Reference':
+        - 'WHERE Syntax': 'WHERE.md'
+        - 'Indexing redis Hashes': 'hash_indexes.md'
+        - 'Using Raw Indexes': 'raw_indexes.md'
+        - 'Supported Types': 'types.md'
+        

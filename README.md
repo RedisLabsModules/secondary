@@ -335,3 +335,5 @@ This is a pre-release of the module, and it is currently in active development. 
 * Allowing multiple indexes to proxy a single command.
 * Distributed mode working across many cluster shards.
 * Automatic repair thread for consistency.
+
+
