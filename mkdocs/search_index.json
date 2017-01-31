@@ -1,0 +1,369 @@
+{
+    "docs": [
+        {
+            "location": "/", 
+            "text": "Redis Secondary Index Module\n\n\nThis project is a Redis Module that adds the ability to create and query secondary indexes in Redis. \n\n\n\n\nThis is a preview of the module.\n\n\nThe API is not stable, and should be used with caution\n\n\n\n\nQuick Example:\n\n\n    # Creating an index\n    127.0.0.1:6379\n IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32\n    OK\n\n    # Inserting some indexed Hash keys\n    127.0.0.1:6379\n IDX.INTO users_name_age HMSET user1 name \nalice\n age 30\n    (integer) 1\n    127.0.0.1:6379\n IDX.INTO users_name_age HMSET user2 name \nbob\n age 25\n    (integer) 1\n\n    # Indexed HGET\n    127.0.0.1:6379\n IDX.FROM users_name_age WHERE \nname LIKE 'b%'\n HGET $ name\n    1) user2\n    2) \nbob\n\n\n    # Indexed HGETALL\n    127.0.0.1:6379\n IDX.FROM users_name_age WHERE \nname \n= 'alice' AND age \n 31\n HGETALL $\n    1) user1\n    2) 1) \nname\n\n    2) \nalice\n\n    3) \nage\n\n    4) \n30\n\n    3) user2\n    4) 1) \nname\n\n    2) \nbob\n\n    3) \nage\n\n    4) \n25\n\n\n\n\n\nHow It Works\n\n\nThis module adds a new data type to Redis: a compound index, internally based on a \nSkipList\n.\n\n\nIt stores tuples of values mapped to keys in redis, and can be queried using simple WHERE expressions\nin a SQL-like language. \n\n\nThe indexes can be used independently using commands that add and remove data to them; Or \nby proxying ordinary Redis commands, allowing to index HASH objects automatically. \n\n\nIndexes need to be pre-defined with a schema in order to work, but they do not enforce a schema. \n\n\nBuilding and setting up\n\n\n\n\n\n\nClone/download the module source code.\n\n\n\n\n\n\nusing cmake, bootstrap and build the project: \n\n\n\n\n\n\ncmake build ./ \n make all\n\n\n\n\nrun redis (unstable or \n4.0) with the module library \nsrc/libmodule.so\n:\n\n\n\n\nredis-server --loadmodule ./src/libmodule.so", 
+            "title": "Home"
+        }, 
+        {
+            "location": "/#redis-secondary-index-module", 
+            "text": "This project is a Redis Module that adds the ability to create and query secondary indexes in Redis.", 
+            "title": "Redis Secondary Index Module"
+        }, 
+        {
+            "location": "/#this-is-a-preview-of-the-module", 
+            "text": "The API is not stable, and should be used with caution", 
+            "title": "This is a preview of the module."
+        }, 
+        {
+            "location": "/#quick-example", 
+            "text": "# Creating an index\n    127.0.0.1:6379  IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32\n    OK\n\n    # Inserting some indexed Hash keys\n    127.0.0.1:6379  IDX.INTO users_name_age HMSET user1 name  alice  age 30\n    (integer) 1\n    127.0.0.1:6379  IDX.INTO users_name_age HMSET user2 name  bob  age 25\n    (integer) 1\n\n    # Indexed HGET\n    127.0.0.1:6379  IDX.FROM users_name_age WHERE  name LIKE 'b%'  HGET $ name\n    1) user2\n    2)  bob \n\n    # Indexed HGETALL\n    127.0.0.1:6379  IDX.FROM users_name_age WHERE  name  = 'alice' AND age   31  HGETALL $\n    1) user1\n    2) 1)  name \n    2)  alice \n    3)  age \n    4)  30 \n    3) user2\n    4) 1)  name \n    2)  bob \n    3)  age \n    4)  25", 
+            "title": "Quick Example:"
+        }, 
+        {
+            "location": "/#how-it-works", 
+            "text": "This module adds a new data type to Redis: a compound index, internally based on a  SkipList .  It stores tuples of values mapped to keys in redis, and can be queried using simple WHERE expressions\nin a SQL-like language.   The indexes can be used independently using commands that add and remove data to them; Or \nby proxying ordinary Redis commands, allowing to index HASH objects automatically.   Indexes need to be pre-defined with a schema in order to work, but they do not enforce a schema.", 
+            "title": "How It Works"
+        }, 
+        {
+            "location": "/#building-and-setting-up", 
+            "text": "Clone/download the module source code.    using cmake, bootstrap and build the project:     cmake build ./   make all   run redis (unstable or  4.0) with the module library  src/libmodule.so :   redis-server --loadmodule ./src/libmodule.so", 
+            "title": "Building and setting up"
+        }, 
+        {
+            "location": "/Commands/", 
+            "text": "IDX.CREATE\n\n\nFormat\n\n\nIDX.CREATE {index_name} [TYPE HASH] [UNIQUE] \n    SCHEMA [{property}] {type} ...\n\n\n\n\nDescription\n\n\nCreate and index key \nindex_name\n with a given schema.\n\n\nIf \nTYPE HASH\n is set, the index will have a named schema and can be used to index Hash keys. \n\n\nIf \nTYPE HASH\n is not set, it is considered a raw index that can only be used with property ids (\n$1, $2, ...\n). More options will be available later.\n\n\nIf UNIQUE is set, the index is considered a unique index, and can only hold one id per value tuple.\n\n\nSee \nSupported Types\n for the list of types in the schema.\n\n\nParameters\n\n\n\n\nindex_name\n: The name of the index that will be used to query it.\n\n\nTYPE HASH\n: If set, the index will have a named schema and will be used to index Hash keys. More types might be supported in the future.\n\n\nUNIQUE\n: If set, the index is considered a unique index, and can only hold one id per value tuple.\n\n\nSCHEMA\n: the beginning of the schema specification, which is comprised of \nproperty type\n pairs in named indexes, and just \ntype\n specifiers in unnamed indexes.\n\n\n\n\nComplexity\n\n\nO(1)\n\n\nReturns\n\n\nStatus Reply: OK\n\n\nExamples\n\n\n# Named Hash index:\nIDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32\n\n# Unnamed raw index\nIDX.CREATE raw_index SCHEMA STRING INT32\n\n# Named unique Hash index:\nIDX.CREATE users_email TYPE HASH UNIQUE SCHEMA email STRING\n\n\n\n\nIDX.INSERT\n\n\nFormat\n\n\nIDX.INSERT index_name {id} {value} ...\n\n\n\n\nDescription\n\n\nFor raw indexes only\n - add a value tuple consistent with the index's schema, and link it to the given id. \n\n\nParameters\n\n\n\n\nindex_name\n: The name of the index that will be used to query it.\n\n\nid\n: The id of the object being indexed. This can be any string or number.\n\n\nvalue(s)\n: A list of values to be indexed. Its length must match the length of the index schema.\n\n\n\n\nComplexity\n\n\nO(log(n)), where n is the size of the index\n\n\nReturns\n\n\nStatus Reply: OK\n\n\nExample\n\n\nIDX.INSERT raw_index myId \nfoo\n 32\n\n\n\n\n\n\nIDX.SELECT\n\n\nFormat\n\n\n IDX.SELECT {index_name} WHERE {predicates}\n\n\n\n\nDescription\n\n\nFor Raw Indexes Only\n: Select ids stored  in the index based on the WHERE clauses. Returns a list of ids. \n\n\nColumns in the index are referenced with 1-based numeric indexes, i.e. \n$1, $2, ...\n. \n\n\nSee WHERE Expression Syntax for details on predicates.\n\n\nParameters\n\n\n\n\nindex_name\n: The name of the index that we want to query.\n\n\nWHERE {predicates}\n: WHERE expression with at least one predicate (condition).\n\n\n\n\nComplexity\n\n\nO(log(n) + m), where n is the size of the index, and m is the number of matching ids.\n\n\nReturns\n\n\nArray Reply: An array of matching ids.\n\n\nExample\n\n\nIDX.SELECT users WHERE \n$1='john' AND $2 IN (1,2,3,4)\n\n\n\n\n\n\n\nIDX.DEL\n\n\nFormat\n\n\nIDX.DEL {index_name} {id} ...\n\n\n\n\nDescription\n\n\nFor raw indexes\n: Delete multiple ids from the index.\n\n\nParameters\n\n\n\n\nindex_name\n: The index we want to delete from.\n\n\nid(s)\n: A list of ids that were inserted into the index.\n\n\n\n\nComplexity\n\n\nO(log(n)), where n is the size of the index. This is multiplied by the number of ids deleted.\n\n\nReturns\n\n\nStatus Reply: OK\n\n\n\n\nIDX.CARD\n\n\nFormat\n\n\nIDX.CARD {index_name}\n\n\n\n\nDescription\n\n\nReturn the number of keys (ids) stored in the index. \n\n\nNote\n: Only in a unique index it is guaranteed to be the same number of distinct value tuples in the index.\n\n\nParameters\n\n\n\n\nindex_name\n: The index we want to get the cardinality for.\n\n\n\n\nComplexity\n\n\nO(1)\n\n\nReturns\n\n\nInteger Reply: the index cardinality\n\n\n\n\nIDX.FROM\n\n\nFormat\n\n\n  IDX.FROM {index_name} \n    WHERE {predicates} \n    {ANY REDIS READ COMMAND}\n\n\n\n\nDescription\n\n\nProxy a Redis read command to all the keys matching the WHERE clause predicates. \n\n\nIn the specified command, the \n$\n character is substituted by the matching Redis key. \n\n\nAn array of the responses of running the command per each matching key is returned (it may include errors).\n\n\nParameters\n\n\n\n\nindex_name\n: The index we want to use.\n\n\nWHERE {predicates}\n: WHERE expression with at least one predicate (condition).\n\n\n\n\nExample\n\n\nIDX.FROM users_name_age WHERE \nname LIKE 'john%'\n HGETALL $\n\n\n\n\nComplexity\n\n\nO(log(n) + m), where n is the index size, and m is the number of matching ids. On top of that, the complexity of the proxied command should also be taken into account.\n\n\nReturns\n\n\nArray Reply: an array of the responses of running the command per each matching key is returned (it may include errors).\n\n\n\n\nIDX.INTO\n\n\nFormat\n\n\nIDX.INTO {index_name} \n    [WHERE {predicates}] \n    {HASH WRITE COMMAND} \n\n\n\n\nDescription\n\n\nFor Hash Indexes Only:\n Execute a HASH write command, and update the key to reindex the object. \n\n\nOptionally the command (such as HINCRBY) can be executed on any key matching a WHERE predicate, but this is not needed. \n\n\nNormally you would just update the key as you would ordinarily in Redis, and the index will track the changes automatically. \n\n\nThe supported commands are: \nHINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX\n and \nDEL\n.\n\n\nParameters\n\n\n\n\nindex_name\n: The index we want to use.\n\n\nWHERE {predicates}\n: Optional WHERE expression with at least one predicate (condition).\n\n\n\n\nExamples:\n\n\n\n# Simple tracking of HMSET on an index\nIDX.INTO users_name_age HMSET user1 name \nJohn Doe\n age 42\n\n# Deleting objects matching a predicate\nIDX.INTO users_name_age WHERE \nname LIKE 'j%'\n DEL $\n\n\n\n\n\nComplexity\n\n\nO(log(n) + m), where n is the index size, and m is the number of matching ids. On top of that, the complexity of the proxied command should also be taken into account.\n\n\nReturns\n\n\nArray Reply: an array of the responses of running the command per each matching key is returned (it may include errors).", 
+            "title": "Commands"
+        }, 
+        {
+            "location": "/Commands/#idxcreate", 
+            "text": "", 
+            "title": "IDX.CREATE"
+        }, 
+        {
+            "location": "/Commands/#format", 
+            "text": "IDX.CREATE {index_name} [TYPE HASH] [UNIQUE] \n    SCHEMA [{property}] {type} ...", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description", 
+            "text": "Create and index key  index_name  with a given schema.  If  TYPE HASH  is set, the index will have a named schema and can be used to index Hash keys.   If  TYPE HASH  is not set, it is considered a raw index that can only be used with property ids ( $1, $2, ... ). More options will be available later.  If UNIQUE is set, the index is considered a unique index, and can only hold one id per value tuple.  See  Supported Types  for the list of types in the schema.", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters", 
+            "text": "index_name : The name of the index that will be used to query it.  TYPE HASH : If set, the index will have a named schema and will be used to index Hash keys. More types might be supported in the future.  UNIQUE : If set, the index is considered a unique index, and can only hold one id per value tuple.  SCHEMA : the beginning of the schema specification, which is comprised of  property type  pairs in named indexes, and just  type  specifiers in unnamed indexes.", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#complexity", 
+            "text": "O(1)", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns", 
+            "text": "Status Reply: OK", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/Commands/#examples", 
+            "text": "# Named Hash index:\nIDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32\n\n# Unnamed raw index\nIDX.CREATE raw_index SCHEMA STRING INT32\n\n# Named unique Hash index:\nIDX.CREATE users_email TYPE HASH UNIQUE SCHEMA email STRING", 
+            "title": "Examples"
+        }, 
+        {
+            "location": "/Commands/#idxinsert", 
+            "text": "", 
+            "title": "IDX.INSERT"
+        }, 
+        {
+            "location": "/Commands/#format_1", 
+            "text": "IDX.INSERT index_name {id} {value} ...", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description_1", 
+            "text": "For raw indexes only  - add a value tuple consistent with the index's schema, and link it to the given id.", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters_1", 
+            "text": "index_name : The name of the index that will be used to query it.  id : The id of the object being indexed. This can be any string or number.  value(s) : A list of values to be indexed. Its length must match the length of the index schema.", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#complexity_1", 
+            "text": "O(log(n)), where n is the size of the index", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns_1", 
+            "text": "Status Reply: OK", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/Commands/#example", 
+            "text": "IDX.INSERT raw_index myId  foo  32", 
+            "title": "Example"
+        }, 
+        {
+            "location": "/Commands/#idxselect", 
+            "text": "", 
+            "title": "IDX.SELECT"
+        }, 
+        {
+            "location": "/Commands/#format_2", 
+            "text": "IDX.SELECT {index_name} WHERE {predicates}", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description_2", 
+            "text": "For Raw Indexes Only : Select ids stored  in the index based on the WHERE clauses. Returns a list of ids.   Columns in the index are referenced with 1-based numeric indexes, i.e.  $1, $2, ... .   See WHERE Expression Syntax for details on predicates.", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters_2", 
+            "text": "index_name : The name of the index that we want to query.  WHERE {predicates} : WHERE expression with at least one predicate (condition).", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#complexity_2", 
+            "text": "O(log(n) + m), where n is the size of the index, and m is the number of matching ids.", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns_2", 
+            "text": "Array Reply: An array of matching ids.", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/Commands/#example_1", 
+            "text": "IDX.SELECT users WHERE  $1='john' AND $2 IN (1,2,3,4)", 
+            "title": "Example"
+        }, 
+        {
+            "location": "/Commands/#idxdel", 
+            "text": "", 
+            "title": "IDX.DEL"
+        }, 
+        {
+            "location": "/Commands/#format_3", 
+            "text": "IDX.DEL {index_name} {id} ...", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description_3", 
+            "text": "For raw indexes : Delete multiple ids from the index.", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters_3", 
+            "text": "index_name : The index we want to delete from.  id(s) : A list of ids that were inserted into the index.", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#complexity_3", 
+            "text": "O(log(n)), where n is the size of the index. This is multiplied by the number of ids deleted.", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns_3", 
+            "text": "Status Reply: OK", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/Commands/#idxcard", 
+            "text": "", 
+            "title": "IDX.CARD"
+        }, 
+        {
+            "location": "/Commands/#format_4", 
+            "text": "IDX.CARD {index_name}", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description_4", 
+            "text": "Return the number of keys (ids) stored in the index.   Note : Only in a unique index it is guaranteed to be the same number of distinct value tuples in the index.", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters_4", 
+            "text": "index_name : The index we want to get the cardinality for.", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#complexity_4", 
+            "text": "O(1)", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns_4", 
+            "text": "Integer Reply: the index cardinality", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/Commands/#idxfrom", 
+            "text": "", 
+            "title": "IDX.FROM"
+        }, 
+        {
+            "location": "/Commands/#format_5", 
+            "text": "IDX.FROM {index_name} \n    WHERE {predicates} \n    {ANY REDIS READ COMMAND}", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description_5", 
+            "text": "Proxy a Redis read command to all the keys matching the WHERE clause predicates.   In the specified command, the  $  character is substituted by the matching Redis key.   An array of the responses of running the command per each matching key is returned (it may include errors).", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters_5", 
+            "text": "index_name : The index we want to use.  WHERE {predicates} : WHERE expression with at least one predicate (condition).", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#example_2", 
+            "text": "IDX.FROM users_name_age WHERE  name LIKE 'john%'  HGETALL $", 
+            "title": "Example"
+        }, 
+        {
+            "location": "/Commands/#complexity_5", 
+            "text": "O(log(n) + m), where n is the index size, and m is the number of matching ids. On top of that, the complexity of the proxied command should also be taken into account.", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns_5", 
+            "text": "Array Reply: an array of the responses of running the command per each matching key is returned (it may include errors).", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/Commands/#idxinto", 
+            "text": "", 
+            "title": "IDX.INTO"
+        }, 
+        {
+            "location": "/Commands/#format_6", 
+            "text": "IDX.INTO {index_name} \n    [WHERE {predicates}] \n    {HASH WRITE COMMAND}", 
+            "title": "Format"
+        }, 
+        {
+            "location": "/Commands/#description_6", 
+            "text": "For Hash Indexes Only:  Execute a HASH write command, and update the key to reindex the object.   Optionally the command (such as HINCRBY) can be executed on any key matching a WHERE predicate, but this is not needed.   Normally you would just update the key as you would ordinarily in Redis, and the index will track the changes automatically.   The supported commands are:  HINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX  and  DEL .", 
+            "title": "Description"
+        }, 
+        {
+            "location": "/Commands/#parameters_6", 
+            "text": "index_name : The index we want to use.  WHERE {predicates} : Optional WHERE expression with at least one predicate (condition).", 
+            "title": "Parameters"
+        }, 
+        {
+            "location": "/Commands/#examples_1", 
+            "text": "# Simple tracking of HMSET on an index\nIDX.INTO users_name_age HMSET user1 name  John Doe  age 42\n\n# Deleting objects matching a predicate\nIDX.INTO users_name_age WHERE  name LIKE 'j%'  DEL $", 
+            "title": "Examples:"
+        }, 
+        {
+            "location": "/Commands/#complexity_6", 
+            "text": "O(log(n) + m), where n is the index size, and m is the number of matching ids. On top of that, the complexity of the proxied command should also be taken into account.", 
+            "title": "Complexity"
+        }, 
+        {
+            "location": "/Commands/#returns_6", 
+            "text": "Array Reply: an array of the responses of running the command per each matching key is returned (it may include errors).", 
+            "title": "Returns"
+        }, 
+        {
+            "location": "/WHERE/", 
+            "text": "WHERE Clause Syntax\n\n\nThe WHERE clause query language is a subset of standard SQL, with the currently supported predicates:   \n\n\n, \n=, \n, \n=, IN, LIKE, IS NULL\n\n\n\n\nPredicates can be combined using \nAND\n and \nOR\n operations, grouped by \n(\n and \n)\n symbols. For example:\n\n\n(foo = 'bar' AND baz LIKE 'boo%') OR (wat \n= 1337 and word IN ('hello', 'world'))\n\n\n\n\nNamed vs indexed properties:\n\n\nSince they may be anonymous, the index properties or columns are represented by either a name (in a HASH index), or a dollar sign and their numeric order in the index's schema.\ni.e. $1, $2, $3 etc. Of course, they must be within the range of the index's schema length.  \n\n\npseudo BNF query syntax:\n\n\n    \nquery\n ::= \npredicate\n | \npredicate\n \nAND\n \npredicate\n ... \n    \npredicate\n ::= \nproperty\n \noperator\n \nvalue\n\n    \nproperty\n ::= \n$\n \ndigit\n | \nidentifier\n\n    \noperator\n ::= \n=\n | \n!=\n | \n | \n | \n=\n | \n=\n | \nIN\n | \nLIKE\n | \nIS\n\n    \nvalue\n ::= \nnumber\n | \nstring\n | \nTRUE\n | \nFALSE\n | \nlist\n | \nNULL\n \n    \nlist\n ::= \n(\n \nvalue\n, ... \n)\n\n\n\n\n\nTime Functions\n\n\nFor time typed index properties, we support a few convenience functions for WHERE expressions (note that they can ONLY be used in WHERE expressions and not passed to the redis commands):\n\n\n\n\n\n\n\n\nFunction\n\n\nMeaning\n\n\n\n\n\n\n\n\n\n\nNOW\n\n\nThe current Unix timestamp\n\n\n\n\n\n\nTODAY\n\n\nUnix timestamp of today's midnight UTC\n\n\n\n\n\n\nTIME_ADD({timetsamp}, {duration})\n\n\nAdd a duration (minutes, hours etc) to a stimestamp. i.e. \nTIME_ADD(NOW, HOURS(5))\n\n\n\n\n\n\nTIME_SUB({timestamp}, {duration})\n\n\nSubtract a duration (minutes, hours etc) from a stimestamp.\n\n\n\n\n\n\nUNIX({int})\n\n\nConvert an integer to a Timestamp type representing a Unix timestamp.\n\n\n\n\n\n\nHOURS(N)\n\n\nReturn the number of seconds in N hours\n\n\n\n\n\n\nDAYS(N)\n\n\nReturn the number of seconds in N days\n\n\n\n\n\n\nMINUTES(N)\n\n\nReturn the number of seconds in N minutes\n\n\n\n\n\n\n\n\n\u200b   \n\n\nExample usage of time functions in WHERE:\n\n\n # Selecting users with join_time in the last 30 days\n WHERE \njoin_time \n= TIME_SUB(TODAY, DAYS(30))\n\n\n # Selecting blog posts with pub_time in the past 4 hours\n WHERE \npub_time \n= TIME_SUB(NOW, HOURS(4))\n\n\n\n\n\nTips and gotchas for  WHERE\n\n\n\n\n\n\nInequality operators (\n!=\n, \nNOT NULL\n) are not yet supported, but the \n, \n etc operators work fine.\n\n\n\n\n\n\nThe \nLIKE\n syntax is not compatible to SQL standards. It only supports full equality, or prefix matching with \n%\n at the end of the string.\n\n\n\n\n\n\nYou can only query the index for properties indexed in it, we do not support full scans. Also \nWHERE TRUE\n style scans are not supported. A temporary workaround would be to do \n$1 \n= ''\n for strings.\n\n\n\n\n\n\nThe order of properties in the index affects the query efficiency. We produce scan ranges on the index from the left field onwards. Once we cannot produce efficient scan keys (for example if you search on the first and third field, we can only scan on the first one), the rest of the predicates are evaluated per scanned key, and \nactually reduce performance\n. A few examples:\n\n\n\n\n\n\n# Good - produces only a single scan key\nWHERE \n$1 = 'foo' AND $2 = 'bar' \n\n\n# Bad - produces a scan key and a filter:\nWHERE \n$1 = 'foo' AND $3 = 'bar'\n\n\n# Good: Produces a few scan ranges:\nWHERE \n$1 IN ('foo', 'bar') AND $2 \n 13\n\n\n# Bad: produces complex filters:\nWHERE \n$1 IN ('foo', 'bar') AND ($2 = 13 OR $3 \n 4)", 
+            "title": "WHERE Syntax"
+        }, 
+        {
+            "location": "/WHERE/#where-clause-syntax", 
+            "text": "The WHERE clause query language is a subset of standard SQL, with the currently supported predicates:     ,  =,  ,  =, IN, LIKE, IS NULL  Predicates can be combined using  AND  and  OR  operations, grouped by  (  and  )  symbols. For example:  (foo = 'bar' AND baz LIKE 'boo%') OR (wat  = 1337 and word IN ('hello', 'world'))", 
+            "title": "WHERE Clause Syntax"
+        }, 
+        {
+            "location": "/WHERE/#named-vs-indexed-properties", 
+            "text": "Since they may be anonymous, the index properties or columns are represented by either a name (in a HASH index), or a dollar sign and their numeric order in the index's schema.\ni.e. $1, $2, $3 etc. Of course, they must be within the range of the index's schema length.", 
+            "title": "Named vs indexed properties:"
+        }, 
+        {
+            "location": "/WHERE/#pseudo-bnf-query-syntax", 
+            "text": "query  ::=  predicate  |  predicate   AND   predicate  ... \n     predicate  ::=  property   operator   value \n     property  ::=  $   digit  |  identifier \n     operator  ::=  =  |  !=  |   |   |  =  |  =  |  IN  |  LIKE  |  IS \n     value  ::=  number  |  string  |  TRUE  |  FALSE  |  list  |  NULL  \n     list  ::=  (   value , ...  )", 
+            "title": "pseudo BNF query syntax:"
+        }, 
+        {
+            "location": "/WHERE/#time-functions", 
+            "text": "For time typed index properties, we support a few convenience functions for WHERE expressions (note that they can ONLY be used in WHERE expressions and not passed to the redis commands):     Function  Meaning      NOW  The current Unix timestamp    TODAY  Unix timestamp of today's midnight UTC    TIME_ADD({timetsamp}, {duration})  Add a duration (minutes, hours etc) to a stimestamp. i.e.  TIME_ADD(NOW, HOURS(5))    TIME_SUB({timestamp}, {duration})  Subtract a duration (minutes, hours etc) from a stimestamp.    UNIX({int})  Convert an integer to a Timestamp type representing a Unix timestamp.    HOURS(N)  Return the number of seconds in N hours    DAYS(N)  Return the number of seconds in N days    MINUTES(N)  Return the number of seconds in N minutes     \u200b", 
+            "title": "Time Functions"
+        }, 
+        {
+            "location": "/WHERE/#example-usage-of-time-functions-in-where", 
+            "text": "# Selecting users with join_time in the last 30 days\n WHERE  join_time  = TIME_SUB(TODAY, DAYS(30)) \n\n # Selecting blog posts with pub_time in the past 4 hours\n WHERE  pub_time  = TIME_SUB(NOW, HOURS(4))", 
+            "title": "Example usage of time functions in WHERE:"
+        }, 
+        {
+            "location": "/WHERE/#tips-and-gotchas-for-where", 
+            "text": "Inequality operators ( != ,  NOT NULL ) are not yet supported, but the  ,   etc operators work fine.    The  LIKE  syntax is not compatible to SQL standards. It only supports full equality, or prefix matching with  %  at the end of the string.    You can only query the index for properties indexed in it, we do not support full scans. Also  WHERE TRUE  style scans are not supported. A temporary workaround would be to do  $1  = ''  for strings.    The order of properties in the index affects the query efficiency. We produce scan ranges on the index from the left field onwards. Once we cannot produce efficient scan keys (for example if you search on the first and third field, we can only scan on the first one), the rest of the predicates are evaluated per scanned key, and  actually reduce performance . A few examples:    # Good - produces only a single scan key\nWHERE  $1 = 'foo' AND $2 = 'bar'  \n\n# Bad - produces a scan key and a filter:\nWHERE  $1 = 'foo' AND $3 = 'bar' \n\n# Good: Produces a few scan ranges:\nWHERE  $1 IN ('foo', 'bar') AND $2   13 \n\n# Bad: produces complex filters:\nWHERE  $1 IN ('foo', 'bar') AND ($2 = 13 OR $3   4)", 
+            "title": "Tips and gotchas for  WHERE"
+        }, 
+        {
+            "location": "/hash_indexes/", 
+            "text": "Automatic HASH object indexing\n\n\nWhile raw indexes are flexible and you can use them for whatever you like, automatic HASH indexes offer a nicer, \neasier way to work with secondary indexes, if you use Redis HASH objects as an object store. \n\n\nSince the modules API cannot yet track changes to keys automatically, the idea is that you proxy your HASH manipulation commands via the indexes.  \n\n\nCreating HASH indexes:\n\n\n IDX.CREATE users_name TYPE HASH SCHEMA name STRING\n\n\n\n\nProxying read commands\n\n\nRead commands are proxied with the syntax:  \n\n\nIDX.FROM {index} WHERE {WHERE clause} {ANY REDIS COMMAND}\n\n\n\n\nThe command is executed per matching id, and the result is chained to the result of the FROM command. \nThe matching ids in the commands are represented with a \n$\n character.\n \n\n\nProxying write commands\n\n\nWrite commands are proxied with the syntax:\n\n\nIDX.INTO {index} [WHERE {WHERE clause}] {HASH WRITE REDIS COMMAND}\n\n\n\n\nThe supported commands for writing are: \nHINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX\n and \nDEL\n.\n\n\nA WHERE clause is not necessary - if you just perform a HMSET for example, the index assumes it just needs to index a specific object and takes its key from the command.", 
+            "title": "Indexing redis Hashes"
+        }, 
+        {
+            "location": "/hash_indexes/#automatic-hash-object-indexing", 
+            "text": "While raw indexes are flexible and you can use them for whatever you like, automatic HASH indexes offer a nicer, \neasier way to work with secondary indexes, if you use Redis HASH objects as an object store.   Since the modules API cannot yet track changes to keys automatically, the idea is that you proxy your HASH manipulation commands via the indexes.", 
+            "title": "Automatic HASH object indexing"
+        }, 
+        {
+            "location": "/hash_indexes/#creating-hash-indexes", 
+            "text": "IDX.CREATE users_name TYPE HASH SCHEMA name STRING", 
+            "title": "Creating HASH indexes:"
+        }, 
+        {
+            "location": "/hash_indexes/#proxying-read-commands", 
+            "text": "Read commands are proxied with the syntax:    IDX.FROM {index} WHERE {WHERE clause} {ANY REDIS COMMAND}  The command is executed per matching id, and the result is chained to the result of the FROM command.  The matching ids in the commands are represented with a  $  character.", 
+            "title": "Proxying read commands"
+        }, 
+        {
+            "location": "/hash_indexes/#proxying-write-commands", 
+            "text": "Write commands are proxied with the syntax:  IDX.INTO {index} [WHERE {WHERE clause}] {HASH WRITE REDIS COMMAND}  The supported commands for writing are:  HINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX  and  DEL .  A WHERE clause is not necessary - if you just perform a HMSET for example, the index assumes it just needs to index a specific object and takes its key from the command.", 
+            "title": "Proxying write commands"
+        }, 
+        {
+            "location": "/raw_indexes/", 
+            "text": "Using Raw Indexes\n\n\nUsing a raw index,there is no degree of automation, the index is just a way to automate storing \nand querying values that map to ids. These ids do not even need to represent Redis keys - you \ncan use Redis indexes for objects stored in another databases, files, or anything you like. \n\n\nCreating a raw index\n\n\nYou begin by creating the index, and specifying a schema. In a raw index, fields have no names, just an index number:\n\n\n IDX.CREATE myindex SCHEMA STRING INT32\n\n\n\n\nThis means that each id in the index will be indexed by two values, a string and a 32-bit signed integer (See \nSupported Property Types\n) \n\n\nThe string will be referred to as \n$1\n in queries, and the integer as \n$2\n\n\nInserting data to the index\n\n\nAgain, in raw indexes there is no automation, you just push an \nid\n and a tuple of values that must match the index's schema.\n\n\n IDX.INSERT myindex id1 \nhello world\n 1337\n\n\n\n\nThis means that we've indexed a key named \nid\n with the value tuple \n(\"hello world\", 1337)\n. \n\n\nQuerying the index\n\n\nNow that the we have data in the index, we can query it and get ids matching the query:\n\n\n IDX.SELECT FROM myindex WHERE \n$1 = 'hello wolrd' AND $1 = 1337\n\n1) \nid1\n\n\n\n\n\n\nwe simply get a list of ids matching our query.  You can page the results with \nLIMIT {offset} {num}\n.\n\n\n\n\nNOTE:\n The full syntax of \nWHERE\n expressions, which loosely follows SQL syntax, can be found in the \nWHERE reference\n.", 
+            "title": "Using Raw Indexes"
+        }, 
+        {
+            "location": "/raw_indexes/#using-raw-indexes", 
+            "text": "Using a raw index,there is no degree of automation, the index is just a way to automate storing \nand querying values that map to ids. These ids do not even need to represent Redis keys - you \ncan use Redis indexes for objects stored in another databases, files, or anything you like.", 
+            "title": "Using Raw Indexes"
+        }, 
+        {
+            "location": "/raw_indexes/#creating-a-raw-index", 
+            "text": "You begin by creating the index, and specifying a schema. In a raw index, fields have no names, just an index number:   IDX.CREATE myindex SCHEMA STRING INT32  This means that each id in the index will be indexed by two values, a string and a 32-bit signed integer (See  Supported Property Types )   The string will be referred to as  $1  in queries, and the integer as  $2", 
+            "title": "Creating a raw index"
+        }, 
+        {
+            "location": "/raw_indexes/#inserting-data-to-the-index", 
+            "text": "Again, in raw indexes there is no automation, you just push an  id  and a tuple of values that must match the index's schema.   IDX.INSERT myindex id1  hello world  1337  This means that we've indexed a key named  id  with the value tuple  (\"hello world\", 1337) .", 
+            "title": "Inserting data to the index"
+        }, 
+        {
+            "location": "/raw_indexes/#querying-the-index", 
+            "text": "Now that the we have data in the index, we can query it and get ids matching the query:   IDX.SELECT FROM myindex WHERE  $1 = 'hello wolrd' AND $1 = 1337 \n1)  id1   we simply get a list of ids matching our query.  You can page the results with  LIMIT {offset} {num} .   NOTE:  The full syntax of  WHERE  expressions, which loosely follows SQL syntax, can be found in the  WHERE reference .", 
+            "title": "Querying the index"
+        }, 
+        {
+            "location": "/types/", 
+            "text": "Supported Property Types\n\n\nAlthough the module does not enforce any type of schema, the indexes themselves are strictly typed. \nWhen creating an index, whether it is named or not, the module expects a list of properties and their types.\n\n\nFor example:\n\n\n# Named Hash index:\nIDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32\n\n# Unnamed raw index\nIDX.CREATE raw_index SCHEMA STRING INT32 FLOAT\n\n\n\n\n\nWhen creating an index, you specify the schema and the types of properties. The supported types are:\n\n\n\n\n\n\n\n\nType\n\n\nLength\n\n\nDetails\n\n\n\n\n\n\n\n\n\n\nSTRING\n\n\nup to 1024 bytes\n\n\nBinary safe string\n\n\n\n\n\n\nINT32\n\n\n32 bit\n\n\nSinged 32 bit integer\n\n\n\n\n\n\nINT64\n\n\n64 bit\n\n\nSinged 64 bit integer\n\n\n\n\n\n\nUINT\n\n\n64 bit\n\n\nunsigned 64 bit integer\n\n\n\n\n\n\nBOOL\n\n\n8 bit (to be optimized)\n\n\nboolean\n\n\n\n\n\n\nFLOAT\n\n\n32 bit\n\n\n32 bit floating point number\n\n\n\n\n\n\nDOUBLE\n\n\n64 bit\n\n\n64 bit double\n\n\n\n\n\n\nTIME\n\n\n64 bit\n\n\n64 bit Unix timestamp (with helper functions)", 
+            "title": "Supported Types"
+        }, 
+        {
+            "location": "/types/#supported-property-types", 
+            "text": "Although the module does not enforce any type of schema, the indexes themselves are strictly typed. \nWhen creating an index, whether it is named or not, the module expects a list of properties and their types.  For example:  # Named Hash index:\nIDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32\n\n# Unnamed raw index\nIDX.CREATE raw_index SCHEMA STRING INT32 FLOAT  When creating an index, you specify the schema and the types of properties. The supported types are:     Type  Length  Details      STRING  up to 1024 bytes  Binary safe string    INT32  32 bit  Singed 32 bit integer    INT64  64 bit  Singed 64 bit integer    UINT  64 bit  unsigned 64 bit integer    BOOL  8 bit (to be optimized)  boolean    FLOAT  32 bit  32 bit floating point number    DOUBLE  64 bit  64 bit double    TIME  64 bit  64 bit Unix timestamp (with helper functions)", 
+            "title": "Supported Property Types"
+        }
+    ]
+}

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="no-js ie6"><![endif]-->
+<!--[if IE 7 ]><html class="no-js ie7"><![endif]-->
+<!--[if IE 8 ]><html class="no-js ie8"><![endif]-->
+<!--[if IE 9 ]><html class="no-js ie9"><![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
+    
+      
+        <title>Redis Secondary Index</title>
+      
+      
+      
+        <link rel="canonical" href="https://github.com/RedisLabsModules/secondary/">
+      
+      
+    
+    <meta property="og:url" content="https://github.com/RedisLabsModules/secondary/">
+    <meta property="og:title" content="Redis Secondary Index">
+    <meta property="og:image" content="https://github.com/RedisLabsModules/secondary//./">
+    <meta name="apple-mobile-web-app-title" content="Redis Secondary Index">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/images/favicon-e565ddfa3b.ico">
+    <link rel="icon" type="image/x-icon" href="./assets/images/favicon-e565ddfa3b.ico">
+    <style>
+      @font-face {
+      	font-family: 'Icon';
+      	src: url('./assets/fonts/icon.eot?52m981');
+      	src: url('./assets/fonts/icon.eot?#iefix52m981')
+               format('embedded-opentype'),
+      		   url('./assets/fonts/icon.woff?52m981')
+               format('woff'),
+      		   url('./assets/fonts/icon.ttf?52m981')
+               format('truetype'),
+      		   url('./assets/fonts/icon.svg?52m981#icon')
+               format('svg');
+      	font-weight: normal;
+      	font-style: normal;
+      }
+    </style>
+    <link rel="stylesheet" href="./assets/stylesheets/application-a422ff04cc.css">
+    
+    
+      
+      
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700|Ubuntu+Mono">
+      <style>
+        body, input {
+          font-family: 'Ubuntu', Helvetica, Arial, sans-serif;
+        }
+        pre, code {
+          font-family: 'Ubuntu Mono', 'Courier New', 'Courier', monospace;
+        }
+      </style>
+    
+    
+    <script src="./assets/javascripts/modernizr-4ab42b99fd.js"></script>
+    
+  </head>
+  
+  
+  
+  <body class=" ">
+    
+      
+      
+    
+    <div class="backdrop">
+      <div class="backdrop-paper"></div>
+    </div>
+    <input class="toggle" type="checkbox" id="toggle-drawer">
+    <input class="toggle" type="checkbox" id="toggle-search">
+    <label class="toggle-button overlay" for="toggle-drawer"></label>
+    <header class="header">
+      <nav aria-label="Header">
+  <div class="bar default">
+    <div class="button button-menu" role="button" aria-label="Menu">
+      <label class="toggle-button icon icon-menu" for="toggle-drawer">
+        <span></span>
+      </label>
+    </div>
+    <div class="stretch">
+      <div class="title">
+        
+          <span class="path">
+            
+          </span>
+        
+        Redis Secondary Index
+      </div>
+    </div>
+    
+    
+    <div class="button button-search" role="button" aria-label="Search">
+      <label class="toggle-button icon icon-search" title="Search" for="toggle-search"></label>
+    </div>
+  </div>
+  <div class="bar search">
+    <div class="button button-close" role="button" aria-label="Close">
+      <label class="toggle-button icon icon-back" for="toggle-search"></label>
+    </div>
+    <div class="stretch">
+      <div class="field">
+        <input class="query" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck>
+      </div>
+    </div>
+    <div class="button button-reset" role="button" aria-label="Search">
+      <button class="toggle-button icon icon-close" id="reset-search"></button>
+    </div>
+  </div>
+</nav>
+    </header>
+    <main class="main">
+      
+      <div class="drawer">
+        <nav aria-label="Navigation">
+  
+  <a href="https://github.com/RedisLabsModules/secondary" class="project">
+    <div class="banner">
+      
+      <div class="name">
+        <strong>
+          Redis Secondary Index
+          <span class="version">
+            
+          </span>
+        </strong>
+        
+          <br>
+          RedisLabsModules/secondary
+        
+      </div>
+    </div>
+  </a>
+  <div class="scrollable">
+    <div class="wrapper">
+      
+        <ul class="repo">
+          <li class="repo-download">
+            
+            <a href="https://github.com/RedisLabsModules/secondary/archive/master.zip" target="_blank" title="Download" data-action="download">
+              <i class="icon icon-download"></i> Download
+            </a>
+          </li>
+          <li class="repo-stars">
+            <a href="https://github.com/RedisLabsModules/secondary/stargazers" target="_blank" title="Stargazers" data-action="star">
+              <i class="icon icon-star"></i> Stars
+              <span class="count">&ndash;</span>
+            </a>
+          </li>
+        </ul>
+        <hr>
+      
+      <div class="toc">
+        <ul>
+          
+            
+  <li>
+    <a class="current" title="Home" href=".">
+      Home
+    </a>
+    
+      
+        
+      
+      
+        <ul>
+          
+            <li class="anchor">
+              <a title="Quick Example:" href="#quick-example">
+                Quick Example:
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="How It Works" href="#how-it-works">
+                How It Works
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="Building and setting up" href="#building-and-setting-up">
+                Building and setting up
+              </a>
+            </li>
+          
+        </ul>
+      
+    
+  </li>
+
+          
+            
+  <li>
+    <a class="" title="Commands" href="Commands/">
+      Commands
+    </a>
+    
+  </li>
+
+          
+            
+  <li>
+    <span class="section">Reference</span>
+    <ul>
+      
+        
+  <li>
+    <a class="" title="WHERE Syntax" href="WHERE/">
+      WHERE Syntax
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Indexing redis Hashes" href="hash_indexes/">
+      Indexing redis Hashes
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Using Raw Indexes" href="raw_indexes/">
+      Using Raw Indexes
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Supported Types" href="types/">
+      Supported Types
+    </a>
+    
+  </li>
+
+      
+    </ul>
+  </li>
+
+          
+        </ul>
+        
+      </div>
+    </div>
+  </div>
+</nav>
+      </div>
+      <article class="article">
+        <div class="wrapper">
+          
+          <h1 id="redis-secondary-index-module">Redis Secondary Index Module</h1>
+<p>This project is a Redis Module that adds the ability to create and query secondary indexes in Redis. </p>
+<blockquote>
+<h3 id="this-is-a-preview-of-the-module">This is a preview of the module.</h3>
+<p>The API is not stable, and should be used with caution</p>
+</blockquote>
+<h2 id="quick-example">Quick Example:</h2>
+<pre><code class="sql">    # Creating an index
+    127.0.0.1:6379&gt; IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32
+    OK
+
+    # Inserting some indexed Hash keys
+    127.0.0.1:6379&gt; IDX.INTO users_name_age HMSET user1 name &quot;alice&quot; age 30
+    (integer) 1
+    127.0.0.1:6379&gt; IDX.INTO users_name_age HMSET user2 name &quot;bob&quot; age 25
+    (integer) 1
+
+    # Indexed HGET
+    127.0.0.1:6379&gt; IDX.FROM users_name_age WHERE &quot;name LIKE 'b%'&quot; HGET $ name
+    1) user2
+    2) &quot;bob&quot;
+
+    # Indexed HGETALL
+    127.0.0.1:6379&gt; IDX.FROM users_name_age WHERE &quot;name &gt;= 'alice' AND age &lt; 31&quot; HGETALL $
+    1) user1
+    2) 1) &quot;name&quot;
+    2) &quot;alice&quot;
+    3) &quot;age&quot;
+    4) &quot;30&quot;
+    3) user2
+    4) 1) &quot;name&quot;
+    2) &quot;bob&quot;
+    3) &quot;age&quot;
+    4) &quot;25&quot;
+</code></pre>
+
+<h2 id="how-it-works">How It Works</h2>
+<p>This module adds a new data type to Redis: a compound index, internally based on a <strong>SkipList</strong>.</p>
+<p>It stores tuples of values mapped to keys in redis, and can be queried using simple WHERE expressions
+in a SQL-like language. </p>
+<p>The indexes can be used independently using commands that add and remove data to them; Or 
+by proxying ordinary Redis commands, allowing to index HASH objects automatically. </p>
+<p>Indexes need to be pre-defined with a schema in order to work, but they do not enforce a schema. </p>
+<h2 id="building-and-setting-up">Building and setting up</h2>
+<ol>
+<li>
+<p>Clone/download the module source code.</p>
+</li>
+<li>
+<p>using cmake, bootstrap and build the project: </p>
+</li>
+</ol>
+<p><code>cmake build ./ &amp;&amp; make all</code></p>
+<ol>
+<li>run redis (unstable or &gt;4.0) with the module library <code>src/libmodule.so</code>:</li>
+</ol>
+<p><code>redis-server --loadmodule ./src/libmodule.so</code></p>
+          <aside class="copyright" role="note">
+            
+            Documentation built with
+            <a href="http://www.mkdocs.org" target="_blank">MkDocs</a>
+            using the
+            <a href="http://squidfunk.github.io/mkdocs-material/" target="_blank">
+              Material
+            </a>
+            theme.
+          </aside>
+          
+            <footer class="footer">
+              
+  <nav class="pagination" aria-label="Footer">
+    <div class="previous">
+      
+    </div>
+    <div class="next">
+      
+        <a href="Commands/" title="Commands">
+          <span class="direction">
+            Next
+          </span>
+          <div class="page">
+            <div class="stretch">
+              <div class="title">
+                Commands
+              </div>
+            </div>
+            <div class="button button-next" role="button" aria-label="Next">
+              <i class="icon icon-forward"></i>
+            </div>
+          </div>
+        </a>
+      
+    </div>
+  </nav>
+
+            </footer>
+          
+        </div>
+      </article>
+      <div class="results" role="status" aria-live="polite">
+        <div class="scrollable">
+          <div class="wrapper">
+            <div class="meta"></div>
+            <div class="list"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script>
+      var base_url = '.';
+      var repo_id  = 'RedisLabsModules/secondary';
+    </script>
+    <script src="./assets/javascripts/application-997097ee0c.js"></script>
+    
+    
+  </body>
+</html>

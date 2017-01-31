@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="no-js ie6"><![endif]-->
+<!--[if IE 7 ]><html class="no-js ie7"><![endif]-->
+<!--[if IE 8 ]><html class="no-js ie8"><![endif]-->
+<!--[if IE 9 ]><html class="no-js ie9"><![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
+    
+      
+        <title>Commands - Redis Secondary Index</title>
+      
+      
+      
+        <link rel="canonical" href="https://github.com/RedisLabsModules/secondary/Commands/">
+      
+      
+    
+    <meta property="og:url" content="https://github.com/RedisLabsModules/secondary/Commands/">
+    <meta property="og:title" content="Redis Secondary Index">
+    <meta property="og:image" content="https://github.com/RedisLabsModules/secondary/Commands//../">
+    <meta name="apple-mobile-web-app-title" content="Redis Secondary Index">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../assets/images/favicon-e565ddfa3b.ico">
+    <link rel="icon" type="image/x-icon" href="../assets/images/favicon-e565ddfa3b.ico">
+    <style>
+      @font-face {
+      	font-family: 'Icon';
+      	src: url('../assets/fonts/icon.eot?52m981');
+      	src: url('../assets/fonts/icon.eot?#iefix52m981')
+               format('embedded-opentype'),
+      		   url('../assets/fonts/icon.woff?52m981')
+               format('woff'),
+      		   url('../assets/fonts/icon.ttf?52m981')
+               format('truetype'),
+      		   url('../assets/fonts/icon.svg?52m981#icon')
+               format('svg');
+      	font-weight: normal;
+      	font-style: normal;
+      }
+    </style>
+    <link rel="stylesheet" href="../assets/stylesheets/application-a422ff04cc.css">
+    
+    
+      
+      
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700|Ubuntu+Mono">
+      <style>
+        body, input {
+          font-family: 'Ubuntu', Helvetica, Arial, sans-serif;
+        }
+        pre, code {
+          font-family: 'Ubuntu Mono', 'Courier New', 'Courier', monospace;
+        }
+      </style>
+    
+    
+    <script src="../assets/javascripts/modernizr-4ab42b99fd.js"></script>
+    
+  </head>
+  
+  
+  
+  <body class=" ">
+    
+      
+      
+    
+    <div class="backdrop">
+      <div class="backdrop-paper"></div>
+    </div>
+    <input class="toggle" type="checkbox" id="toggle-drawer">
+    <input class="toggle" type="checkbox" id="toggle-search">
+    <label class="toggle-button overlay" for="toggle-drawer"></label>
+    <header class="header">
+      <nav aria-label="Header">
+  <div class="bar default">
+    <div class="button button-menu" role="button" aria-label="Menu">
+      <label class="toggle-button icon icon-menu" for="toggle-drawer">
+        <span></span>
+      </label>
+    </div>
+    <div class="stretch">
+      <div class="title">
+        
+          <span class="path">
+            
+          </span>
+        
+        Commands
+      </div>
+    </div>
+    
+    
+    <div class="button button-search" role="button" aria-label="Search">
+      <label class="toggle-button icon icon-search" title="Search" for="toggle-search"></label>
+    </div>
+  </div>
+  <div class="bar search">
+    <div class="button button-close" role="button" aria-label="Close">
+      <label class="toggle-button icon icon-back" for="toggle-search"></label>
+    </div>
+    <div class="stretch">
+      <div class="field">
+        <input class="query" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck>
+      </div>
+    </div>
+    <div class="button button-reset" role="button" aria-label="Search">
+      <button class="toggle-button icon icon-close" id="reset-search"></button>
+    </div>
+  </div>
+</nav>
+    </header>
+    <main class="main">
+      
+      <div class="drawer">
+        <nav aria-label="Navigation">
+  
+  <a href="https://github.com/RedisLabsModules/secondary" class="project">
+    <div class="banner">
+      
+      <div class="name">
+        <strong>
+          Redis Secondary Index
+          <span class="version">
+            
+          </span>
+        </strong>
+        
+          <br>
+          RedisLabsModules/secondary
+        
+      </div>
+    </div>
+  </a>
+  <div class="scrollable">
+    <div class="wrapper">
+      
+        <ul class="repo">
+          <li class="repo-download">
+            
+            <a href="https://github.com/RedisLabsModules/secondary/archive/master.zip" target="_blank" title="Download" data-action="download">
+              <i class="icon icon-download"></i> Download
+            </a>
+          </li>
+          <li class="repo-stars">
+            <a href="https://github.com/RedisLabsModules/secondary/stargazers" target="_blank" title="Stargazers" data-action="star">
+              <i class="icon icon-star"></i> Stars
+              <span class="count">&ndash;</span>
+            </a>
+          </li>
+        </ul>
+        <hr>
+      
+      <div class="toc">
+        <ul>
+          
+            
+  <li>
+    <a class="" title="Home" href="..">
+      Home
+    </a>
+    
+  </li>
+
+          
+            
+  <li>
+    <a class="current" title="Commands" href="./">
+      Commands
+    </a>
+    
+      
+      
+        <ul>
+          
+            <li class="anchor">
+              <a title="IDX.CREATE" href="#idxcreate">
+                IDX.CREATE
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="IDX.INSERT" href="#idxinsert">
+                IDX.INSERT
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="IDX.SELECT" href="#idxselect">
+                IDX.SELECT
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="IDX.DEL" href="#idxdel">
+                IDX.DEL
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="IDX.CARD" href="#idxcard">
+                IDX.CARD
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="IDX.FROM" href="#idxfrom">
+                IDX.FROM
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="IDX.INTO" href="#idxinto">
+                IDX.INTO
+              </a>
+            </li>
+          
+        </ul>
+      
+    
+  </li>
+
+          
+            
+  <li>
+    <span class="section">Reference</span>
+    <ul>
+      
+        
+  <li>
+    <a class="" title="WHERE Syntax" href="../WHERE/">
+      WHERE Syntax
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Indexing redis Hashes" href="../hash_indexes/">
+      Indexing redis Hashes
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Using Raw Indexes" href="../raw_indexes/">
+      Using Raw Indexes
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Supported Types" href="../types/">
+      Supported Types
+    </a>
+    
+  </li>
+
+      
+    </ul>
+  </li>
+
+          
+        </ul>
+        
+      </div>
+    </div>
+  </div>
+</nav>
+      </div>
+      <article class="article">
+        <div class="wrapper">
+          
+            <h1>Commands</h1>
+          
+          <h2 id="idxcreate">IDX.CREATE</h2>
+<h3 id="format">Format</h3>
+<pre><code>IDX.CREATE {index_name} [TYPE HASH] [UNIQUE] 
+    SCHEMA [{property}] {type} ...
+</code></pre>
+
+<h3 id="description">Description</h3>
+<p>Create and index key <code>index_name</code> with a given schema.</p>
+<p>If <code>TYPE HASH</code> is set, the index will have a named schema and can be used to index Hash keys. </p>
+<p>If <code>TYPE HASH</code> is not set, it is considered a raw index that can only be used with property ids (<code>$1, $2, ...</code>). More options will be available later.</p>
+<p>If UNIQUE is set, the index is considered a unique index, and can only hold one id per value tuple.</p>
+<p><strong>See <a href="../types/">Supported Types</a> for the list of types in the schema.</strong></p>
+<h3 id="parameters">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The name of the index that will be used to query it.</li>
+<li><strong>TYPE HASH</strong>: If set, the index will have a named schema and will be used to index Hash keys. More types might be supported in the future.</li>
+<li><strong>UNIQUE</strong>: If set, the index is considered a unique index, and can only hold one id per value tuple.</li>
+<li><strong>SCHEMA</strong>: the beginning of the schema specification, which is comprised of <code>property type</code> pairs in named indexes, and just <code>type</code> specifiers in unnamed indexes.</li>
+</ul>
+<h3 id="complexity">Complexity</h3>
+<p>O(1)</p>
+<h3 id="returns">Returns</h3>
+<p>Status Reply: OK</p>
+<h3 id="examples">Examples</h3>
+<pre><code class="sql"># Named Hash index:
+IDX.CREATE users_name_age TYPE HASH SCHEMA name STRING age INT32
+
+# Unnamed raw index
+IDX.CREATE raw_index SCHEMA STRING INT32
+
+# Named unique Hash index:
+IDX.CREATE users_email TYPE HASH UNIQUE SCHEMA email STRING
+</code></pre>
+
+<h2 id="idxinsert">IDX.INSERT</h2>
+<h3 id="format_1">Format</h3>
+<pre><code>IDX.INSERT index_name {id} {value} ...
+</code></pre>
+
+<h3 id="description_1">Description</h3>
+<p><strong>For raw indexes only</strong> - add a value tuple consistent with the index's schema, and link it to the given id. </p>
+<h3 id="parameters_1">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The name of the index that will be used to query it.</li>
+<li><strong>id</strong>: The id of the object being indexed. This can be any string or number.</li>
+<li><strong>value(s)</strong>: A list of values to be indexed. Its length must match the length of the index schema.</li>
+</ul>
+<h3 id="complexity_1">Complexity</h3>
+<p>O(log(n)), where n is the size of the index</p>
+<h3 id="returns_1">Returns</h3>
+<p>Status Reply: OK</p>
+<h3 id="example">Example</h3>
+<pre><code class="sql">IDX.INSERT raw_index myId &quot;foo&quot; 32
+</code></pre>
+
+<hr />
+<h2 id="idxselect">IDX.SELECT</h2>
+<h3 id="format_2">Format</h3>
+<pre><code> IDX.SELECT {index_name} WHERE {predicates}
+</code></pre>
+
+<h3 id="description_2">Description</h3>
+<p><strong>For Raw Indexes Only</strong>: Select ids stored  in the index based on the WHERE clauses. Returns a list of ids. </p>
+<p>Columns in the index are referenced with 1-based numeric indexes, i.e. <code>$1, $2, ...</code>. </p>
+<p>See WHERE Expression Syntax for details on predicates.</p>
+<h3 id="parameters_2">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The name of the index that we want to query.</li>
+<li><strong>WHERE {predicates}</strong>: WHERE expression with at least one predicate (condition).</li>
+</ul>
+<h3 id="complexity_2">Complexity</h3>
+<p>O(log(n) + m), where n is the size of the index, and m is the number of matching ids.</p>
+<h3 id="returns_2">Returns</h3>
+<p>Array Reply: An array of matching ids.</p>
+<h3 id="example_1">Example</h3>
+<pre><code class="sql">IDX.SELECT users WHERE &quot;$1='john' AND $2 IN (1,2,3,4)&quot;
+</code></pre>
+
+<hr />
+<h2 id="idxdel">IDX.DEL</h2>
+<h3 id="format_3">Format</h3>
+<pre><code>IDX.DEL {index_name} {id} ...
+</code></pre>
+
+<h3 id="description_3">Description</h3>
+<p><strong>For raw indexes</strong>: Delete multiple ids from the index.</p>
+<h3 id="parameters_3">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The index we want to delete from.</li>
+<li><strong>id(s)</strong>: A list of ids that were inserted into the index.</li>
+</ul>
+<h3 id="complexity_3">Complexity</h3>
+<p>O(log(n)), where n is the size of the index. This is multiplied by the number of ids deleted.</p>
+<h3 id="returns_3">Returns</h3>
+<p>Status Reply: OK</p>
+<hr />
+<h2 id="idxcard">IDX.CARD</h2>
+<h3 id="format_4">Format</h3>
+<pre><code>IDX.CARD {index_name}
+</code></pre>
+
+<h3 id="description_4">Description</h3>
+<p>Return the number of keys (ids) stored in the index. </p>
+<p><strong>Note</strong>: Only in a unique index it is guaranteed to be the same number of distinct value tuples in the index.</p>
+<h3 id="parameters_4">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The index we want to get the cardinality for.</li>
+</ul>
+<h3 id="complexity_4">Complexity</h3>
+<p>O(1)</p>
+<h3 id="returns_4">Returns</h3>
+<p>Integer Reply: the index cardinality</p>
+<hr />
+<h2 id="idxfrom">IDX.FROM</h2>
+<h3 id="format_5">Format</h3>
+<pre><code>  IDX.FROM {index_name} 
+    WHERE {predicates} 
+    {ANY REDIS READ COMMAND}
+</code></pre>
+
+<h3 id="description_5">Description</h3>
+<p>Proxy a Redis read command to all the keys matching the WHERE clause predicates. </p>
+<p>In the specified command, the <code>$</code> character is substituted by the matching Redis key. </p>
+<p>An array of the responses of running the command per each matching key is returned (it may include errors).</p>
+<h3 id="parameters_5">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The index we want to use.</li>
+<li><strong>WHERE {predicates}</strong>: WHERE expression with at least one predicate (condition).</li>
+</ul>
+<h3 id="example_2">Example</h3>
+<pre><code class="sql">IDX.FROM users_name_age WHERE &quot;name LIKE 'john%'&quot; HGETALL $
+</code></pre>
+
+<h3 id="complexity_5">Complexity</h3>
+<p>O(log(n) + m), where n is the index size, and m is the number of matching ids. On top of that, the complexity of the proxied command should also be taken into account.</p>
+<h3 id="returns_5">Returns</h3>
+<p>Array Reply: an array of the responses of running the command per each matching key is returned (it may include errors).</p>
+<hr />
+<h2 id="idxinto">IDX.INTO</h2>
+<h3 id="format_6">Format</h3>
+<pre><code>IDX.INTO {index_name} 
+    [WHERE {predicates}] 
+    {HASH WRITE COMMAND} 
+</code></pre>
+
+<h3 id="description_6">Description</h3>
+<p><strong>For Hash Indexes Only:</strong> Execute a HASH write command, and update the key to reindex the object. </p>
+<p>Optionally the command (such as HINCRBY) can be executed on any key matching a WHERE predicate, but this is not needed. </p>
+<p>Normally you would just update the key as you would ordinarily in Redis, and the index will track the changes automatically. </p>
+<p>The supported commands are: <code>HINCRBY, HINCRBYFLOAT, HMSET, HSET, HSETNX</code> and <code>DEL</code>.</p>
+<h3 id="parameters_6">Parameters</h3>
+<ul>
+<li><strong>index_name</strong>: The index we want to use.</li>
+<li><strong>WHERE {predicates}</strong>: Optional WHERE expression with at least one predicate (condition).</li>
+</ul>
+<h3 id="examples_1">Examples:</h3>
+<pre><code class="sql">
+# Simple tracking of HMSET on an index
+IDX.INTO users_name_age HMSET user1 name &quot;John Doe&quot; age 42
+
+# Deleting objects matching a predicate
+IDX.INTO users_name_age WHERE &quot;name LIKE 'j%'&quot; DEL $
+
+</code></pre>
+
+<h3 id="complexity_6">Complexity</h3>
+<p>O(log(n) + m), where n is the index size, and m is the number of matching ids. On top of that, the complexity of the proxied command should also be taken into account.</p>
+<h3 id="returns_6">Returns</h3>
+<p>Array Reply: an array of the responses of running the command per each matching key is returned (it may include errors).</p>
+          <aside class="copyright" role="note">
+            
+            Documentation built with
+            <a href="http://www.mkdocs.org" target="_blank">MkDocs</a>
+            using the
+            <a href="http://squidfunk.github.io/mkdocs-material/" target="_blank">
+              Material
+            </a>
+            theme.
+          </aside>
+          
+            <footer class="footer">
+              
+  <nav class="pagination" aria-label="Footer">
+    <div class="previous">
+      
+        <a href=".." title="Home">
+          <span class="direction">
+            Previous
+          </span>
+          <div class="page">
+            <div class="button button-previous" role="button" aria-label="Previous">
+              <i class="icon icon-back"></i>
+            </div>
+            <div class="stretch">
+              <div class="title">
+                Home
+              </div>
+            </div>
+          </div>
+        </a>
+      
+    </div>
+    <div class="next">
+      
+        <a href="../WHERE/" title="WHERE Syntax">
+          <span class="direction">
+            Next
+          </span>
+          <div class="page">
+            <div class="stretch">
+              <div class="title">
+                WHERE Syntax
+              </div>
+            </div>
+            <div class="button button-next" role="button" aria-label="Next">
+              <i class="icon icon-forward"></i>
+            </div>
+          </div>
+        </a>
+      
+    </div>
+  </nav>
+
+            </footer>
+          
+        </div>
+      </article>
+      <div class="results" role="status" aria-live="polite">
+        <div class="scrollable">
+          <div class="wrapper">
+            <div class="meta"></div>
+            <div class="list"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script>
+      var base_url = '..';
+      var repo_id  = 'RedisLabsModules/secondary';
+    </script>
+    <script src="../assets/javascripts/application-997097ee0c.js"></script>
+    
+    
+  </body>
+</html>

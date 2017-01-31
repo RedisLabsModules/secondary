@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="no-js ie6"><![endif]-->
+<!--[if IE 7 ]><html class="no-js ie7"><![endif]-->
+<!--[if IE 8 ]><html class="no-js ie8"><![endif]-->
+<!--[if IE 9 ]><html class="no-js ie9"><![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
+    
+      
+        <title>WHERE Syntax - Redis Secondary Index</title>
+      
+      
+      
+        <link rel="canonical" href="https://github.com/RedisLabsModules/secondary/WHERE/">
+      
+      
+    
+    <meta property="og:url" content="https://github.com/RedisLabsModules/secondary/WHERE/">
+    <meta property="og:title" content="Redis Secondary Index">
+    <meta property="og:image" content="https://github.com/RedisLabsModules/secondary/WHERE//../">
+    <meta name="apple-mobile-web-app-title" content="Redis Secondary Index">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../assets/images/favicon-e565ddfa3b.ico">
+    <link rel="icon" type="image/x-icon" href="../assets/images/favicon-e565ddfa3b.ico">
+    <style>
+      @font-face {
+      	font-family: 'Icon';
+      	src: url('../assets/fonts/icon.eot?52m981');
+      	src: url('../assets/fonts/icon.eot?#iefix52m981')
+               format('embedded-opentype'),
+      		   url('../assets/fonts/icon.woff?52m981')
+               format('woff'),
+      		   url('../assets/fonts/icon.ttf?52m981')
+               format('truetype'),
+      		   url('../assets/fonts/icon.svg?52m981#icon')
+               format('svg');
+      	font-weight: normal;
+      	font-style: normal;
+      }
+    </style>
+    <link rel="stylesheet" href="../assets/stylesheets/application-a422ff04cc.css">
+    
+    
+      
+      
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700|Ubuntu+Mono">
+      <style>
+        body, input {
+          font-family: 'Ubuntu', Helvetica, Arial, sans-serif;
+        }
+        pre, code {
+          font-family: 'Ubuntu Mono', 'Courier New', 'Courier', monospace;
+        }
+      </style>
+    
+    
+    <script src="../assets/javascripts/modernizr-4ab42b99fd.js"></script>
+    
+  </head>
+  
+  
+  
+  <body class=" ">
+    
+      
+      
+    
+    <div class="backdrop">
+      <div class="backdrop-paper"></div>
+    </div>
+    <input class="toggle" type="checkbox" id="toggle-drawer">
+    <input class="toggle" type="checkbox" id="toggle-search">
+    <label class="toggle-button overlay" for="toggle-drawer"></label>
+    <header class="header">
+      <nav aria-label="Header">
+  <div class="bar default">
+    <div class="button button-menu" role="button" aria-label="Menu">
+      <label class="toggle-button icon icon-menu" for="toggle-drawer">
+        <span></span>
+      </label>
+    </div>
+    <div class="stretch">
+      <div class="title">
+        
+          <span class="path">
+            
+              
+                Reference <i class="icon icon-link"></i>
+              
+            
+          </span>
+        
+        WHERE Syntax
+      </div>
+    </div>
+    
+    
+    <div class="button button-search" role="button" aria-label="Search">
+      <label class="toggle-button icon icon-search" title="Search" for="toggle-search"></label>
+    </div>
+  </div>
+  <div class="bar search">
+    <div class="button button-close" role="button" aria-label="Close">
+      <label class="toggle-button icon icon-back" for="toggle-search"></label>
+    </div>
+    <div class="stretch">
+      <div class="field">
+        <input class="query" type="text" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck>
+      </div>
+    </div>
+    <div class="button button-reset" role="button" aria-label="Search">
+      <button class="toggle-button icon icon-close" id="reset-search"></button>
+    </div>
+  </div>
+</nav>
+    </header>
+    <main class="main">
+      
+      <div class="drawer">
+        <nav aria-label="Navigation">
+  
+  <a href="https://github.com/RedisLabsModules/secondary" class="project">
+    <div class="banner">
+      
+      <div class="name">
+        <strong>
+          Redis Secondary Index
+          <span class="version">
+            
+          </span>
+        </strong>
+        
+          <br>
+          RedisLabsModules/secondary
+        
+      </div>
+    </div>
+  </a>
+  <div class="scrollable">
+    <div class="wrapper">
+      
+        <ul class="repo">
+          <li class="repo-download">
+            
+            <a href="https://github.com/RedisLabsModules/secondary/archive/master.zip" target="_blank" title="Download" data-action="download">
+              <i class="icon icon-download"></i> Download
+            </a>
+          </li>
+          <li class="repo-stars">
+            <a href="https://github.com/RedisLabsModules/secondary/stargazers" target="_blank" title="Stargazers" data-action="star">
+              <i class="icon icon-star"></i> Stars
+              <span class="count">&ndash;</span>
+            </a>
+          </li>
+        </ul>
+        <hr>
+      
+      <div class="toc">
+        <ul>
+          
+            
+  <li>
+    <a class="" title="Home" href="..">
+      Home
+    </a>
+    
+  </li>
+
+          
+            
+  <li>
+    <a class="" title="Commands" href="../Commands/">
+      Commands
+    </a>
+    
+  </li>
+
+          
+            
+  <li>
+    <span class="section">Reference</span>
+    <ul>
+      
+        
+  <li>
+    <a class="current" title="WHERE Syntax" href="./">
+      WHERE Syntax
+    </a>
+    
+      
+        
+      
+      
+        <ul>
+          
+            <li class="anchor">
+              <a title="Named vs indexed properties:" href="#named-vs-indexed-properties">
+                Named vs indexed properties:
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="pseudo BNF query syntax:" href="#pseudo-bnf-query-syntax">
+                pseudo BNF query syntax:
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="Time Functions" href="#time-functions">
+                Time Functions
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="Tips and gotchas for  WHERE" href="#tips-and-gotchas-for-where">
+                Tips and gotchas for  WHERE
+              </a>
+            </li>
+          
+        </ul>
+      
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Indexing redis Hashes" href="../hash_indexes/">
+      Indexing redis Hashes
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Using Raw Indexes" href="../raw_indexes/">
+      Using Raw Indexes
+    </a>
+    
+  </li>
+
+      
+        
+  <li>
+    <a class="" title="Supported Types" href="../types/">
+      Supported Types
+    </a>
+    
+  </li>
+
+      
+    </ul>
+  </li>
+
+          
+        </ul>
+        
+      </div>
+    </div>
+  </div>
+</nav>
+      </div>
+      <article class="article">
+        <div class="wrapper">
+          
+          <h1 id="where-clause-syntax">WHERE Clause Syntax</h1>
+<p>The WHERE clause query language is a subset of standard SQL, with the currently supported predicates:   </p>
+<pre><code class="sql">&lt;, &lt;=, &gt;, &gt;=, IN, LIKE, IS NULL
+</code></pre>
+
+<p>Predicates can be combined using <code>AND</code> and <code>OR</code> operations, grouped by <code>(</code> and <code>)</code> symbols. For example:</p>
+<pre><code class="sql">(foo = 'bar' AND baz LIKE 'boo%') OR (wat &lt;= 1337 and word IN ('hello', 'world'))
+</code></pre>
+
+<h3 id="named-vs-indexed-properties">Named vs indexed properties:</h3>
+<p>Since they may be anonymous, the index properties or columns are represented by either a name (in a HASH index), or a dollar sign and their numeric order in the index's schema.
+i.e. $1, $2, $3 etc. Of course, they must be within the range of the index's schema length.  </p>
+<h3 id="pseudo-bnf-query-syntax">pseudo BNF query syntax:</h3>
+<pre><code>    &lt;query&gt; ::= &lt;predicate&gt; | &lt;predicate&gt; &quot;AND&quot; &lt;predicate&gt; ... 
+    &lt;predicate&gt; ::= &lt;property&gt; &lt;operator&gt; &lt;value&gt;
+    &lt;property&gt; ::= &quot;$&quot; &lt;digit&gt; | &lt;identifier&gt;
+    &lt;operator&gt; ::= &quot;=&quot; | &quot;!=&quot; | &quot;&gt;&quot; | &quot;&lt;&quot; | &quot;&gt;=&quot; | &quot;&lt;=&quot; | &quot;IN&quot; | &quot;LIKE&quot; | &quot;IS&quot;
+    &lt;value&gt; ::= &lt;number&gt; | &lt;string&gt; | &quot;TRUE&quot; | &quot;FALSE&quot; | &lt;list&gt; | &quot;NULL&quot; 
+    &lt;list&gt; ::= &quot;(&quot; &lt;value&gt;, ... &quot;)&quot;
+</code></pre>
+
+<h3 id="time-functions">Time Functions</h3>
+<p>For time typed index properties, we support a few convenience functions for WHERE expressions (note that they can ONLY be used in WHERE expressions and not passed to the redis commands):</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NOW</td>
+<td>The current Unix timestamp</td>
+</tr>
+<tr>
+<td>TODAY</td>
+<td>Unix timestamp of today's midnight UTC</td>
+</tr>
+<tr>
+<td>TIME_ADD({timetsamp}, {duration})</td>
+<td>Add a duration (minutes, hours etc) to a stimestamp. i.e. <code>TIME_ADD(NOW, HOURS(5))</code></td>
+</tr>
+<tr>
+<td>TIME_SUB({timestamp}, {duration})</td>
+<td>Subtract a duration (minutes, hours etc) from a stimestamp.</td>
+</tr>
+<tr>
+<td>UNIX({int})</td>
+<td>Convert an integer to a Timestamp type representing a Unix timestamp.</td>
+</tr>
+<tr>
+<td>HOURS(N)</td>
+<td>Return the number of seconds in N hours</td>
+</tr>
+<tr>
+<td>DAYS(N)</td>
+<td>Return the number of seconds in N days</td>
+</tr>
+<tr>
+<td>MINUTES(N)</td>
+<td>Return the number of seconds in N minutes</td>
+</tr>
+</tbody>
+</table>
+<p>​   </p>
+<h4 id="example-usage-of-time-functions-in-where">Example usage of time functions in WHERE:</h4>
+<pre><code class="sql"> # Selecting users with join_time in the last 30 days
+ WHERE &quot;join_time &gt;= TIME_SUB(TODAY, DAYS(30))&quot;
+
+ # Selecting blog posts with pub_time in the past 4 hours
+ WHERE &quot;pub_time &gt;= TIME_SUB(NOW, HOURS(4))&quot;
+</code></pre>
+
+<h3 id="tips-and-gotchas-for-where">Tips and gotchas for  WHERE</h3>
+<ul>
+<li>
+<p>Inequality operators (<code>!=</code>, <code>NOT NULL</code>) are not yet supported, but the &lt;, &gt; etc operators work fine.</p>
+</li>
+<li>
+<p>The <code>LIKE</code> syntax is not compatible to SQL standards. It only supports full equality, or prefix matching with <code>%</code> at the end of the string.</p>
+</li>
+<li>
+<p>You can only query the index for properties indexed in it, we do not support full scans. Also <code>WHERE TRUE</code> style scans are not supported. A temporary workaround would be to do <code>$1 &gt;= ''</code> for strings.</p>
+</li>
+<li>
+<p>The order of properties in the index affects the query efficiency. We produce scan ranges on the index from the left field onwards. Once we cannot produce efficient scan keys (for example if you search on the first and third field, we can only scan on the first one), the rest of the predicates are evaluated per scanned key, and <strong>actually reduce performance</strong>. A few examples:</p>
+</li>
+</ul>
+<pre><code class="sql"># Good - produces only a single scan key
+WHERE &quot;$1 = 'foo' AND $2 = 'bar' &quot;
+
+# Bad - produces a scan key and a filter:
+WHERE &quot;$1 = 'foo' AND $3 = 'bar'&quot;
+
+# Good: Produces a few scan ranges:
+WHERE &quot;$1 IN ('foo', 'bar') AND $2 &gt; 13&quot;
+
+# Bad: produces complex filters:
+WHERE &quot;$1 IN ('foo', 'bar') AND ($2 = 13 OR $3 &lt; 4)&quot;
+</code></pre>
+          <aside class="copyright" role="note">
+            
+            Documentation built with
+            <a href="http://www.mkdocs.org" target="_blank">MkDocs</a>
+            using the
+            <a href="http://squidfunk.github.io/mkdocs-material/" target="_blank">
+              Material
+            </a>
+            theme.
+          </aside>
+          
+            <footer class="footer">
+              
+  <nav class="pagination" aria-label="Footer">
+    <div class="previous">
+      
+        <a href="../Commands/" title="Commands">
+          <span class="direction">
+            Previous
+          </span>
+          <div class="page">
+            <div class="button button-previous" role="button" aria-label="Previous">
+              <i class="icon icon-back"></i>
+            </div>
+            <div class="stretch">
+              <div class="title">
+                Commands
+              </div>
+            </div>
+          </div>
+        </a>
+      
+    </div>
+    <div class="next">
+      
+        <a href="../hash_indexes/" title="Indexing redis Hashes">
+          <span class="direction">
+            Next
+          </span>
+          <div class="page">
+            <div class="stretch">
+              <div class="title">
+                Indexing redis Hashes
+              </div>
+            </div>
+            <div class="button button-next" role="button" aria-label="Next">
+              <i class="icon icon-forward"></i>
+            </div>
+          </div>
+        </a>
+      
+    </div>
+  </nav>
+
+            </footer>
+          
+        </div>
+      </article>
+      <div class="results" role="status" aria-live="polite">
+        <div class="scrollable">
+          <div class="wrapper">
+            <div class="meta"></div>
+            <div class="list"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script>
+      var base_url = '..';
+      var repo_id  = 'RedisLabsModules/secondary';
+    </script>
+    <script src="../assets/javascripts/application-997097ee0c.js"></script>
+    
+    
+  </body>
+</html>
