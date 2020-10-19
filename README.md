@@ -1,3 +1,6 @@
+| :warning: Notice! This module has been deprecated please check https://github.com/RediSearch/RediSearch/ |
+| --- |
+
 # Redis Secondary Index Module
 
 This project is a Redis Module that adds the ability to create and query secondary indexes in Redis. 
